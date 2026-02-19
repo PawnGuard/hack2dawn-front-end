@@ -56,7 +56,7 @@ This project uses a modern, component-based architecture.
 | **Language** | TypeScript | Strict static typing |
 
 ## 📂 Project Structure
-
+...................................
 ```text
 /src
   /app          # Next.js App Router (Pages and Layouts)
