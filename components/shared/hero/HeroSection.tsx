@@ -1,9 +1,21 @@
 // Orquestador principal (solo ensambla)
+import CallToAction from "./CallToAction";
 import HeroBackground from "./HeroBackground";
+import HeroContent from "./HeroContent";
+import HeroCountdown from "./HeroCountdown";
 
 
 export default function HeroSection() {
+    const eventDate = new Date("2026-02-26T00:00:00Z"); // Fecha del evento
+
     return (
-        <HeroBackground />
+        <section>
+            <HeroBackground />
+            <div className="relative z-20 flex flex-col items-center gap-8 px-6 text-center">
+                <HeroContent />
+                <HeroCountdown targetDate={eventDate}/>
+                <CallToAction />
+            </div>
+        </section>
     );
 }
