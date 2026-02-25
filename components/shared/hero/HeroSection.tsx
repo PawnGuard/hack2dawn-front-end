@@ -9,7 +9,8 @@ export default function HeroSection() {
     const eventDate = new Date("2026-02-26T00:00:00Z"); // Fecha del evento
 
     return (
-        <section>
+        <section className="relative min-h-screen w-full overflow-hidden flex flex-col
+                        items-center justify-center">
             <HeroBackground />
             <div className="relative z-20 flex flex-col items-center gap-8 px-6 text-center">
                 <HeroContent />
