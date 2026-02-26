@@ -3,6 +3,7 @@ import CallToAction from "./CallToAction";
 import HeroBackground from "./HeroBackground";
 import HeroContent from "./HeroContent";
 import HeroCountdown from "./HeroCountdown";
+import { GlitchIcon } from "../glitch";
 
 
 export default function HeroSection() {
@@ -13,9 +14,10 @@ export default function HeroSection() {
                         items-center justify-center">
             <HeroBackground />
             <div className="relative z-20 flex flex-col items-center gap-8 px-6 text-center">
+                <GlitchIcon size={45} />
                 <HeroContent />
                 <HeroCountdown targetDate={eventDate}/>
-                <CallToAction />
+                <CallToAction />    
             </div>
         </section>
     );
