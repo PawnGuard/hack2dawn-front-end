@@ -5,7 +5,7 @@ export function Footer() {
     const { description, navLinks, socialLinks } = footerConfig;
 
     return (
-        <footer className="bg-gray-100 dark:bg-gray-900">
+        <footer className="bg-color-background">
             <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
                 <div className="flex justify-center text-teal-600 dark:text-teal-300">
                     <span className="font-display">Hack2Dawn</span>

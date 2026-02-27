@@ -3,14 +3,13 @@ import { SPONSORS } from "@/data/sponsors";
 // SponsorBanner.tsx
 export default function SponsorBanner() {
   return (
-    <section aria-label="Sponsors" className="overflow-hidden py-8 border-y border-white/10">
+    <section aria-label="Sponsors" className="overflow-hidden py-8 bg-background">
       <div className="flex w-full">
 
         {/* Div 1 */}
         <div
           aria-hidden="false"
-          className="animate-marquee flex shrink-0 w-full items-center justify-around
-                     [will-change:transform] hover:[animation-play-state:paused]"
+          className="animate-marquee flex shrink-0 w-full items-center justify-around will-change-transform"
         >
           {SPONSORS.map((sponsor) => (
             <SponsorItem key={sponsor.name} sponsor={sponsor} />
@@ -20,8 +19,7 @@ export default function SponsorBanner() {
         {/* Div 2 — idéntico, aria-hidden para no duplicar en lectores de pantalla */}
         <div
           aria-hidden="true"
-          className="animate-marquee flex shrink-0 w-full items-center justify-around
-                     [will-change:transform] hover:[animation-play-state:paused]"
+          className="animate-marquee flex shrink-0 w-full items-center justify-around will-change-transform"
         >
           {SPONSORS.map((sponsor) => (
             <SponsorItem key={`dup-${sponsor.name}`} sponsor={sponsor} />

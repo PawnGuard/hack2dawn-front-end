@@ -14,7 +14,6 @@ export default function HeroSection() {
                         items-center justify-center">
             <HeroBackground />
             <div className="relative z-20 flex flex-col items-center gap-8 px-6 text-center">
-                <GlitchIcon size={45} />
                 <HeroContent />
                 <HeroCountdown targetDate={eventDate}/>
                 <CallToAction />    

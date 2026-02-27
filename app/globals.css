@@ -2,7 +2,7 @@
 
 /* ── Variables de color ── */
 :root {
-  --ctf-coffe-bean:     #1E0513;
+  --ctf-coffe-bean:     #0a0006;
   --ctf-indigo:         #430464;
   --ctf-dark-magenta:   #940992;
   --ctf-shocking-pink:  #EF01BA;
@@ -38,7 +38,6 @@
   html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
 
   body {
-    background-color: var(--ctf-coffe-bean);
     font-family: var(--font-body);
   }
 
