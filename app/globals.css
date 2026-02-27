@@ -1,42 +1,53 @@
 @import "tailwindcss";
 
-/* Variables de tipografia */
-@theme inline {
-  --font-display: var(--font-display);
-  --font-heading: var(--font-heading);
-  --font-mono: var(--font-mono);
-  --font-body: var(--font-body)
+/* ── Variables de color ── */
+:root {
+  --ctf-coffe-bean:     #1E0513;
+  --ctf-indigo:         #430464;
+  --ctf-dark-magenta:   #940992;
+  --ctf-shocking-pink:  #EF01BA;
+  --ctf-harvest-orange: #F77200;
+  --ctf-canary-yellow:  #FEF759;
+  --ctf-lavender-mint:  #F4EDF2;
 }
 
 @theme {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --font-display: var(--font-display);
+  --font-heading: var(--font-heading);
+  --font-mono:    var(--font-mono);
+  --font-body:    var(--font-body);
+
+  --color-background:   var(--ctf-coffe-bean);
+  --color-purple-dark:  var(--ctf-indigo);
+  --color-purple:       var(--ctf-dark-magenta);
+  --color-pink:         var(--ctf-shocking-pink);
+  --color-orange:       var(--ctf-harvest-orange);
+  --color-yellow:       var(--ctf-canary-yellow);
+  --color-white:        var(--ctf-lavender-mint);
+
+  --animate-marquee: marquee 30s linear infinite;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-100%); }  /* ✅ -100% para dos contenedores separados */
+  }
+
 }
 
 @layer base {
-  html {
-    scroll-behavior: smooth;
-    -webkit-font-smoothing: antialiased;
-  }
+  html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
   body {
+    background-color: var(--ctf-coffe-bean);
     font-family: var(--font-body);
   }
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
-  }
-  code, pre, kbd {
-    font-family: var(--font-mono);
-  }
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+  h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
+  code, pre, kbd          { font-family: var(--font-mono); }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
+  @media (prefers-reduced-motion: reduce) {
+    .animate-marquee {
+      animation: none;
+    }
+  }
 }

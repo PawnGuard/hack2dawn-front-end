@@ -7,12 +7,12 @@ export default function HeroContent() {
         CTF · 2025
       </span>
 
-      <h1 className="font-retro text-4xl md:text-6xl text-sw-text leading-tight
+      <h1 className="font-display text-4xl md:text-6xl text-sw-text leading-tight
                      drop-shadow-[0_0_30px_#FF1F8C]">
         HACK2DAWN
       </h1>
 
-      <p className="font-cyber text-sw-muted text-base md:text-lg max-w-lg">
+      <p className="font-heading text-sw-muted text-base md:text-lg max-w-lg">
         Demuestra tus habilidades. Captura las flags. Domina el scoreboard.
       </p>
     </div>

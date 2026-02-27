@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Chakra_Petch, Space_Grotesk, JetBrains_Mono} from "next/font/google";
+import { Geist, Geist_Mono, Chakra_Petch, Space_Grotesk, JetBrains_Mono, Press_Start_2P} from "next/font/google";
 import "./globals.css";
 import localFont from 'next/font/local'
 
