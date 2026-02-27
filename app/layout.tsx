@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Chakra_Petch, Space_Grotesk, JetBrains_Mono, Press_Start_2P} from "next/font/google";
 import "./globals.css";
-import localFont from 'next/font/local'
+import localFont from 'next/font/local';
+import FuzzyOverlay from "@/components/shared/FuzzyOverlay";
 
 // -----Fuentes Locales----- //
 const watchdogs = localFont({
@@ -44,6 +45,7 @@ export default function RootLayout({
     <html lang="es" className={`${chakraPetch.variable} ${watchdogs.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <body className={"font-body bg-black text-white"}>
         {children}
+        <FuzzyOverlay />
       </body>
     </html>
   );

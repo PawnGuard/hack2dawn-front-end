@@ -4,10 +4,10 @@ import { QASection } from "@/components/shared/qa&support";
 
 export default function LandingPage(){
     return (
-        <main>
+        <>
             <HeroSection />
             <SponsorMarquee />
             <QASection />
-        </main>
+        </>
     )
 }
