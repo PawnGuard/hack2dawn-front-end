@@ -1,4 +1,4 @@
-import { SPONSORS } from "@/data/sponsors";
+import { SPONSORS, type Sponsor } from "@/data/sponsors";
 
 // SponsorBanner.tsx
 export default function SponsorBanner() {
@@ -37,11 +37,12 @@ function SponsorItem({ sponsor }: { sponsor: Sponsor }) {
       href={sponsor.website ?? "#"}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={sponsor.name}
-      className="flex items-center justify-center px-8
-                 grayscale opacity-50
+      aria-label={`Visitar sitio de ${sponsor.name}`}
+      title={sponsor.name}
+      className="flex items-center justify-center px-12
+                 grayscale opacity-40
                  transition-[filter,opacity,transform] duration-300
-                 hover:grayscale-0 hover:opacity-100 hover:scale-110"
+                 hover:grayscale-0 hover:opacity-100 hover:scale-105"
     >
       {sponsor.logo}
     </a>

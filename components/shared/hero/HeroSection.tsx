@@ -3,11 +3,9 @@ import CallToAction from "./CallToAction";
 import HeroBackground from "./HeroBackground";
 import HeroContent from "./HeroContent";
 import HeroCountdown from "./HeroCountdown";
-import { GlitchIcon } from "../glitch";
-
 
 export default function HeroSection() {
-    const eventDate = new Date("2026-02-26T00:00:00Z"); // Fecha del evento
+    const eventDate = new Date("2026-05-09T09:00:00Z"); // Fecha del evento dummie se remplazara con CTFd
 
     return (
         <section className="relative min-h-screen w-full overflow-hidden flex flex-col
@@ -16,7 +14,7 @@ export default function HeroSection() {
             <div className="relative z-20 flex flex-col items-center gap-8 px-6 text-center">
                 <HeroContent />
                 <HeroCountdown targetDate={eventDate}/>
-                <CallToAction />    
+                <CallToAction />
             </div>
         </section>
     );

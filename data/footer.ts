@@ -32,7 +32,7 @@ export const footerConfig: FooterConfig = {
     { label: 'Registro',  href: '/register' },
     { label: 'Credits', href: '/credits' },
     { label: 'Rules', href: '/rules' },
-    { label: 'FAQ',     href: '/faq' },
+    { label: 'QA & Support',     href: '/faq' },
   ],
   socialLinks: [
     { label: 'GitHub',    href: '#', icon: GithubIcon    },

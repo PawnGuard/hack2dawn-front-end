@@ -9,18 +9,23 @@ export type Sponsor = {
 
 export const SPONSORS: Sponsor[] = [
   {
-    name: "HackTheBox",
+    name: "Sponsor 1",
     website: "https://example.com",
-    logo: <img src="/images/HacktheBox Logo.webp" alt="HackTheBox" className="h-8" />
+    logo: <img src="/images/sponsor-placeholder-1.webp" alt="Sponsor 1" className="h-10 w-auto object-contain" />
   },
   {
-    name: "Ooooo",
+    name: "Sponsor 2",
     website: "https://example.com",
-    logo: <img src="/images/HacktheBox Logo.webp" alt="HackTheBox" className="h-8" />
+    logo: <img src="/images/sponsor-placeholder-2.webp" alt="Sponsor 2" className="h-10 w-auto object-contain" />
   },
   {
-    name: "Ooooo",
+    name: "Sponsor 3",
     website: "https://example.com",
-    logo: <img src="/images/HacktheBox Logo.webp" alt="HackTheBox" className="h-8" />
+    logo: <img src="/images/sponsor-placeholder-3.webp" alt="Sponsor 3" className="h-10 w-auto object-contain" />
   },
+  {
+    name: "Sponsor 4",
+    website: "https://example.com",
+    logo: <img src="/images/sponsor-placeholder-4.webp" alt="Sponsor 4" className="h-10 w-auto object-contain" />
+  }
 ];
