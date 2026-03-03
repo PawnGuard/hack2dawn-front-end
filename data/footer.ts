@@ -18,14 +18,11 @@ export type SocialLink = {
 };
 
 export type FooterConfig = {
-  description: string;
   navLinks: NavLink[];
   socialLinks: SocialLink[];
 };
 
 export const footerConfig: FooterConfig = {
-  description:
-    'Listo para hackear? Què esperas?',
   navLinks: [
     { label: 'Home',    href: '/' },
     { label: 'Login',  href: '/login' },
@@ -35,9 +32,9 @@ export const footerConfig: FooterConfig = {
     { label: 'QA & Support',     href: '/faq' },
   ],
   socialLinks: [
-    { label: 'GitHub',    href: '#', icon: GithubIcon    },
-    { label: 'Discord',    href: '#', icon: DiscordIcon    },
-    { label: 'Instagram',    href: '#', icon: InstagramIcon    },
-    { label: 'Linkedin',    href: '#', icon: LinkedinIcon    },
+    { label: 'GitHub',    href: 'https://github.com/PawnGuard', icon: GithubIcon    },
+    { label: 'Discord',    href: 'https://discord.com/invite/EsnyzAuU9w', icon: DiscordIcon    },
+    { label: 'Instagram',    href: 'https://www.instagram.com/pawnguard/', icon: InstagramIcon    },
+    { label: 'Linkedin',    href: 'https://www.linkedin.com/company/pawnguard', icon: LinkedinIcon    },
   ],
 };

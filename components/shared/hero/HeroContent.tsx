@@ -4,6 +4,7 @@ export default function HeroContent() {
     <div className="flex flex-col items-center gap-4 max-w-3xl">
       
 
+      
       <h1 className="font-display text-4xl md:text-8xl text-sw-text leading-tight
                      drop-shadow-[0_0_30px_#FF1F8C]">
         HACK2DAWN
