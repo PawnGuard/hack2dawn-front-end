@@ -1,0 +1,158 @@
+/* ──────────────────────────────────────────────
+   Horizontal Scroll Gallery – Scroll Hijacking
+   Patrón sticky + spacer para storytelling scroll
+   ────────────────────────────────────────────── */
+
+/* ── Spacer wrapper (crea el espacio vertical de scroll) ── */
+.scrollWrapper {
+    position: relative;
+    /* height se define inline desde el componente */
+}
+
+/* ── Sticky container (se fija al viewport mientras el spacer pasa) ── */
+.stickyContainer {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ── Section (pista horizontal) ────────────── */
+.scrollSection {
+    padding: 10vh 10vh 10vh 10vmax;
+    min-width: 550vh;
+    white-space: nowrap;
+    will-change: transform;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+/* ── Item base ─────────────────────────────── */
+.item {
+    display: inline-block;
+    position: relative;
+    margin: 0 -30vh 0 3vh;
+    will-change: transform;
+}
+
+.item::before {
+    content: '';
+    display: inline-block;
+    vertical-align: middle;
+    height: 100%;
+}
+
+/* ── Tamaños ───────────────────────────────── */
+.big {
+    height: 80vh;
+    width: 60vh;
+}
+
+.big.horizontal {
+    height: 60vh;
+    width: 80vh;
+}
+
+.normal {
+    height: 60vh;
+    width: 45vh;
+    z-index: 1;
+}
+
+.normal.horizontal {
+    height: 45vh;
+    width: 60vh;
+}
+
+.normal:nth-of-type(3n) {
+    bottom: 5vh;
+}
+
+.normal:nth-of-type(4n) {
+    bottom: -5vh;
+}
+
+.small {
+    height: 40vh;
+    width: 30vh;
+    z-index: 2;
+}
+
+.small.horizontal {
+    height: 30vh;
+    width: 40vh;
+}
+
+.small:nth-of-type(3n) {
+    bottom: 13vh;
+}
+
+.small:nth-of-type(4n) {
+    bottom: -13vh;
+}
+
+/* ── Imagen base (oculta por defecto) ──────── */
+.image {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    object-fit: cover;
+    filter: grayscale(1);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(0) translateY(0) scale(1);
+    transition: filter 0.3s ease,
+                opacity 1s ease,
+                transform 1s ease;
+}
+
+/* ── Direcciones de entrada por nth-of-type ── */
+.item:nth-of-type(4n) .image {
+    transform: translateX(-30vh) translateY(-30vh) scale(0.8);
+    transition-delay: 0s;
+}
+
+.item:nth-of-type(4n-1) .image {
+    transform: translateX(30vh) translateY(30vh) scale(0.8);
+    transition-delay: 0.05s;
+}
+
+.item:nth-of-type(4n-2) .image {
+    transform: translateX(-30vh) translateY(30vh) scale(0.8);
+    transition-delay: 0.1s;
+}
+
+.item:nth-of-type(4n-3) .image {
+    transform: translateX(-30vh) translateY(-30vh) scale(0.8);
+    transition-delay: 0.15s;
+}
+
+/* ── Estado activo (visible) ───────────────── */
+.active {
+    transform: translateX(0) translateY(0) scale(1) !important;
+    opacity: 0.8;
+    pointer-events: auto;
+    transition: filter 0.3s ease,
+                opacity 1s ease,
+                transform 1s ease;
+}
+
+/* ── Estado clicked (explota y desaparece) ─── */
+.clicked {
+    transform: translateX(0) translateY(0) scale(5) !important;
+    opacity: 0;
+    pointer-events: auto;
+    transition: filter 0.3s ease,
+                opacity 1s ease,
+                transform 1s ease;
+}
+
+/* ── Hover en imágenes activas ─────────────── */
+.active:hover {
+    filter: grayscale(0);
+    opacity: 1;
+    cursor: pointer;
+}
