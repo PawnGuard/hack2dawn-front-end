@@ -105,12 +105,16 @@ function Separator() {
 }
 
 export default function HeroCountdown({ targetDate }: { targetDate: Date }) {
-  const [time, setTime] = useState<TimeLeft>(calculate(targetDate));
+  // null on SSR → real value only after mount, prevents hydration mismatch
+  const [time, setTime] = useState<TimeLeft | null>(null);
 
   useEffect(() => {
+    setTime(calculate(targetDate));
     const id = setInterval(() => setTime(calculate(targetDate)), 1000);
     return () => clearInterval(id);
   }, [targetDate]);
+
+  if (!time) return null;
 
   return (
     <div className="flex items-start gap-1 md:gap-3">
