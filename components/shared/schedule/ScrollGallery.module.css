@@ -1,0 +1,262 @@
+/* ──────────────────────────────────────────────
+   Horizontal Scroll Gallery – Scroll Hijacking
+   Patrón sticky + spacer para storytelling scroll
+   ────────────────────────────────────────────── */
+
+/* ── Spacer wrapper (crea el espacio vertical de scroll) ── */
+.scrollWrapper {
+    position: relative;
+    /* height se define inline desde el componente */
+}
+
+/* ── Sticky container (se fija al viewport mientras el spacer pasa) ── */
+.stickyContainer {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+    background: #0a0006  url('/background/mountains-background.png') center bottom 40vh / cover no-repeat fixed;
+}
+
+/* ── Section (pista horizontal) ────────────── */
+.scrollSection {
+    padding: 10vh 10vh 10vh 10vmax;
+    min-width: 550vh;
+    white-space: nowrap;
+    will-change: transform;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+/* ── Item base ─────────────────────────────── */
+.item {
+    display: inline-block;
+    position: relative;
+    margin: 0 -30vh 0 3vh;
+    will-change: transform;
+}
+
+.item::before {
+    content: '';
+    display: inline-block;
+    vertical-align: middle;
+    height: 100%;
+}
+
+/* ── Tamaños ───────────────────────────────── */
+.big {
+    height: 80vh;
+    width: 60vh;
+}
+
+.big.horizontal {
+    height: 60vh;
+    width: 80vh;
+}
+
+.normal {
+    height: 60vh;
+    width: 45vh;
+    z-index: 1;
+}
+
+.normal.horizontal {
+    height: 45vh;
+    width: 60vh;
+}
+
+.normal:nth-of-type(3n) {
+    bottom: 5vh;
+}
+
+.normal:nth-of-type(4n) {
+    bottom: -5vh;
+}
+
+.small {
+    height: 40vh;
+    width: 30vh;
+    z-index: 2;
+}
+
+.small.horizontal {
+    height: 30vh;
+    width: 40vh;
+}
+
+.small:nth-of-type(3n) {
+    bottom: 13vh;
+}
+
+.small:nth-of-type(4n) {
+    bottom: -13vh;
+}
+
+/* ── Imagen base (oculta por defecto) ──────── */
+.image {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    object-fit: cover;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(0) translateY(0) scale(1);
+    transition: filter 0.3s ease,
+                opacity 1s ease,
+                transform 1s ease;
+}
+
+/* ── Direcciones de entrada por nth-of-type ── */
+.item:nth-of-type(4n) .image {
+    transform: translateX(-30vh) translateY(-30vh) scale(0.8);
+    transition-delay: 0s;
+}
+
+.item:nth-of-type(4n-1) .image {
+    transform: translateX(30vh) translateY(30vh) scale(0.8);
+    transition-delay: 0.05s;
+}
+
+.item:nth-of-type(4n-2) .image {
+    transform: translateX(-30vh) translateY(30vh) scale(0.8);
+    transition-delay: 0.1s;
+}
+
+.item:nth-of-type(4n-3) .image {
+    transform: translateX(-30vh) translateY(-30vh) scale(0.8);
+    transition-delay: 0.15s;
+}
+
+/* ── Estado activo (visible) ───────────────── */
+.active {
+    transform: translateX(0) translateY(0) scale(1) !important;
+    opacity: 0.8;
+    pointer-events: auto;
+    transition: opacity 1s ease,
+                transform 1s ease;
+}
+
+/* ── Hover en imágenes activas ─────────────── */
+.active:hover {
+    opacity: 1;
+    cursor: pointer;
+}
+
+/* ── Nissan car (acompaña el scroll) ───────── */
+.car {
+    position: absolute;
+    bottom: 20vh;
+    left: 0;
+    z-index: 50;
+    pointer-events: none;
+    will-change: transform, opacity;
+    opacity: 0;
+    /* translateX se controla desde JS */
+    transform: translateX(5vw) translateY(0);
+}
+
+.carImage {
+    height: 20vh;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 20px rgba(239, 1, 186, 0.4));
+    image-rendering: pixelated; /* mantiene el estilo pixel-art del GIF */
+}
+
+/* ── Cyberpunk road / grid (suelo 3D) ──────── */
+.road {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40vh;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.roadGrid {
+    position: absolute;
+    top: 0;
+    left: -25%;
+    width: 150%;
+    height: 300%;
+    transform: perspective(500px) rotateX(60deg);
+    transform-origin: 50% 0%;
+    will-change: background-position;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            rgba(190, 20, 255, 0.55) 0px,
+            rgba(190, 20, 255, 0.55) 1px,
+            transparent 1px,
+            transparent 60px
+        ),
+        repeating-linear-gradient(
+            0deg,
+            rgba(190, 20, 255, 0.3) 0px,
+            rgba(190, 20, 255, 0.3) 1px,
+            transparent 1px,
+            transparent 40px
+        );
+}
+
+/* ── Dimming overlay: bright at horizon (top) → dim near viewer (bottom) ── */
+.roadDim {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        transparent 5%,
+        rgba(10, 0, 6, 0.6) 50%,
+        #0a0006 100%
+    );
+    z-index: 2;
+}
+
+/* ── Neon horizon line (línea brillante en el horizonte) ── */
+.roadHorizon {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent 5%,
+        #bf14ff 20%,
+        #e080ff 40%,
+        #ffffff 50%,
+        #e080ff 60%,
+        #bf14ff 80%,
+        transparent 95%
+    );
+    box-shadow:
+        0 0 8px  rgba(191, 20, 255, 0.9),
+        0 0 20px rgba(191, 20, 255, 0.6),
+        0 0 40px rgba(191, 20, 255, 0.3),
+        0 2px 6px rgba(239, 1, 186, 0.5);
+    z-index: 3;
+}
+
+/* ── Horizon glow (resplandor suave debajo de la línea) ── */
+.roadHorizonGlow {
+    position: absolute;
+    top: 0;
+    left: 10%;
+    width: 80%;
+    height: 30%;
+    background: radial-gradient(
+        ellipse at 50% 0%,
+        rgba(191, 20, 255, 0.25) 0%,
+        transparent 70%
+    );
+    z-index: 2;
+}
