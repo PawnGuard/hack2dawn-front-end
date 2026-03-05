@@ -26,11 +26,12 @@ export default function ScrollGallery() {
     const wrapperRef = useRef<HTMLDivElement>(null);
     const stickyRef = useRef<HTMLDivElement>(null);
     const trackRef = useRef<HTMLDivElement>(null);
+    const carRef = useRef<HTMLDivElement>(null);
+    const roadGridRef = useRef<HTMLDivElement>(null);
     const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
     const [spacerHeight, setSpacerHeight] = useState("300vh");
     const [imagesVisible, setImagesVisible] = useState(false);
-    const [clickedId, setClickedId] = useState<number | null>(null);
 
     /* ── Calcular spacerHeight = ancho del track − viewport ── */
     useEffect(() => {
@@ -48,13 +49,18 @@ export default function ScrollGallery() {
         return () => window.removeEventListener("resize", recalc);
     }, []);
 
-    /* ── Scroll-driven horizontal translation + parallax ──── */
+    /* ── Scroll-driven horizontal translation + parallax + car ── */
     useEffect(() => {
         const wrapper = wrapperRef.current;
         const track = trackRef.current;
+        const car = carRef.current;
+        const roadGrid = roadGridRef.current;
         if (!wrapper || !track) return;
 
         const PARALLAX_FACTOR = 0.12;
+        // Rebote en Y del carro (simulación de carretera)
+        const BOUNCE_AMP = 3;      // px de amplitud
+        const BOUNCE_FREQ = 0.015; // frecuencia del rebote (más alto = más rápido)
         let rafId: number;
 
         const onScroll = () => {
@@ -83,6 +89,27 @@ export default function ScrollGallery() {
                         translateX * (speed - 1) * PARALLAX_FACTOR;
                     el.style.transform = `translateX(${-parallax}px)`;
                 });
+
+                // ── Mover el carro con el scroll ──────────────
+                if (car) {
+                    // El carro viaja de 5% a 85% del viewport en X
+                    const carX = 5 + progress * 80; // vw
+                    // Rebote vertical suave (sin wave)
+                    const bounceY = Math.sin(translateX * BOUNCE_FREQ) * BOUNCE_AMP;
+                    car.style.transform = `translateX(${carX}vw) translateY(${bounceY}px)`;
+                    // Fade in al inicio, fade out al final
+                    const opacity = progress < 0.02
+                        ? progress / 0.02
+                        : progress > 0.95
+                            ? (1 - progress) / 0.05
+                            : 1;
+                    car.style.opacity = `${opacity}`;
+                }
+
+                // ── Mover el grid del suelo con el scroll ─────
+                if (roadGrid) {
+                    roadGrid.style.backgroundPosition = `${-translateX * 0.5}px 0`;
+                }
             });
         };
 
@@ -114,17 +141,6 @@ export default function ScrollGallery() {
         return () => observer.disconnect();
     }, [imagesVisible]);
 
-    /* ── Click → explode → hide → show cycle ──────────────── */
-    const handleImageClick = useCallback((id: number) => {
-        setClickedId(id);
-        setImagesVisible(false);
-
-        setTimeout(() => {
-            setClickedId(null);
-            setImagesVisible(true);
-        }, 2000);
-    }, []);
-
     /* ── Helpers de className ──────────────────────────────── */
     const getItemClassName = (item: GalleryItem) => {
         const classes = [styles.item, styles[item.size]];
@@ -134,9 +150,7 @@ export default function ScrollGallery() {
 
     const getImageClassName = (item: GalleryItem) => {
         const classes = [styles.image];
-        if (clickedId === item.id) {
-            classes.push(styles.clicked);
-        } else if (imagesVisible) {
+        if (imagesVisible) {
             classes.push(styles.active);
         }
         return classes.join(" ");
@@ -155,6 +169,25 @@ export default function ScrollGallery() {
             style={{ height: spacerHeight }}
         >
             <div ref={stickyRef} className={styles.stickyContainer}>
+                {/* ── Cyberpunk road grid (suelo 3D) ── */}
+                <div className={styles.road}>
+                    <div ref={roadGridRef} className={styles.roadGrid} />
+                    <div className={styles.roadDim} />
+                    <div className={styles.roadHorizon} />
+                    <div className={styles.roadHorizonGlow} />
+                </div>
+
+                {/* ── Nissan car que acompaña el scroll ── */}
+                <div ref={carRef} className={styles.car}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src="/images/nissan.gif"
+                        alt="Nissan driving through the gallery"
+                        draggable={false}
+                        className={styles.carImage}
+                    />
+                </div>
+
                 <div ref={trackRef} className={styles.scrollSection}>
                     {galleryItems.map((item, index) => (
                         <div
@@ -167,7 +200,6 @@ export default function ScrollGallery() {
                                 className={getImageClassName(item)}
                                 src={item.src}
                                 alt={item.alt}
-                                onClick={() => handleImageClick(item.id)}
                                 draggable={false}
                             />
                         </div>
