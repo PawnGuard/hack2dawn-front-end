@@ -101,14 +101,14 @@ export default function About() {
                             style={{ objectFit: 'cover', objectPosition: 'center top' }}
                         />
                     </div>
-                    <div className={styles.aboutTitle}>
-                        <p>
+                    <div className={`${styles.aboutTitle} flex flex-col-reverse md:flex-row items-start gap-4 md:gap-8 lg:gap-12 px-4 md:px-6 lg:px-12`}>
+                        <p className="text-sm sm:text-base md:text-lg lg:text-xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-xl leading-relaxed text-white/95 m-0 p-4 md:p-6 lg:p-8 bg-black/50 border-l-4 border-orange-500 rounded backdrop-blur-md flex-shrink md:flex-shrink-0">
                             Hack2Dawn es un evento de ciberseguridad tipo Capture The Flag (CTF)
                             donde equipos compiten resolviendo desafíos de seguridad informática
                             durante toda la noche hasta el amanecer.
                         </p>
-                        <h2>
-                            About<br />
+                        <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-left flex-shrink-0 md:ml-auto lg:ml-96">
+                            About
                         </h2>
                     </div>
                 </section>
