@@ -84,6 +84,8 @@ export default function StorySection() {
                         Math.max(0, (scrolled - aboutScrollPx) / galleryScrollRange),
                     );
 
+                    if (galleryProgress === 0) return;
+
                     const maxTranslate =
                         track.scrollWidth - window.innerWidth;
                     const translateX = galleryProgress * maxTranslate;
@@ -106,9 +108,7 @@ export default function StorySection() {
                     if (car) {
                         const bounceY =
                             Math.sin(translateX * BOUNCE_FREQ) * BOUNCE_AMP;
-                        // GSAP handles X via tween; we only add the bounce Y
-                        const currentX = gsap.getProperty(car, "x");
-                        car.style.transform = `translateX(${currentX}px) translateY(${bounceY}px)`;
+                        car.style.transform = `translateX(${gsap.getProperty(car, "x")}px) translateY(${bounceY}px)`;
                     }
                 },
             },

@@ -12,6 +12,10 @@
   z-index: 1;
 }
 
+.wrapper {
+  overflow: hidden;
+}
+
 .content {
   overflow-x: hidden;
 }

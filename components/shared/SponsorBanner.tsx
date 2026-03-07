@@ -19,7 +19,7 @@ export default function SponsorBanner() {
         {/* Div 2 — idéntico, aria-hidden para no duplicar en lectores de pantalla */}
         <div
           aria-hidden="true"
-          className="animate-marquee flex shrink-0 w-full items-center justify-around will-change-transform"
+          className="animate-marquee flex shrink-0 w-full items-center justify-around"
         >
           {SPONSORS.map((sponsor) => (
             <SponsorItem key={`dup-${sponsor.name}`} sponsor={sponsor} />
