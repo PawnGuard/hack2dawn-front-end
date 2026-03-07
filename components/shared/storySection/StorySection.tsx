@@ -55,11 +55,11 @@ export default function StorySection() {
                 start: "top top",
                 end: () => {
                     const trackOverflow = track.scrollWidth - window.innerWidth;
-                    const descentScroll = window.innerHeight * 2;
-                    return `+=${window.innerHeight * 5 + descentScroll + Math.max(0, trackOverflow)}`;
+                    const descentScroll = window.innerHeight * 1;
+                    return `+=${window.innerHeight * 2 + descentScroll + Math.max(0, trackOverflow)}`;
                 },
                 pin: true,
-                scrub: 1,
+                scrub: 0.5,
                 invalidateOnRefresh: true,
                 onUpdate: (self) => {
                     /* ── Phase-4 per-frame work: parallax, road grid, car bounce ── */
@@ -73,8 +73,8 @@ export default function StorySection() {
                     const scrollRange = totalEnd - totalStart;
                     if (scrollRange <= 0) return;
 
-                    // About phases take ~5 viewport heights + 2 for descent
-                    const aboutScrollPx = window.innerHeight * 7;
+                    // About phases take ~3 viewport heights + 1 for descent
+                    const aboutScrollPx = window.innerHeight * 4;
                     const galleryScrollRange = scrollRange - aboutScrollPx;
                     if (galleryScrollRange <= 0) return;
 
@@ -250,7 +250,7 @@ export default function StorySection() {
                 <section ref={heroRef} className={styles.hero}>
                     <div className={styles.aboutForeground}>
                         <Image
-                            src="/background/About2.svg"
+                            src="/background/About2.webp"
                             alt="About Detail"
                             draggable={false}
                             fill

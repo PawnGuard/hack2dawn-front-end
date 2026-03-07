@@ -20,7 +20,7 @@
 .hero {
   width: 100%;
   height: 100vh;
-  background-image: url("/background/BackgroundAbout.svg");
+  background-image: url("/background/BackgroundAbout.webp");
   background-position: center top;
   background-repeat: no-repeat;
   background-size: cover;
