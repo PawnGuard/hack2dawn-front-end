@@ -250,7 +250,7 @@
   pointer-events: none;
   will-change: transform, opacity;
   opacity: 0;
-  transform: translateX(5vw) translateY(0);
+  /* Sin transform — GSAP lo controla todo */
 }
 
 .carImage {

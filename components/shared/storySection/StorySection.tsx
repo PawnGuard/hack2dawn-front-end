@@ -5,6 +5,7 @@ import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { galleryItems, type GalleryItem } from "@/data/gallery";
+import { aboutContent } from "@/data/about";
 import styles from "./StorySection.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -108,7 +109,7 @@ export default function StorySection() {
                     if (car) {
                         const bounceY =
                             Math.sin(translateX * BOUNCE_FREQ) * BOUNCE_AMP;
-                        car.style.transform = `translateX(${gsap.getProperty(car, "x")}px) translateY(${bounceY}px)`;
+                        gsap.set(car, { y: bounceY });
                     }
                 },
             },
@@ -184,7 +185,7 @@ export default function StorySection() {
         }, "<+=0.8")
         .fromTo(car, {
             opacity: 0,
-            x: "5vw",
+            x: 0,
         }, {
             opacity: 1,
             duration: 0.3,
@@ -265,13 +266,10 @@ export default function StorySection() {
                         className={`${styles.aboutTitle} flex flex-col-reverse md:flex-row items-start gap-4 md:gap-8 lg:gap-12 px-4 md:px-6 lg:px-12`}
                     >
                         <p className="text-sm sm:text-base md:text-lg lg:text-xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-xl leading-relaxed text-white/95 m-0 p-4 md:p-6 lg:p-8 bg-black/50 border-l-4 border-orange-500 rounded backdrop-blur-md flex-shrink md:flex-shrink-0">
-                            Hack2Dawn es un evento de ciberseguridad tipo
-                            Capture The Flag (CTF) donde equipos compiten
-                            resolviendo desafíos de seguridad informática
-                            durante toda la noche hasta el amanecer.
+                            {aboutContent.description}
                         </p>
                         <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-left flex-shrink-0 md:ml-auto lg:ml-96">
-                            About
+                            {aboutContent.title}
                         </h2>
                     </div>
                 </section>
