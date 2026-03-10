@@ -24,12 +24,14 @@ export type FooterConfig = {
 
 export const footerConfig: FooterConfig = {
   navLinks: [
-    { label: 'Home',    href: '/' },
-    { label: 'Login',  href: '/login' },
-    { label: 'Registro',  href: '#register' },
-    { label: 'About',  href: '/about' },
-    { label: 'QA & Support',     href: '/faq' },
-    { label: 'Credits', href: '/credits' }
+    { label: 'Home',         href: '#home' },
+    { label: 'Login',        href: '/login' },
+    { label: 'Registro',     href: '/register' },
+    { label: 'Sponsors',     href: '#sponsors' },
+    { label: 'About',        href: '#about' },
+    { label: 'Schedule',     href: '#about' },
+    { label: 'QA & Support', href: '#faq' },
+    { label: 'Credits',      href: '/credits' }
   ],
   socialLinks: [
     { label: 'GitHub',    href: 'https://github.com/PawnGuard', icon: GithubIcon    },

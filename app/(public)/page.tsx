@@ -6,10 +6,10 @@ import { QASection } from "@/components/shared/qa&support";
 export default function LandingPage(){
     return (
         <>
-            <HeroSection />
-            <SponsorMarquee />
-            <StorySection />
-            <QASection />
+            <section id="home"><HeroSection /></section>
+            <section id="sponsors"><SponsorMarquee /></section>
+            <section id="about"><StorySection /></section>
+            <section id="faq"><QASection /></section>
         </>
     )
 }
