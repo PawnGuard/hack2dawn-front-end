@@ -26,10 +26,10 @@ export const footerConfig: FooterConfig = {
   navLinks: [
     { label: 'Home',    href: '/' },
     { label: 'Login',  href: '/login' },
-    { label: 'Registro',  href: '/register' },
-    { label: 'Credits', href: '/credits' },
-    { label: 'Rules', href: '/rules' },
+    { label: 'Registro',  href: '#register' },
+    { label: 'About',  href: '/about' },
     { label: 'QA & Support',     href: '/faq' },
+    { label: 'Credits', href: '/credits' }
   ],
   socialLinks: [
     { label: 'GitHub',    href: 'https://github.com/PawnGuard', icon: GithubIcon    },

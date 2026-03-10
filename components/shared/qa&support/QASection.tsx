@@ -5,6 +5,7 @@ import Image from 'next/image';
 import QABackground from './QABackground';
 import { qaData } from '@/data/qa';
 import styles from './QACards.module.css';
+import { EncryptedText } from '@/components/ui/encrypted-text';
 
 export default function QASection() {
   const cardsRef = useRef<HTMLDivElement>(null);
@@ -62,7 +63,24 @@ export default function QASection() {
       
       {/* Header */}
       <div className={styles.header}>
-        <h2>QA & Support</h2>
+        <span className={styles.headerLabel}>
+          <EncryptedText
+            text="// preguntas frecuentes"
+            encryptedClassName={styles.headerLabelEncrypted}
+            revealedClassName=""
+            revealDelayMs={40}
+            flipDelayMs={35}
+          />
+        </span>
+        <h2>
+          <EncryptedText
+            text="Q&A Support"
+            encryptedClassName={styles.headerTitleEncrypted}
+            revealedClassName=""
+            revealDelayMs={80}
+            flipDelayMs={50}
+          />
+        </h2>
       </div>
 
       {/* 3D Cards Grid */}

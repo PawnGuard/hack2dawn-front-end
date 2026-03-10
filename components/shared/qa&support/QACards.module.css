@@ -228,8 +228,8 @@
 /* Section header - Movido a la derecha superior */
 .header {
   position: absolute;
-  top: 2rem;
-  right: 2rem;
+  top: 5rem;
+  right: 4%;
   left: auto;
   z-index: 10;
   text-align: right;
@@ -237,20 +237,39 @@
   background: linear-gradient(to left, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.6), transparent);
   pointer-events: none;
   max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.headerLabel {
+  font-family: monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(0, 255, 200, 0.75);
+}
+
+.headerLabelEncrypted {
+  color: rgba(0, 255, 200, 0.3);
 }
 
 .header h2 {
-  font-size: clamp(2.5rem, 6vw, 5rem);
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 0.75rem;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffffff;
+  line-height: 1;
+  margin-bottom: 0;
+  text-shadow:
+    0 0 8px  rgba(0, 255, 200, 1),
+    0 0 24px rgba(0, 255, 200, 0.6),
+    0 0 50px rgba(0, 200, 160, 0.3);
 }
 
-.header p {
-  font-size: clamp(1.125rem, 2.5vw, 1.75rem);
-  color: #aff;
-  font-weight: 400;
+.headerTitleEncrypted {
+  color: rgba(0, 255, 200, 0.4);
 }
 
 /* Alter grid at breakpoints - Grid 6x6 fijo para 36 tarjetas */

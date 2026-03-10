@@ -9,6 +9,7 @@ export default function LandingPage(){
             <HeroSection />
             <SponsorMarquee />
             <StorySection />
+            <QASection />
         </>
     )
 }
