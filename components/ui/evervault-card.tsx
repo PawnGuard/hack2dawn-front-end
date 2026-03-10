@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, memo } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { cn } from "@/lib/utils";
 
 const CHARACTERS =
@@ -13,7 +13,17 @@ function generateRandomString(length: number): string {
   ).join("");
 }
 
-const SCRAMBLE_LENGTH = 1350; // reduced from 1500 — enough to fill a card, much cheaper
+// Approximate dimensions of a single monospace char at font-size 0.6rem
+const CHAR_W = 5.8; // px
+const CHAR_H = 9.5; // px
+
+/** Calculate how many characters are needed to fill `width × height` */
+function calcScrambleLength(w: number, h: number): number {
+  if (w === 0 || h === 0) return 0;
+  const cols = Math.ceil(w / CHAR_W);
+  const rows = Math.ceil(h / CHAR_H);
+  return cols * rows;
+}
 
 type EvervaultCardProps = {
   text?: string;
@@ -42,27 +52,41 @@ export function _EvervaultCard({
 }: EvervaultCardProps) {
   const [randomString, setRandomString] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const scrambleLenRef = useRef(0);
+  const scrambleRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
 
   const active = isHovering || forceHover;
 
-  useEffect(() => {
-    // Initialize on the client to avoid SSR/client mismatch
-    setRandomString(generateRandomString(SCRAMBLE_LENGTH));
+  const refreshString = useCallback(() => {
+    setRandomString(generateRandomString(scrambleLenRef.current));
   }, []);
+
+  // Observe the scramble container and recalculate length on resize
+  useEffect(() => {
+    const el = scrambleRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      scrambleLenRef.current = calcScrambleLength(width, height);
+      refreshString();
+    });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [refreshString]);
 
   useEffect(() => {
     if (active) {
-      intervalRef.current = setInterval(() => {
-        setRandomString(generateRandomString(SCRAMBLE_LENGTH));
-      }, 120); // increased from 75ms — still smooth, half the renders
+      intervalRef.current = setInterval(refreshString, 120);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [active]);
+  }, [active, refreshString]);
 
   return (
     <div
@@ -82,6 +106,7 @@ export function _EvervaultCard({
       >
         {/* Scramble background — covers the whole card */}
         <div
+          ref={scrambleRef}
           aria-hidden="true"
           className="absolute inset-0 text-[0.6rem] font-mono font-bold break-all select-none pointer-events-none whitespace-pre-wrap transition-[opacity] duration-300"
           style={{
@@ -100,7 +125,7 @@ export function _EvervaultCard({
         <div className="relative z-10 flex flex-1 items-center justify-center px-4 pt-4">
           {text && (
             <span
-              className="font-bold text-5xl text-center transition-all duration-300"
+              className="font-bold text-3xl lg:text-5xl text-center transition-all duration-300"
               style={{
                 color: textColor,
                 textShadow: active ? `0 0 20px ${charColor}99` : "none",
@@ -125,7 +150,7 @@ export function _EvervaultCard({
         {time && (
           <div className="relative z-10 flex items-center justify-center px-4 py-10">
             <span
-              className="font-bold text-7xl animate-pulse"
+              className="font-bold text-5xl lg:text-7xl animate-pulse"
               style={{ color: charColor }}
             >
               {time}

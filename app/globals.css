@@ -63,7 +63,7 @@
 
   --animate-marquee: marquee 30s linear infinite;
   --ease-slot: cubic-bezier(1,0,1,0);
-  --digit-height: 80px;
+  --digit-h: clamp(50px, 5.5vw, 80px);
 
   @keyframes marquee {
     from { transform: translateX(0); }
