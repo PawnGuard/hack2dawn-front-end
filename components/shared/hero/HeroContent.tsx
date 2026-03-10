@@ -35,7 +35,7 @@ export default function HeroContent() {
         />
       </h1>
       <p className="font-heading text-sw-muted text-base md:text-lg max-w-lg">
-        Demuestra tus habilidades. Captura las flags. Domina el scoreboard.
+        Explora. Rompe. Aprende. Destruye el scoreboard.
       </p>
     </div>
   );
