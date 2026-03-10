@@ -84,13 +84,32 @@
   pointer-events: none;
 }
 
-.aboutTitle h2 {
-  line-height: 1;
+/* About title heading — neon style matching Schedule */
+.aboutTitleHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.aboutTitle p {
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+.aboutTitleLabel {
+  font-family: monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(249, 115, 22, 0.75);
+}
+
+.aboutTitleText {
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow:
+    0 0 8px  rgba(249, 115, 22, 1),
+    0 0 24px rgba(249, 115, 22, 0.6),
+    0 0 50px rgba(239, 68, 0, 0.3);
+  line-height: 1;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -131,6 +150,12 @@
   position: relative;
   margin: 0 -30vh 0 3vh;
   will-change: transform;
+}
+
+/* Cards need positive spacing instead of the photo-overlap effect */
+.item.cardWrapper {
+  margin: 0 10vh 0 10vh;
+  top: -12vh;
 }
 
 .item::before {
@@ -235,10 +260,51 @@
               transform 1s ease;
 }
 
+/* ── Card item override (no object-fit, allow content layout) ── */
+.cardItem {
+  object-fit: unset;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── Hover on active images ───────────────────────────────── */
 .active:hover {
   opacity: 1;
   cursor: pointer;
+}
+
+/* ── Schedule corner label — visible during gallery scroll ── */
+.scheduleTitle {
+  position: absolute;
+  top: 2%;
+  left: 4%;
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.scheduleTitleLabel {
+  font-family: monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(191, 20, 255, 0.65);
+}
+
+.scheduleTitleText {
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow:
+    0 0 8px  rgba(191, 20, 255, 1),
+    0 0 24px rgba(191, 20, 255, 0.6),
+    0 0 50px rgba(239, 1, 186, 0.3);
+  line-height: 1;
 }
 
 /* ── Nissan car (follows scroll) ──────────────────────────── */
