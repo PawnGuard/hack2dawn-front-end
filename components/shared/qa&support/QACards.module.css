@@ -1,0 +1,289 @@
+/* QA Cards 3D Styles - Basado en el código de referencia */
+
+.qaContainer {
+  position: relative;
+  min-height: 120vh;
+  width: 100%;
+  overflow: hidden;
+  background: hsl(0, 0%, 20%);
+  isolation: isolate;
+  z-index: 1;
+}
+
+.main {
+  display: block;
+  margin: auto;
+  position: relative;
+  height: calc(var(--cardH, 18em) * var(--cardCount, 36) * 1.5);
+}
+
+/* Grid */
+.cards,
+.stack {
+  transform-style: preserve-3d;
+}
+
+.cards {
+  --scroll: 0;
+  --cardW: 32em;
+  --cardH: 18em;
+  --cardZInc: 3.5em;
+  display: grid;
+  grid-template: repeat(6, var(--cardH)) / repeat(6, var(--cardW));
+  grid-gap: 1.5em;
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%) rotateX(45deg) rotateZ(45deg) translateY(var(--scroll));
+  transform-origin: 50% 0;
+  z-index: 2;
+}
+
+.stack {
+  display: block;
+  position: relative;
+}
+
+.contents {
+  color: #000;
+  font-size: 0.85em;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.contents h3 {
+  color: #aff;
+  font-size: 2.2em;
+  font-weight: 400;
+  margin-bottom: 0.35em;
+}
+
+.contents p {
+  margin: 0;
+  padding: 0;
+}
+
+.questionOnly {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  font-size: 2em;
+  font-weight: 600;
+  color: #000;
+  padding: 1em;
+  line-height: 1.3;
+}
+
+.imageContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.imageContainer img {
+  border-radius: inherit;
+}
+
+/* Capa de sombra encima de la imagen */
+.imageContainer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.questionOnly .questionText {
+  display: block;
+}
+
+.card {
+  background-size: 200% 200%;
+  box-shadow: -1px -1px 0 hsla(0, 0%, 0%, 0.2) inset;
+  color: #000;
+  padding: 1.25em;
+  position: absolute;
+  transition: all 0.3s;
+  width: 100%;
+  height: 100%;
+}
+
+/* Card hover effects */
+.stack:hover .top,
+.stack:focus .top {
+  transform: translateZ(calc(var(--cardZInc) * 3));
+}
+
+.stack:hover .mid,
+.stack:focus .mid {
+  transform: translateZ(calc(var(--cardZInc) * 2));
+}
+
+.stack:hover .bottom,
+.stack:focus .bottom {
+  transform: translateZ(var(--cardZInc));
+}
+
+.stack:hover .answer,
+.stack:focus .answer {
+  transform: translateZ(calc(var(--cardZInc) * 5));
+}
+
+.stack:hover .shadow,
+.stack:focus .shadow {
+  -webkit-filter: blur(6px);
+  filter: blur(6px);
+  opacity: 0.4;
+}
+
+/* Card layers */
+.top {
+  transform: translateZ(3px);
+  z-index: 3;
+}
+
+.mid {
+  transform: translateZ(2px);
+  z-index: 2;
+}
+
+.bottom {
+  transform: translateZ(1px);
+  z-index: 1;
+}
+
+.shadow {
+  background: hsl(0, 0%, 0%);
+  -webkit-filter: blur(0);
+  filter: blur(0);
+  opacity: 0.7;
+}
+
+/* 4ta capa - Solo respuesta (aparece al hacer click) */
+.answer {
+  transform: translateZ(calc(var(--cardZInc) * 4));
+  z-index: 10;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), -1px -1px 0 hsla(0, 0%, 0%, 0.2) inset;
+  animation: popIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) both;
+}
+
+.answerClosing {
+  animation: popOut 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) both !important;
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: translateZ(calc(var(--cardZInc) * 1)) scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: translateZ(calc(var(--cardZInc) * 4)) scale(1);
+  }
+}
+
+@keyframes popOut {
+  0% {
+    opacity: 1;
+    transform: translateZ(calc(var(--cardZInc) * 4)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateZ(calc(var(--cardZInc) * 1)) scale(0.7);
+  }
+}
+
+.answerContent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2em;
+}
+
+.answerContent p {
+  color: #000;
+  font-size: 1.6em;
+  line-height: 1.8;
+  margin: 0;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Section header - Movido a la derecha superior */
+.header {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  left: auto;
+  z-index: 10;
+  text-align: right;
+  padding: 2rem;
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.6), transparent);
+  pointer-events: none;
+  max-width: 600px;
+}
+
+.header h2 {
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.75rem;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+.header p {
+  font-size: clamp(1.125rem, 2.5vw, 1.75rem);
+  color: #aff;
+  font-weight: 400;
+}
+
+/* Alter grid at breakpoints - Grid 6x6 fijo para 36 tarjetas */
+@media screen and (max-width: 640px) {
+  .cards {
+    grid-template: repeat(36, var(--cardH)) / var(--cardW);
+  }
+  .main {
+    height: calc(var(--cardH) * 36 - 2em);
+  }
+}
+
+@media screen and (min-width: 641px) and (max-width: 1280px) {
+  .cards {
+    grid-template: repeat(18, var(--cardH)) / repeat(2, var(--cardW));
+  }
+  .main {
+    height: calc(var(--cardH) * 18 - 2em);
+  }
+}
+
+@media screen and (min-width: 1281px) {
+  .cards {
+    grid-template: repeat(6, var(--cardH)) / repeat(6, var(--cardW));
+  }
+  .main {
+    height: calc(var(--cardH) * 6 - 2em);
+  }
+}
+
+/* Dark mode optimization */
+@media screen and (prefers-color-scheme: dark) {
+  .qaContainer {
+    background: hsl(0, 0%, 10%);
+  }
+}

@@ -1,47 +1,198 @@
-// Sección principal de QA & Support
-import QABackground from "./QABackground";
-import { qaData } from "@/data/qa";
-import { AngleDownIcon } from "@/components/icons";
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import QABackground from './QABackground';
+import { qaData } from '@/data/qa';
+import styles from './QACards.module.css';
 
 export default function QASection() {
-    return (
-        <section className="relative min-h-screen w-full overflow-hidden flex flex-col
-                        items-start justify-end py-20">
-            <QABackground />
-            <div className="relative z-20 flex flex-col items-start gap-12 px-6 pb-12 w-full max-w-4xl">
-                {/* Header */}
-                <div className="text-left">
-                    <h2 className="text-4xl md:text-6xl font-bold text-white mb-4">
-                        QA & Support
-                    </h2>
-                    <p className="text-lg md:text-xl text-gray-200">
-                        Preguntas Frecuentes - Todo lo que necesitas saber sobre Hack2Dawn
-                    </p>
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const [closingCard, setClosingCard] = useState<number | null>(null);
+
+  useEffect(() => {
+    const scrollGrid = () => {
+      if (!cardsRef.current || !mainRef.current || !sectionRef.current) return;
+
+      const sectionRect = sectionRef.current.getBoundingClientRect();
+      const mainHeight = mainRef.current.offsetHeight;
+      const sectionHeight = sectionRef.current.offsetHeight;
+      
+      // Calcular progreso del scroll dentro de la sección
+      const scrollStart = Math.max(0, -sectionRect.top);
+      const scrollEnd = Math.max(0, mainHeight - sectionHeight);
+      const scrollProgress = scrollEnd > 0 ? scrollStart / scrollEnd : 0;
+      
+      const transY = scrollProgress * 100;
+      cardsRef.current.style.setProperty('--scroll', `${transY}%`);
+    };
+
+    window.addEventListener('scroll', scrollGrid, { passive: true });
+    window.addEventListener('resize', scrollGrid);
+    scrollGrid();
+
+    return () => {
+      window.removeEventListener('scroll', scrollGrid);
+      window.removeEventListener('resize', scrollGrid);
+    };
+  }, []);
+
+  const handleCloseCard = () => {
+    if (expandedCard !== null) {
+      setClosingCard(expandedCard);
+      setExpandedCard(null);
+      setTimeout(() => {
+        setClosingCard(null);
+      }, 400); // Duración de la animación popOut
+    }
+  };
+
+  return (
+    <section ref={sectionRef} className={styles.qaContainer}>
+      <QABackground />
+      
+      {/* Gradiente superior - Transición desde la sección anterior */}
+      <div className="absolute top-0 left-0 right-0 h-[150px] qa-gradient-top z-[100] pointer-events-none" />
+      
+      {/* Gradiente inferior - Transición hacia la sección siguiente */}
+      <div className="absolute bottom-0 left-0 right-0 h-[400px] qa-gradient-bottom z-[100] pointer-events-none" />
+      
+      {/* Header */}
+      <div className={styles.header}>
+        <h2>QA & Support</h2>
+      </div>
+
+      {/* 3D Cards Grid */}
+      <main 
+        ref={mainRef}
+        className={styles.main}
+      >
+        <div 
+          ref={cardsRef}
+          className={styles.cards}
+        >
+          {qaData.map((item) => {
+            const isExpanded = expandedCard === item.id;
+            const isClosing = closingCard === item.id;
+            return (
+            <div 
+              key={item.id} 
+              className={styles.stack}
+              onClick={() => {
+                // Si tiene respuesta y no está expandida, expandir
+                if (item.answer && !isExpanded && !isClosing) {
+                  setExpandedCard(item.id);
+                }
+              }}
+              onMouseLeave={() => {
+                // Cerrar la 4ta capa cuando el mouse sale del stack
+                if (isExpanded) {
+                  handleCloseCard();
+                }
+              }}
+              style={{ cursor: item.answer ? 'pointer' : 'default' }}
+            >
+              {/* 4ta capa - Solo respuesta (aparece al hacer click) */}
+              {(isExpanded || isClosing) && item.answer && (
+                <div 
+                  className={`${styles.card} ${styles.answer} ${isClosing ? styles.answerClosing : ''}`}
+                  style={{ background: item.color }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCloseCard();
+                  }}
+                >
+                  <div className={styles.answerContent}>
+                    <p>{item.answer}</p>
+                  </div>
                 </div>
+              )}
 
-                {/* FAQ Accordion */}
-                <div className="space-y-4 w-full">
-                    {qaData.map((item) => (
-                        <details 
-                            key={item.id}
-                            className="group border-s-4 border-orange bg-background backdrop-blur-sm p-6 [&_summary::-webkit-details-marker]:hidden rounded-r-lg hover:bg-background/90 transition-all" 
-                            open={item.isOpen}
-                        >
-                            <summary className="flex items-center justify-between gap-4 cursor-pointer text-white">
-                                <h3 className="text-lg font-medium">{item.question}</h3>
+              {/* Top card - Solo pregunta o imagen */}
+              <div 
+                className={`${styles.card} ${styles.top}`}
+                style={{ background: item.color }}
+              >
+                {item.image ? (
+                  <div className={styles.imageContainer}>
+                    <Image
+                      src={item.image}
+                      alt="Beach decoration"
+                      fill
+                      style={{ objectFit: 'cover' }}
+                    />
+                  </div>
+                ) : (
+                  <div className={styles.contents}>
+                    {item.question && (
+                      <div className={styles.questionOnly}>
+                        {item.question}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
-                                <AngleDownIcon 
-                                    className="size-5 shrink-0 transition-transform duration-300 group-open:-rotate-180 text-orange" 
-                                />
-                            </summary>
+              {/* Mid card - Solo pregunta o imagen */}
+              <div 
+                className={`${styles.card} ${styles.mid}`}
+                style={{ background: item.color }}
+              >
+                {item.image ? (
+                  <div className={styles.imageContainer}>
+                    <Image
+                      src={item.image}
+                      alt="Beach decoration"
+                      fill
+                      style={{ objectFit: 'cover' }}
+                    />
+                  </div>
+                ) : (
+                  <div className={styles.contents}>
+                    {item.question && (
+                      <div className={styles.questionOnly}>
+                        {item.question}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
-                            <p className="pt-4 text-gray-300 leading-relaxed">
-                                {item.answer}
-                            </p>
-                        </details>
-                    ))}
-                </div>
+              {/* Bottom card - Solo pregunta o imagen */}
+              <div 
+                className={`${styles.card} ${styles.bottom}`}
+                style={{ background: item.color }}
+              >
+                {item.image ? (
+                  <div className={styles.imageContainer}>
+                    <Image
+                      src={item.image}
+                      alt="Beach decoration"
+                      fill
+                      style={{ objectFit: 'cover' }}
+                    />
+                  </div>
+                ) : (
+                  <div className={styles.contents}>
+                    {item.question && (
+                      <div className={styles.questionOnly}>
+                        {item.question}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Shadow */}
+              <div className={`${styles.card} ${styles.shadow}`} />
             </div>
-        </section>
-    );
+            );
+          })}
+        </div>
+      </main>
+    </section>
+  );
 }
