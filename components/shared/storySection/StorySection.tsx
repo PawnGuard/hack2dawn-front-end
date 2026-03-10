@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { galleryItems, type GalleryItem } from "@/data/gallery";
 import { aboutContent } from "@/data/about";
+import { EvervaultCard, Icon } from "@/components/ui/evervault-card";
 import styles from "./StorySection.module.css";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -20,8 +21,12 @@ export default function StorySection() {
     const heroRef = useRef<HTMLElement>(null);
     const roadRef = useRef<HTMLDivElement>(null);
     const imageContainerRef = useRef<HTMLDivElement>(null);
+    const scheduleTitleRef = useRef<HTMLDivElement>(null);
 
     const [imagesVisible, setImagesVisible] = useState(false);
+    const imagesVisibleRef = useRef(false);
+    const [carOverCardIndex, setCarOverCardIndex] = useState(-1);
+    const carOverCardIndexRef = useRef(-1);
 
     useEffect(() => {
         const wrapper = wrapperRef.current;
@@ -63,20 +68,34 @@ export default function StorySection() {
                 scrub: 0.5,
                 invalidateOnRefresh: true,
                 onUpdate: (self) => {
-                    /* ── Phase-4 per-frame work: parallax, road grid, car bounce ── */
-                    if (!galleryLayer || galleryLayer.style.opacity === "0")
-                        return;
-
                     const totalEnd =
                         typeof self.end === "number" ? self.end : 0;
                     const totalStart =
                         typeof self.start === "number" ? self.start : 0;
                     const scrollRange = totalEnd - totalStart;
-                    if (scrollRange <= 0) return;
 
                     // About phases take ~3 viewport heights + 1 for descent
                     const aboutScrollPx = window.innerHeight * 4;
                     const galleryScrollRange = scrollRange - aboutScrollPx;
+
+                    if (scrollRange > 0 && galleryScrollRange > 0) {
+                        const scrolled = self.progress * scrollRange;
+                        const gp = Math.min(
+                            1,
+                            Math.max(0, (scrolled - aboutScrollPx) / galleryScrollRange),
+                        );
+                        const shouldShow = gp > 0;
+                        if (shouldShow !== imagesVisibleRef.current) {
+                            imagesVisibleRef.current = shouldShow;
+                            setImagesVisible(shouldShow);
+                        }
+                    }
+
+                    /* ── Phase-4 per-frame work: parallax, road grid, car bounce ── */
+                    if (!galleryLayer || galleryLayer.style.opacity === "0")
+                        return;
+
+                    if (scrollRange <= 0) return;
                     if (galleryScrollRange <= 0) return;
 
                     const scrolled = self.progress * scrollRange;
@@ -110,6 +129,24 @@ export default function StorySection() {
                         const bounceY =
                             Math.sin(translateX * BOUNCE_FREQ) * BOUNCE_AMP;
                         gsap.set(car, { y: bounceY });
+                    }
+
+                    // Detect which card (if any) the car is horizontally under
+                    if (car) {
+                        const carRect = car.getBoundingClientRect();
+                        const carCenterX = carRect.left + carRect.width / 2;
+                        let newIndex = -1;
+                        itemRefs.current.forEach((el, i) => {
+                            if (!el || galleryItems[i]?.type !== "card") return;
+                            const itemRect = el.getBoundingClientRect();
+                            if (carCenterX >= itemRect.left && carCenterX <= itemRect.right) {
+                                newIndex = i;
+                            }
+                        });
+                        if (newIndex !== carOverCardIndexRef.current) {
+                            carOverCardIndexRef.current = newIndex;
+                            setCarOverCardIndex(newIndex);
+                        }
                     }
                 },
             },
@@ -197,8 +234,12 @@ export default function StorySection() {
             galleryLayer,
             { opacity: 1, duration: 0.3, ease: "power1.inOut" },
             ">",
-        )
-            .add(() => setImagesVisible(true));
+        ).fromTo(
+            scheduleTitleRef.current,
+            { opacity: 0, x: -20 },
+            { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" },
+            "<",
+        );
 
         /* ── Phase 4: Horizontal scroll ───────────────────── */
         tl.to(
@@ -226,6 +267,7 @@ export default function StorySection() {
     const getItemClassName = (item: GalleryItem) => {
         const classes = [styles.item, styles[item.size]];
         if (item.orientation === "horizontal") classes.push(styles.horizontal);
+        if (item.type === "card") classes.push(styles.cardWrapper);
         return classes.join(" ");
     };
 
@@ -263,14 +305,27 @@ export default function StorySection() {
                         />
                     </div>
                     <div
-                        className={`${styles.aboutTitle} flex flex-col-reverse md:flex-row items-start gap-4 md:gap-8 lg:gap-12 px-4 md:px-6 lg:px-12`}
+                        className={`${styles.aboutTitle} flex flex-col-reverse md:flex-row items-start gap-6 md:gap-10 lg:gap-16 px-4 md:px-6 lg:px-12`}
                     >
-                        <p className="text-sm sm:text-base md:text-lg lg:text-xl max-w-xs sm:max-w-sm md:max-w-md lg:max-w-xl leading-relaxed text-white/95 m-0 p-4 md:p-6 lg:p-8 bg-black/50 border-l-4 border-orange-500 rounded backdrop-blur-md flex-shrink md:flex-shrink-0">
-                            {aboutContent.description}
-                        </p>
-                        <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-left flex-shrink-0 md:ml-auto lg:ml-96">
-                            {aboutContent.title}
-                        </h2>
+                        {/* Description as EvervaultCard */}
+                        <div className="relative flex-shrink-0 w-full max-w-xs sm:max-w-sm md:max-w-md h-52 sm:h-56 md:h-64">
+                            <div className="border border-white/[0.15] flex items-stretch p-0 relative h-full w-full bg-black/60 backdrop-blur-sm rounded-lg">
+                                <Icon className="absolute h-5 w-5 -top-2.5 -left-2.5 text-orange-500 z-20" />
+                                <Icon className="absolute h-5 w-5 -bottom-2.5 -left-2.5 text-orange-500 z-20" />
+                                <Icon className="absolute h-5 w-5 -top-2.5 -right-2.5 text-orange-500 z-20" />
+                                <Icon className="absolute h-5 w-5 -bottom-2.5 -right-2.5 text-orange-500 z-20" />
+                                <EvervaultCard
+                                    body={aboutContent.description}
+                                    charColor="#f97316"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Title styled like Schedule */}
+                        <div className={`${styles.aboutTitleHeading} flex-shrink-0 md:ml-auto lg:ml-96`}>
+                            <span className={styles.aboutTitleLabel}>// sobre nosotros</span>
+                            <span className={styles.aboutTitleText}>{aboutContent.title}</span>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -305,6 +360,12 @@ export default function StorySection() {
                     <div className={styles.roadHorizonGlow} />
                 </div>
 
+                {/* Schedule corner label */}
+                <div ref={scheduleTitleRef} className={styles.scheduleTitle}>
+                    <span className={styles.scheduleTitleLabel}>// agenda</span>
+                    <span className={styles.scheduleTitleText}>Schedule</span>
+                </div>
+
                 {/* Nissan car */}
                 <div ref={carRef} className={styles.car}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -324,13 +385,31 @@ export default function StorySection() {
                             ref={setItemRef(index)}
                             className={getItemClassName(item)}
                         >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                                className={getImageClassName()}
-                                src={item.src}
-                                alt={item.alt}
-                                draggable={false}
-                            />
+                            {item.type === "card" ? (
+                                <div className={`${getImageClassName()} ${styles.cardItem}`}>
+                                    <div
+                                        className="border flex items-stretch p-0 relative h-full w-full bg-black/60 backdrop-blur-sm rounded-lg transition-all duration-300"
+                                        style={carOverCardIndex === index ? {
+                                            borderColor: item.charColor ?? "rgba(255,255,255,0.2)",
+                                            boxShadow: `0 0 16px ${item.charColor ?? "#fff"}55, 0 0 32px ${item.charColor ?? "#fff"}22`,
+                                        } : { borderColor: "rgba(255,255,255,0.2)" }}
+                                    >
+                                        <Icon className="absolute h-6 w-6 -top-3 -left-3 text-white z-20" />
+                                        <Icon className="absolute h-6 w-6 -bottom-3 -left-3 text-white z-20" />
+                                        <Icon className="absolute h-6 w-6 -top-3 -right-3 text-white z-20" />
+                                        <Icon className="absolute h-6 w-6 -bottom-3 -right-3 text-white z-20" />
+                                        <EvervaultCard text={item.text} time={item.time} description={item.description} charColor={item.charColor} textColor={item.textColor} forceHover={carOverCardIndex === index} />
+                                    </div>
+                                </div>
+                            ) : (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                    className={getImageClassName()}
+                                    src={item.src}
+                                    alt={item.alt}
+                                    draggable={false}
+                                />
+                            )}
                         </div>
                     ))}
                 </div>
