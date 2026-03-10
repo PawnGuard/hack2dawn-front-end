@@ -8,6 +8,7 @@ import { galleryItems, type GalleryItem } from "@/data/gallery";
 import { aboutContent } from "@/data/about";
 import { EvervaultCard, Icon } from "@/components/ui/evervault-card";
 import styles from "./StorySection.module.css";
+import { EncryptedText } from "@/components/ui/encrypted-text";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -27,6 +28,9 @@ export default function StorySection() {
     const imagesVisibleRef = useRef(false);
     const [carOverCardIndex, setCarOverCardIndex] = useState(-1);
     const carOverCardIndexRef = useRef(-1);
+    const [aboutTitleVisible, setAboutTitleVisible] = useState(false);
+    const [scheduleTitleVisible, setScheduleTitleVisible] = useState(false);
+    const carDetectFrameRef = useRef(0); // throttle car detection to every 3 frames
 
     useEffect(() => {
         const wrapper = wrapperRef.current;
@@ -132,20 +136,24 @@ export default function StorySection() {
                     }
 
                     // Detect which card (if any) the car is horizontally under
+                    // Throttled: only run every 3 onUpdate calls to avoid getBoundingClientRect spam
                     if (car) {
-                        const carRect = car.getBoundingClientRect();
-                        const carCenterX = carRect.left + carRect.width / 2;
-                        let newIndex = -1;
-                        itemRefs.current.forEach((el, i) => {
-                            if (!el || galleryItems[i]?.type !== "card") return;
-                            const itemRect = el.getBoundingClientRect();
-                            if (carCenterX >= itemRect.left && carCenterX <= itemRect.right) {
-                                newIndex = i;
+                        carDetectFrameRef.current += 1;
+                        if (carDetectFrameRef.current % 3 === 0) {
+                            const carRect = car.getBoundingClientRect();
+                            const carCenterX = carRect.left + carRect.width / 2;
+                            let newIndex = -1;
+                            itemRefs.current.forEach((el, i) => {
+                                if (!el || galleryItems[i]?.type !== "card") return;
+                                const itemRect = el.getBoundingClientRect();
+                                if (carCenterX >= itemRect.left && carCenterX <= itemRect.right) {
+                                    newIndex = i;
+                                }
+                            });
+                            if (newIndex !== carOverCardIndexRef.current) {
+                                carOverCardIndexRef.current = newIndex;
+                                setCarOverCardIndex(newIndex);
                             }
-                        });
-                        if (newIndex !== carOverCardIndexRef.current) {
-                            carOverCardIndexRef.current = newIndex;
-                            setCarOverCardIndex(newIndex);
                         }
                     }
                 },
@@ -183,7 +191,7 @@ export default function StorySection() {
         tl.fromTo(
             aboutTitle,
             { opacity: 0, yPercent: 0 },
-            { opacity: 1, yPercent: 0, duration: 0.15, ease: "power1.inOut" },
+            { opacity: 1, yPercent: 0, duration: 0.15, ease: "power1.inOut", onStart: () => setAboutTitleVisible(true) },
             ">",
         ).to(aboutTitle, {
             yPercent: 400,
@@ -237,7 +245,7 @@ export default function StorySection() {
         ).fromTo(
             scheduleTitleRef.current,
             { opacity: 0, x: -20 },
-            { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" },
+            { opacity: 1, x: 0, duration: 0.4, ease: "power2.out", onStart: () => setScheduleTitleVisible(true) },
             "<",
         );
 
@@ -323,8 +331,26 @@ export default function StorySection() {
 
                         {/* Title styled like Schedule */}
                         <div className={`${styles.aboutTitleHeading} flex-shrink-0 md:ml-auto lg:ml-96`}>
-                            <span className={styles.aboutTitleLabel}>// sobre nosotros</span>
-                            <span className={styles.aboutTitleText}>{aboutContent.title}</span>
+                            <span className={styles.aboutTitleLabel}>
+                                <EncryptedText
+                                    text="// sobre nosotros"
+                                    encryptedClassName="text-orange-500/30"
+                                    revealedClassName=""
+                                    revealDelayMs={70}
+                                    flipDelayMs={50}
+                                    trigger={aboutTitleVisible}
+                                />
+                            </span>
+                            <span className={styles.aboutTitleText}>
+                                <EncryptedText
+                                    text={aboutContent.title}
+                                    encryptedClassName="text-orange-500/40"
+                                    revealedClassName=""
+                                    revealDelayMs={120}
+                                    flipDelayMs={80}
+                                    trigger={aboutTitleVisible}
+                                />
+                            </span>
                         </div>
                     </div>
                 </section>
@@ -362,8 +388,26 @@ export default function StorySection() {
 
                 {/* Schedule corner label */}
                 <div ref={scheduleTitleRef} className={styles.scheduleTitle}>
-                    <span className={styles.scheduleTitleLabel}>// agenda</span>
-                    <span className={styles.scheduleTitleText}>Schedule</span>
+                    <span className={styles.scheduleTitleLabel}>
+                        <EncryptedText
+                            text="// agenda"
+                            encryptedClassName="text-purple-500/30"
+                            revealedClassName=""
+                            revealDelayMs={70}
+                            flipDelayMs={50}
+                            trigger={scheduleTitleVisible}
+                        />
+                    </span>
+                    <span className={styles.scheduleTitleText}>
+                        <EncryptedText
+                            text="Schedule"
+                            encryptedClassName="text-purple-500/40"
+                            revealedClassName=""
+                            revealDelayMs={120}
+                            flipDelayMs={80}
+                            trigger={scheduleTitleVisible}
+                        />
+                    </span>
                 </div>
 
                 {/* Nissan car */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { cn } from "@/lib/utils";
 
 const CHARACTERS =
@@ -12,6 +12,8 @@ function generateRandomString(length: number): string {
     () => CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)]
   ).join("");
 }
+
+const SCRAMBLE_LENGTH = 1350; // reduced from 1500 — enough to fill a card, much cheaper
 
 type EvervaultCardProps = {
   text?: string;
@@ -28,7 +30,7 @@ type EvervaultCardProps = {
   forceHover?: boolean;
 };
 
-export function EvervaultCard({
+export function _EvervaultCard({
   text,
   time,
   description,
@@ -46,14 +48,14 @@ export function EvervaultCard({
 
   useEffect(() => {
     // Initialize on the client to avoid SSR/client mismatch
-    setRandomString(generateRandomString(1500));
+    setRandomString(generateRandomString(SCRAMBLE_LENGTH));
   }, []);
 
   useEffect(() => {
     if (active) {
       intervalRef.current = setInterval(() => {
-        setRandomString(generateRandomString(1500));
-      }, 75);
+        setRandomString(generateRandomString(SCRAMBLE_LENGTH));
+      }, 120); // increased from 75ms — still smooth, half the renders
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
@@ -146,6 +148,8 @@ export function EvervaultCard({
     </div>
   );
 }
+
+export const EvervaultCard = memo(_EvervaultCard);
 
 export function Icon({
   className,
