@@ -20,8 +20,6 @@ function calculate(target: Date): TimeLeft {
   };
 }
 
-const DIGIT_HEIGHT = 80; // px — must match --digit-height in globals.css
-
 /**
  * Vertical digit reel showing digits 0..max stacked, scrolling to `value`.
  * Uses cubic-bezier(1,0,1,0) — the slot-machine snap easing from the original.
@@ -38,12 +36,12 @@ function DigitReel({ value, max }: { value: number; max: number }) {
   return (
     <div
       className="relative overflow-hidden digit-slot"
-      style={{ height: DIGIT_HEIGHT, width: 52 }}
+      style={{ height: "var(--digit-h)", width: "clamp(32px, 3.4vw, 52px)" }}
     >
       <div
         className="flex flex-col"
         style={{
-          transform: `translateY(-${value * DIGIT_HEIGHT}px)`,
+          transform: `translateY(calc(-1 * ${value} * var(--digit-h)))`,
           transition: isWrap ? "none" : `transform 0.5s var(--ease-slot)`,
         }}
       >
@@ -52,7 +50,7 @@ function DigitReel({ value, max }: { value: number; max: number }) {
             key={d}
             className="font-heading text-sw-cyan tabular-nums
                        flex items-center justify-center"
-            style={{ height: DIGIT_HEIGHT, fontSize: "3.75rem", lineHeight: 1 }}
+            style={{ height: "var(--digit-h)", fontSize: "clamp(2rem, 3.5vw, 3.75rem)", lineHeight: 1 }}
           >
             {d}
           </span>
@@ -96,7 +94,7 @@ function Separator() {
     <div className="flex items-end pb-7">
       <span
         className="font-display text-sw-cyan opacity-40"
-        style={{ fontSize: "3.75rem", lineHeight: 1 }}
+        style={{ fontSize: "clamp(2rem, 3.5vw, 3.75rem)", lineHeight: 1 }}
       >
         :
       </span>
