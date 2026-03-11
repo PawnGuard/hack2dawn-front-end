@@ -93,6 +93,11 @@ export const EncryptedText: React.FC<EncryptedTextProps> = ({
     setRevealCount(0);
 
     let isCancelled = false;
+    // Track the last value passed to setRevealCount so we skip redundant
+    // state updates. At 60 fps with revealDelayMs=50 each character is
+    // revealed every ~3 frames; without this guard setRevealCount would
+    // fire 3× per step, causing two wasteful re-renders.
+    let lastSetReveal = -1;
 
     const update = (now: number) => {
       if (isCancelled) return;
@@ -104,7 +109,11 @@ export const EncryptedText: React.FC<EncryptedTextProps> = ({
         Math.floor(elapsedMs / Math.max(1, revealDelayMs)),
       );
 
-      setRevealCount(currentRevealCount);
+      // Only call setState when the count actually advances
+      if (currentRevealCount !== lastSetReveal) {
+        lastSetReveal = currentRevealCount;
+        setRevealCount(currentRevealCount);
+      }
 
       if (currentRevealCount >= totalLength) {
         return;

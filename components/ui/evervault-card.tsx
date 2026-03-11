@@ -50,16 +50,22 @@ export function _EvervaultCard({
   textColor = "#ffffff",
   forceHover = false,
 }: EvervaultCardProps) {
-  const [randomString, setRandomString] = useState("");
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // No useState for the scramble string — we write to the DOM directly so
+  // React never re-renders just because the background characters changed.
+  const rafRef = useRef<number | null>(null);
+  const lastScrambleUpdateRef = useRef(0);
   const scrambleLenRef = useRef(0);
   const scrambleRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
 
   const active = isHovering || forceHover;
 
+  // Write the new scramble string straight to the DOM text node.
+  // Calling this never schedules a React re-render.
   const refreshString = useCallback(() => {
-    setRandomString(generateRandomString(scrambleLenRef.current));
+    if (scrambleRef.current) {
+      scrambleRef.current.textContent = generateRandomString(scrambleLenRef.current);
+    }
   }, []);
 
   // Observe the scramble container and recalculate length on resize
@@ -77,14 +83,37 @@ export function _EvervaultCard({
     return () => observer.disconnect();
   }, [refreshString]);
 
+  // RAF-based scramble: same ~120 ms visual cadence as the old setInterval
+  // but mutates textContent instead of calling setState, so React stays idle.
   useEffect(() => {
-    if (active) {
-      intervalRef.current = setInterval(refreshString, 120);
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!active) {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      return;
     }
+
+    const SCRAMBLE_INTERVAL_MS = 120;
+    let cancelled = false;
+
+    const loop = (now: number) => {
+      if (cancelled) return;
+      if (now - lastScrambleUpdateRef.current >= SCRAMBLE_INTERVAL_MS) {
+        lastScrambleUpdateRef.current = now;
+        refreshString();
+      }
+      rafRef.current = requestAnimationFrame(loop);
+    };
+
+    rafRef.current = requestAnimationFrame(loop);
+
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      cancelled = true;
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
     };
   }, [active, refreshString]);
 
@@ -105,6 +134,7 @@ export function _EvervaultCard({
         } : {}}
       >
         {/* Scramble background — covers the whole card */}
+        {/* Scramble text is written via ref.textContent — React owns no children here */}
         <div
           ref={scrambleRef}
           aria-hidden="true"
@@ -117,9 +147,7 @@ export function _EvervaultCard({
             WebkitMaskImage:
               "radial-gradient(ellipse 80% 80% at 50% 50%, white, transparent)",
           }}
-        >
-          {randomString}
-        </div>
+        />
 
         {/* Top: main text */}
         <div className="relative z-10 flex flex-1 items-center justify-center px-4 pt-4">
