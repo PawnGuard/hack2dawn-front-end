@@ -23,28 +23,28 @@ const colors = [
 // 5 preguntas para las tarjetas específicas (cards 10, 11, 16, 17, 21)
 const questions: Omit<QAItem, 'id'>[] = [
     {
-        question: "¿Cuáles son los requisitos para participar?",
-        answer: "Para participar en Hack2Dawn, se requiere tener conocimientos básicos de ciberseguridad y habilidades de hacking ético. No se requiere experiencia previa en CTFs.",
+        question: "¿Qué es un CTF?",
+        answer: 'Un CTF (Capture The Flag) es una competencia de ciberseguridad donde resuelves retos técnicos para encontrar "banderas" ocultas. Básicamente un escape room virtual donde pones a prueba tu ingenio de forma legal y divertida.',
         color: colors[2]
     },
     {
-        question: "¿Cómo puedo registrarme en el evento?",
-        answer: "El registro se realiza a través de nuestra plataforma web. Solo necesitas crear una cuenta, formar o unirte a un equipo, y completar tu perfil. El proceso es rápido y sencillo.",
+        question: "¿Para quién está dirigido?",
+        answer: '¡Para cualquier estudiante que quiera vivir su primer CTF! No habrá temas imposibles, pero darle un repaso al tema antes del evento tampoco te caería nada mal.',
         color: colors[3]
     },
     {
-        question: "¿Habrá soporte técnico durante el evento?",
-        answer: "Absolutamente. Contaremos con un equipo de soporte técnico disponible durante todo el evento para ayudarte con cualquier problema de plataforma o conectividad.",
+        question: "¿Es presencial o en línea?",
+        answer: 'El evento es híbrido, pero los premios son exclusivamente para asistentes presenciales. Si ganas y no estás ahí, el premio pasa directo al siguiente. ¡No te lo pierdas!',
         color: colors[1]
     },
     {
-        question: "¿Qué categorías de desafíos habrá?",
-        answer: "El evento incluye desafíos de Web Exploitation, Cryptography, Reverse Engineering, Forensics, Binary Exploitation y más. Cada categoría pondrá a prueba diferentes habilidades de ciberseguridad.",
+        question: "¿Habrá premios?",
+        answer: '¡Obvio! Nuestros sponsors tienen premios especiales para los ganadores. Más razón para ir en persona y vivir la experiencia completa.',
         color: colors[2]
     },
     {
-        question: "¿Necesito llevar mi propia computadora?",
-        answer: "Sí, cada participante debe traer su propia laptop con las herramientas que desee utilizar. Asegúrate de tener tu equipo cargado y listo para el evento.",
+        question: "¿Qué es Pawnguard?",
+        answer: 'Somos un grupo estudiantil del Tec de Monterrey Campus Guadalajara enfocado en ciberseguridad. Enseñamos hacking ético, redes y Linux para forjar a la próxima generación de hackers éticos.',
         color: colors[0]
     }
 ];

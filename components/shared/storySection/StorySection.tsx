@@ -50,6 +50,17 @@ export default function StorySection() {
         const galleryLayer = galleryLayerRef.current;
         if (!wrapper || !track) return;
 
+        // Limpiar cualquier estado residual de GSAP de un render anterior
+        ScrollTrigger.getAll().forEach((t) => t.kill());
+        document.querySelectorAll(".gsap-pin-spacer").forEach((spacer) => {
+            const child = spacer.firstElementChild;
+            if (child && spacer.parentNode) {
+                spacer.parentNode.replaceChild(child, spacer);
+            }
+        });
+        document.body.style.removeProperty("padding-bottom");
+        document.body.style.removeProperty("overflow");
+
         const img = wrapper.querySelector<HTMLElement>(`.${styles.img}`);
         const hero = heroRef.current;
         const road = roadRef.current;
@@ -307,10 +318,30 @@ export default function StorySection() {
             "<",
         );
 
+        // Forzar recálculo de posiciones después de que el browser pinte y GSAP
+        // haya inyectado el pin-spacer — garantiza que getBoundingClientRect()
+        // en secciones posteriores (QASection) devuelva la posición real.
+        let refreshRaf1: number, refreshRaf2: number;
+        refreshRaf1 = requestAnimationFrame(() => {
+            refreshRaf2 = requestAnimationFrame(() => {
+                ScrollTrigger.refresh(true);
+            });
+        });
+
         /* ── Cleanup ──────────────────────────────────────── */
         return () => {
+            cancelAnimationFrame(refreshRaf1);
+            cancelAnimationFrame(refreshRaf2);
             tl.kill();
             ScrollTrigger.getAll().forEach((t) => t.kill());
+            document.querySelectorAll(".gsap-pin-spacer").forEach((spacer) => {
+                const child = spacer.firstElementChild;
+                if (child && spacer.parentNode) {
+                    spacer.parentNode.replaceChild(child, spacer);
+                }
+            });
+            document.body.style.removeProperty("padding-bottom");
+            document.body.style.removeProperty("overflow");
         };
     }, []);
 
