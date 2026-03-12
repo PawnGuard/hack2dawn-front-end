@@ -70,7 +70,7 @@ export const contributors: Contributor[] = [
     avatar: "https://github.com/AngelGabrielCP5TEC.png",
     profileUrl: "https://github.com/AngelGabrielCP5TEC",
     socials: [
-      { platform: "linkedin", url: "" },
+      { platform: "linkedin", url: "https://www.linkedin.com/in/angelgabrielcamacho/" },
       { platform: "github",   url: "https://github.com/AngelGabrielCP5TEC" }
     ],
   }
