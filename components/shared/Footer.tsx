@@ -5,7 +5,7 @@ export function Footer() {
     const { navLinks, socialLinks } = footerConfig;
 
     return (
-        <footer className="bg-color-background">
+        <footer className="bg-[var(--color-background)]">
             <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
                 <h1 className="font-display text-4xl md:text-4xl text-sw-text leading-tight
                      drop-shadow-[0_0_30px_#FF1F8C] text-center">

@@ -3,7 +3,7 @@ import { SPONSORS, type Sponsor } from "@/data/sponsors";
 // SponsorBanner.tsx
 export default function SponsorBanner() {
   return (
-    <section aria-label="Sponsors" className="overflow-hidden py-8 bg-background">
+    <section aria-label="Sponsors" className="overflow-hidden py-16 bg-background">
       <div className="flex w-full">
 
         {/* Div 1 */}
@@ -39,7 +39,7 @@ function SponsorItem({ sponsor }: { sponsor: Sponsor }) {
       rel="noopener noreferrer"
       aria-label={`Visitar sitio de ${sponsor.name}`}
       title={sponsor.name}
-      className="flex items-center justify-center px-12
+      className="flex items-center justify-center px-16
                  grayscale opacity-40
                  transition-[filter,opacity,transform] duration-300
                  hover:grayscale-0 hover:opacity-100 hover:scale-105"

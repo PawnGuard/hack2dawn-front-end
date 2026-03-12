@@ -14,6 +14,17 @@ export default function QASection() {
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const [closingCard, setClosingCard] = useState<number | null>(null);
 
+  // Helper: font size dinámico según longitud del texto
+  const getDynamicFontSize = (text: string, base: number = 2): string => {
+    const len = text?.length ?? 0;
+    if (len > 160) return `${base * 0.62}em`;
+    if (len > 120) return `${base * 0.72}em`;
+    if (len > 80)  return `${base * 0.84}em`;
+    if (len > 50)  return `${base * 0.94}em`;
+    return `${base}em`;
+  };
+
+
   useEffect(() => {
     const scrollGrid = () => {
       if (!cardsRef.current || !mainRef.current || !sectionRef.current) return;
@@ -124,12 +135,14 @@ export default function QASection() {
                   }}
                 >
                   <div className={styles.answerContent}>
-                    <p>{item.answer}</p>
+                    <p style={{ fontSize: getDynamicFontSize(item.answer) }}>
+                      {item.answer}
+                    </p>
                   </div>
                 </div>
               )}
 
-              {/* Top card - Solo pregunta o imagen */}
+              {/* Top card - Solo pregunta o im agen */}
               <div 
                 className={`${styles.card} ${styles.top}`}
                 style={{ background: item.color }}
@@ -146,8 +159,11 @@ export default function QASection() {
                 ) : (
                   <div className={styles.contents}>
                     {item.question && (
-                      <div className={styles.questionOnly}>
-                        {item.question}
+                      <div 
+                        className={styles.questionOnly}
+                        style={{ fontSize: getDynamicFontSize(item.question) }}
+                      >
+                        <span className={styles.questionText}>{item.question}</span>
                       </div>
                     )}
                   </div>

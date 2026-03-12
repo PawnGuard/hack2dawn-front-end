@@ -10,23 +10,23 @@ export type Sponsor = {
 
 export const SPONSORS: Sponsor[] = [
   {
-    name: "Sponsor 1",
-    website: "https://example.com",
-    logo: <Image src="/images/sponsor-placeholder-1.webp" alt="Sponsor 1" className="h-10 w-auto object-contain" width={120} height={40} />
+    name: "Tec de Monterrey",
+    website: "https://tec.mx/es",
+    logo: <Image src="/images/tec-logo.webp" alt="Tec de Monterrey" className="h-20 w-auto object-contain" width={240} height={80} />
   },
   {
-    name: "Sponsor 2",
-    website: "https://example.com",
-    logo: <Image src="/images/sponsor-placeholder-2.webp" alt="Sponsor 2" className="h-10 w-auto object-contain" width={120} height={40} />
+    name: "PawnGuard",
+    website: "https://github.com/PawnGuard",
+    logo: <Image src="/images/pwg-logo.webp" alt="PawnGuard" className="h-20 w-auto object-contain" width={240} height={80} />
   },
   {
     name: "Sponsor 3",
     website: "https://example.com",
-    logo: <Image src="/images/sponsor-placeholder-3.webp" alt="Sponsor 3" className="h-10 w-auto object-contain" width={120} height={40} />
+    logo: <Image src="/images/sponsor-placeholder-3.webp" alt="Sponsor 3" className="h-20 w-auto object-contain" width={240} height={80} />
   },
   {
     name: "Sponsor 4",
     website: "https://example.com",
-    logo: <Image src="/images/sponsor-placeholder-4.webp" alt="Sponsor 4" className="h-10 w-auto object-contain" width={120} height={40} />
+    logo: <Image src="/images/sponsor-placeholder-4.webp" alt="Sponsor 4" className="h-20 w-auto object-contain" width={240} height={80} />
   }
 ];

@@ -30,7 +30,17 @@ export default function StorySection() {
     const carOverCardIndexRef = useRef(-1);
     const [aboutTitleVisible, setAboutTitleVisible] = useState(false);
     const [scheduleTitleVisible, setScheduleTitleVisible] = useState(false);
-    const carDetectFrameRef = useRef(0); // throttle car detection to every 3 frames
+    const carDetectFrameRef = useRef(0); // throttle car detection to every 6 frames
+
+    // ── onUpdate caches (populated/refreshed by ScrollTrigger onRefresh) ─────
+    /** Pre-computed px budget for About phases; refreshed on viewport resize */
+    const aboutScrollPxRef = useRef(0);
+    /** Per-item parallax multiplier = (scrollSpeed - 1) * PARALLAX_FACTOR; 0 ⟹ skip */
+    const parallaxMultipliersRef = useRef<number[]>([]);
+    /** Card item position cache: baseLeft = item.offsetLeft - track.offsetLeft */
+    const cardItemCachesRef = useRef<{ index: number; baseLeft: number; width: number }[]>([]);
+    /** Half-width of car element, cached to avoid per-frame offsetWidth read */
+    const cachedCarHalfWRef = useRef(0);
 
     useEffect(() => {
         const wrapper = wrapperRef.current;
@@ -39,6 +49,17 @@ export default function StorySection() {
         const roadGrid = roadGridRef.current;
         const galleryLayer = galleryLayerRef.current;
         if (!wrapper || !track) return;
+
+        // Limpiar cualquier estado residual de GSAP de un render anterior
+        ScrollTrigger.getAll().forEach((t) => t.kill());
+        document.querySelectorAll(".gsap-pin-spacer").forEach((spacer) => {
+            const child = spacer.firstElementChild;
+            if (child && spacer.parentNode) {
+                spacer.parentNode.replaceChild(child, spacer);
+            }
+        });
+        document.body.style.removeProperty("padding-bottom");
+        document.body.style.removeProperty("overflow");
 
         const img = wrapper.querySelector<HTMLElement>(`.${styles.img}`);
         const hero = heroRef.current;
@@ -58,6 +79,42 @@ export default function StorySection() {
         const BOUNCE_AMP = 3;
         const BOUNCE_FREQ = 0.015;
 
+        /** Populate all onUpdate caches. Called once here and again on every
+         *  ScrollTrigger refresh (invalidateOnRefresh) so values stay correct
+         *  after resize / orientation change. */
+        const buildCaches = () => {
+            // aboutScrollPx: 4 viewport heights is the budget for About phases
+            aboutScrollPxRef.current = window.innerHeight * 4;
+
+            // Per-item parallax multiplier — pre-multiplied so onUpdate does nothing
+            // for items with speed === 1 (the majority).
+            parallaxMultipliersRef.current = galleryItems.map(
+                (item) => ((item.scrollSpeed ?? 1) - 1) * PARALLAX_FACTOR,
+            );
+
+            // Card item position caches — uses offsetLeft (no layout thrash per frame)
+            if (track) {
+                const trackOffLeft = track.offsetLeft;
+                cardItemCachesRef.current = itemRefs.current.reduce<
+                    { index: number; baseLeft: number; width: number }[]
+                >((acc, el, i) => {
+                    if (el && galleryItems[i]?.type === "card") {
+                        acc.push({
+                            index: i,
+                            baseLeft: el.offsetLeft - trackOffLeft,
+                            width: el.offsetWidth,
+                        });
+                    }
+                    return acc;
+                }, []);
+            }
+
+            // Car half-width for center-point calculation
+            if (car) cachedCarHalfWRef.current = car.offsetWidth / 2;
+        };
+
+        buildCaches();
+
         /* ── Build the unified timeline ───────────────────── */
         const tl = gsap.timeline({
             scrollTrigger: {
@@ -69,21 +126,27 @@ export default function StorySection() {
                     return `+=${window.innerHeight * 2 + descentScroll + Math.max(0, trackOverflow)}`;
                 },
                 pin: true,
-                scrub: 0.5,
+                // Higher scrub = more lerp lag = smoother, cinema-like feel.
+                // 0.5 was too reactive causing a jittery/rushed sensation.
+                scrub: 1.8,
                 invalidateOnRefresh: true,
+                onRefresh: () => buildCaches(),
                 onUpdate: (self) => {
                     const totalEnd =
                         typeof self.end === "number" ? self.end : 0;
                     const totalStart =
                         typeof self.start === "number" ? self.start : 0;
                     const scrollRange = totalEnd - totalStart;
+                    if (scrollRange <= 0) return;
 
-                    // About phases take ~3 viewport heights + 1 for descent
-                    const aboutScrollPx = window.innerHeight * 4;
+                    // Use cached value — avoids window.innerHeight read every frame
+                    const aboutScrollPx = aboutScrollPxRef.current;
                     const galleryScrollRange = scrollRange - aboutScrollPx;
 
-                    if (scrollRange > 0 && galleryScrollRange > 0) {
-                        const scrolled = self.progress * scrollRange;
+                    // Single scroll position computation shared by both blocks below
+                    const scrolled = self.progress * scrollRange;
+
+                    if (galleryScrollRange > 0) {
                         const gp = Math.min(
                             1,
                             Math.max(0, (scrolled - aboutScrollPx) / galleryScrollRange),
@@ -93,66 +156,55 @@ export default function StorySection() {
                             imagesVisibleRef.current = shouldShow;
                             setImagesVisible(shouldShow);
                         }
-                    }
 
-                    /* ── Phase-4 per-frame work: parallax, road grid, car bounce ── */
-                    if (!galleryLayer || galleryLayer.style.opacity === "0")
-                        return;
+                        /* ── Phase-4 per-frame work: parallax, road grid, car bounce ── */
+                        if (!galleryLayer || galleryLayer.style.opacity === "0") return;
+                        if (gp === 0) return;
 
-                    if (scrollRange <= 0) return;
-                    if (galleryScrollRange <= 0) return;
+                        const maxTranslate = track.scrollWidth - window.innerWidth;
+                        const translateX = gp * maxTranslate;
 
-                    const scrolled = self.progress * scrollRange;
-                    const galleryProgress = Math.min(
-                        1,
-                        Math.max(0, (scrolled - aboutScrollPx) / galleryScrollRange),
-                    );
+                        // Per-item parallax — skip items whose multiplier is 0 (speed === 1)
+                        const mults = parallaxMultipliersRef.current;
+                        itemRefs.current.forEach((el, i) => {
+                            const m = mults[i];
+                            if (!el || m === 0) return;
+                            el.style.transform = `translateX(${-(translateX * m)}px)`;
+                        });
 
-                    if (galleryProgress === 0) return;
+                        // Road grid scroll
+                        if (roadGrid) {
+                            roadGrid.style.backgroundPosition = `${-translateX * 0.5}px 0`;
+                        }
 
-                    const maxTranslate =
-                        track.scrollWidth - window.innerWidth;
-                    const translateX = galleryProgress * maxTranslate;
+                        // Car vertical bounce
+                        if (car) {
+                            const bounceY =
+                                Math.sin(translateX * BOUNCE_FREQ) * BOUNCE_AMP;
+                            gsap.set(car, { y: bounceY });
+                        }
 
-                    // Per-item parallax
-                    itemRefs.current.forEach((el, i) => {
-                        if (!el) return;
-                        const speed = galleryItems[i]?.scrollSpeed ?? 1;
-                        const parallax =
-                            translateX * (speed - 1) * PARALLAX_FACTOR;
-                        el.style.transform = `translateX(${-parallax}px)`;
-                    });
-
-                    // Road grid scroll
-                    if (roadGrid) {
-                        roadGrid.style.backgroundPosition = `${-translateX * 0.5}px 0`;
-                    }
-
-                    // Car vertical bounce
-                    if (car) {
-                        const bounceY =
-                            Math.sin(translateX * BOUNCE_FREQ) * BOUNCE_AMP;
-                        gsap.set(car, { y: bounceY });
-                    }
-
-                    // Detect which card (if any) the car is horizontally under
-                    // Throttled: only run every 3 onUpdate calls to avoid getBoundingClientRect spam
-                    if (car) {
-                        carDetectFrameRef.current += 1;
-                        if (carDetectFrameRef.current % 3 === 0) {
-                            const carRect = car.getBoundingClientRect();
-                            const carCenterX = carRect.left + carRect.width / 2;
-                            let newIndex = -1;
-                            itemRefs.current.forEach((el, i) => {
-                                if (!el || galleryItems[i]?.type !== "card") return;
-                                const itemRect = el.getBoundingClientRect();
-                                if (carCenterX >= itemRect.left && carCenterX <= itemRect.right) {
-                                    newIndex = i;
+                        // Car-over-card detection — throttled to every 6 frames.
+                        // Uses gsap.getProperty (pure JS, no layout read) for car X,
+                        // and pre-cached offsetLeft values for item positions.
+                        if (car) {
+                            carDetectFrameRef.current += 1;
+                            if (carDetectFrameRef.current % 6 === 0) {
+                                const carX = gsap.getProperty(car, "x") as number;
+                                const carCenterX = carX + cachedCarHalfWRef.current;
+                                const trackX = gsap.getProperty(track, "x") as number;
+                                let newIndex = -1;
+                                for (const c of cardItemCachesRef.current) {
+                                    const vl = trackX + c.baseLeft;
+                                    if (carCenterX >= vl && carCenterX <= vl + c.width) {
+                                        newIndex = c.index;
+                                        break;
+                                    }
                                 }
-                            });
-                            if (newIndex !== carOverCardIndexRef.current) {
-                                carOverCardIndexRef.current = newIndex;
-                                setCarOverCardIndex(newIndex);
+                                if (newIndex !== carOverCardIndexRef.current) {
+                                    carOverCardIndexRef.current = newIndex;
+                                    setCarOverCardIndex(newIndex);
+                                }
                             }
                         }
                     }
@@ -188,11 +240,13 @@ export default function StorySection() {
             );
 
         /* ── Phase 2: About title appears → scrolls down ─── */
+        // Slight offset (+=0.08) so the title doesn't compete visually with the
+        // tail of the zoom. Duration bumped to 0.3 for a gentler fade-in.
         tl.fromTo(
             aboutTitle,
             { opacity: 0, yPercent: 0 },
-            { opacity: 1, yPercent: 0, duration: 0.15, ease: "power1.inOut", onStart: () => setAboutTitleVisible(true) },
-            ">",
+            { opacity: 1, yPercent: 0, duration: 0.3, ease: "power2.out", onStart: () => setAboutTitleVisible(true) },
+            ">+=0.08",
         ).to(aboutTitle, {
             yPercent: 400,
             ease: "none",
@@ -264,10 +318,30 @@ export default function StorySection() {
             "<",
         );
 
+        // Forzar recálculo de posiciones después de que el browser pinte y GSAP
+        // haya inyectado el pin-spacer — garantiza que getBoundingClientRect()
+        // en secciones posteriores (QASection) devuelva la posición real.
+        let refreshRaf1: number, refreshRaf2: number;
+        refreshRaf1 = requestAnimationFrame(() => {
+            refreshRaf2 = requestAnimationFrame(() => {
+                ScrollTrigger.refresh(true);
+            });
+        });
+
         /* ── Cleanup ──────────────────────────────────────── */
         return () => {
+            cancelAnimationFrame(refreshRaf1);
+            cancelAnimationFrame(refreshRaf2);
             tl.kill();
             ScrollTrigger.getAll().forEach((t) => t.kill());
+            document.querySelectorAll(".gsap-pin-spacer").forEach((spacer) => {
+                const child = spacer.firstElementChild;
+                if (child && spacer.parentNode) {
+                    spacer.parentNode.replaceChild(child, spacer);
+                }
+            });
+            document.body.style.removeProperty("padding-bottom");
+            document.body.style.removeProperty("overflow");
         };
     }, []);
 

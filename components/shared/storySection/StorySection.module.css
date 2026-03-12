@@ -162,7 +162,11 @@
   display: inline-block;
   position: relative;
   margin: 0 -30vh 0 3vh;
-  will-change: transform;
+  /* will-change removed: promoting every item creates one compositor layer
+     per gallery card/photo, multiplying GPU memory. The scrollSection track
+     is the only element GSAP translates, so its will-change: transform is
+     the right place. Items that receive per-frame parallax transforms will be
+     promoted on-demand by the browser when the transform is first applied. */
 }
 
 /* Cards need positive spacing instead of the photo-overlap effect */

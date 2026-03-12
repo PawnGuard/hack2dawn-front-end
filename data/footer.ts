@@ -24,13 +24,13 @@ export type FooterConfig = {
 
 export const footerConfig: FooterConfig = {
   navLinks: [
-    { label: 'Home',         href: '#home' },
+    { label: 'Home',         href: '/' },
     { label: 'Login',        href: '/login' },
     { label: 'Registro',     href: '/register' },
-    { label: 'Sponsors',     href: '#sponsors' },
-    { label: 'About',        href: '#about' },
-    { label: 'Schedule',     href: '#about' },
-    { label: 'QA & Support', href: '#faq' },
+    { label: 'Sponsors',     href: '/#sponsors' },
+    { label: 'About',        href: '/#about' },
+    { label: 'Schedule',     href: '/#about' },
+    { label: 'QA & Support', href: '/#faq' },
     { label: 'Credits',      href: '/credits' }
   ],
   socialLinks: [
