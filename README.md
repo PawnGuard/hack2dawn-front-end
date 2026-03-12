@@ -185,4 +185,4 @@ Si necesitas compartir estado entre páginas, usa lib/ para centralizar esa lóg
 
 Antes de crear un componente nuevo, revisa si ya existe algo similar en components/ui/ o components/shared/
 
-ready v1.0.0
+ready v1.0.0 
