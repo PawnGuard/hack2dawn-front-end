@@ -51,14 +51,14 @@ const questions: Omit<QAItem, 'id'>[] = [
 
 // Imágenes para las tarjetas decorativas blancas
 const beachImages = [
-    "/images/beach.jpeg",
-    "/images/beach2.jpeg",
-    "/images/beach3.jpeg",
-    "/images/beach4.jpeg",
-    "/images/beach5.jpeg",
-    "/images/beach6.jpeg",
-    "/images/beach7.jpeg",
-    "/images/beach8.jpeg"
+    "/images/beach.webp",
+    "/images/beach2.webp",
+    "/images/beach3.webp",
+    "/images/beach4.webp",
+    "/images/beach5.webp",
+    "/images/beach6.webp",
+    "/images/beach7.webp",
+    "/images/beach8.webp"
 ];
 
 // Generar 36 tarjetas (6x6) - solo cards 10, 11, 16, 17, 21 tienen preguntas
