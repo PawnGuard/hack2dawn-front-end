@@ -221,9 +221,10 @@ export default function StorySection() {
             .to(
                 img,
                 {
-                    scale: 4,
+                    scale: () => window.innerWidth < 768 ? 25 : 4,
+                    opacity: () => window.innerWidth < 768 ? 0 : 1,
                     z: 350,
-                    transformOrigin: "center 80%",
+                    transformOrigin: () => window.innerWidth < 768 ? "center 70%" : "center 80%",
                     ease: "power1.inOut",
                 },
                 0,

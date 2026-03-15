@@ -15,7 +15,6 @@
   margin: auto;
   position: relative;
   height: calc(var(--cardH, 18em) * var(--cardCount, 36) * 1.5);
-  overflow-x: hidden;
 }
 
 /* Grid */
@@ -275,50 +274,12 @@
 }
 
 /* Alter grid at breakpoints - Grid 6x6 fijo para 36 tarjetas */
-@media screen and (max-width: 480px) {
-  /* Portrait phones — narrow cards that fit the viewport */
-  .qaContainer {
-    min-height: 200vh;
-  }
+@media screen and (max-width: 640px) {
   .cards {
-    --cardW: min(80vw, 20em);
-    --cardH: 13em;
     grid-template: repeat(36, var(--cardH)) / var(--cardW);
-    top: 12%;
   }
   .main {
-    height: calc(var(--cardH) * 36 * 1.4);
-  }
-  .header {
-    top: 2rem;
-    right: 0;
-    left: 0;
-    text-align: center;
-    padding: 1rem;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.9) 60%, transparent);
-    max-width: 100%;
-  }
-  .header h2 {
-    font-size: clamp(1.8rem, 8vw, 2.4rem);
-  }
-}
-
-@media screen and (min-width: 481px) and (max-width: 640px) {
-  .qaContainer {
-    min-height: 180vh;
-  }
-  .cards {
-    --cardW: min(75vw, 22em);
-    --cardH: 14em;
-    grid-template: repeat(36, var(--cardH)) / var(--cardW);
-    top: 14%;
-  }
-  .main {
-    height: calc(var(--cardH) * 36 * 1.4);
-  }
-  .header {
-    top: 2.5rem;
-    padding: 1.25rem;
+    height: calc(var(--cardH) * 36 - 2em);
   }
 }
 
