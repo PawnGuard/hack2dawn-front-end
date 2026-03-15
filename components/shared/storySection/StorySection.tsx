@@ -390,7 +390,7 @@ export default function StorySection() {
                         className={`${styles.aboutTitle} flex flex-col-reverse md:flex-row items-start gap-6 md:gap-10 lg:gap-16 px-4 md:px-6 lg:px-12`}
                     >
                         {/* Description as EvervaultCard */}
-                        <div className="relative flex-shrink-0 w-full max-w-xs sm:max-w-sm md:max-w-md h-52 sm:h-56 md:h-64">
+                        <div className={`${styles.aboutCardContainer} relative flex-shrink-0 w-full max-w-xs sm:max-w-sm md:max-w-md h-52 sm:h-56 md:h-64`}>
                             <div className="border border-white/[0.15] flex items-stretch p-0 relative h-full w-full bg-black/60 backdrop-blur-sm rounded-lg">
                                 <Icon className="absolute h-5 w-5 -top-2.5 -left-2.5 text-orange-500 z-20" />
                                 <Icon className="absolute h-5 w-5 -bottom-2.5 -left-2.5 text-orange-500 z-20" />
