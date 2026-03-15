@@ -273,22 +273,114 @@
   color: rgba(0, 255, 200, 0.4);
 }
 
-/* Alter grid at breakpoints - Grid 6x6 fijo para 36 tarjetas */
+/* Alter grid at breakpoints */
 @media screen and (max-width: 640px) {
-  .cards {
-    grid-template: repeat(36, var(--cardH)) / var(--cardW);
+  /* Redefinir animaciones sin translateZ para móvil */
+  @keyframes popIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
+
+  @keyframes popOut {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
+
+  /* Ocultar tarjetas decorativas (sin pregunta) solo en móvil */
+  .decorative {
+    display: none;
+  }
+
+  .cards {
+    --cardW: min(88vw, 22em);
+    --cardH: 11em;
+    /* 5 filas para las 5 tarjetas con pregunta */
+    grid-template: repeat(5, 11em) / min(88vw, 22em);
+    /* Sin rotación 3D en móvil — el grid queda plano y navegable */
+    transform: translateX(-50%) translateY(var(--scroll));
+    top: 0;
+  }
+
   .main {
-    height: calc(var(--cardH) * 36 - 2em);
+    margin-top: 8rem;
+    height: calc(11em * 6 + 2rem);
+  }
+
+  .header {
+    top: 1.5rem;
+    right: auto;
+    left: 4%;
+    text-align: left;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.6), transparent);
+    max-width: 90%;
+    padding: 0.75rem 1rem;
+  }
+
+  .header h2 {
+    font-size: clamp(1.8rem, 7vw, 2.5rem);
+  }
+
+  .questionOnly {
+    font-size: 1.8em;
+  }
+
+  .answerContent {
+    padding: 0.6em;
+  }
+
+  .answerContent p {
+    line-height: 1.5;
+  }
+
+  /* La capa de respuesta usa escala en lugar de translateZ en móvil */
+  .answer {
+    transform: scale(1);
+    z-index: 10;
+    font-size: 0.78rem; /* base em para getDynamicFontSize en mobile */
+  }
+
+  /* Desactivar efectos 3D de hover en móvil (sin ratón) */
+  .stack:hover .top,
+  .stack:focus .top,
+  .stack:hover .mid,
+  .stack:focus .mid,
+  .stack:hover .bottom,
+  .stack:focus .bottom {
+    transform: none;
+  }
+
+  .stack:hover .answer,
+  .stack:focus .answer {
+    transform: scale(1);
+  }
+
+  .stack:hover .shadow,
+  .stack:focus .shadow {
+    filter: none;
+    opacity: 0.7;
   }
 }
 
 @media screen and (min-width: 641px) and (max-width: 1280px) {
   .cards {
-    grid-template: repeat(18, var(--cardH)) / repeat(2, var(--cardW));
+    --cardW: min(42vw, 26em);
+    --cardH: 15em;
+    grid-template: repeat(18, 15em) / repeat(2, min(42vw, 26em));
   }
   .main {
-    height: calc(var(--cardH) * 18 - 2em);
+    height: calc(15em * 18 * 1.5);
   }
 }
 
