@@ -221,9 +221,10 @@ export default function StorySection() {
             .to(
                 img,
                 {
-                    scale: 4,
+                    scale: () => window.innerWidth < 768 ? 25 : 4,
+                    opacity: () => window.innerWidth < 768 ? 0 : 1,
                     z: 350,
-                    transformOrigin: "center 80%",
+                    transformOrigin: () => window.innerWidth < 768 ? "center 70%" : "center 80%",
                     ease: "power1.inOut",
                 },
                 0,
@@ -390,7 +391,7 @@ export default function StorySection() {
                         className={`${styles.aboutTitle} flex flex-col-reverse md:flex-row items-start gap-6 md:gap-10 lg:gap-16 px-4 md:px-6 lg:px-12`}
                     >
                         {/* Description as EvervaultCard */}
-                        <div className="relative flex-shrink-0 w-full max-w-xs sm:max-w-sm md:max-w-md h-52 sm:h-56 md:h-64">
+                        <div className={`${styles.aboutCardContainer} relative flex-shrink-0 w-full max-w-xs sm:max-w-sm md:max-w-md h-52 sm:h-56 md:h-64`}>
                             <div className="border border-white/[0.15] flex items-stretch p-0 relative h-full w-full bg-black/60 backdrop-blur-sm rounded-lg">
                                 <Icon className="absolute h-5 w-5 -top-2.5 -left-2.5 text-orange-500 z-20" />
                                 <Icon className="absolute h-5 w-5 -bottom-2.5 -left-2.5 text-orange-500 z-20" />

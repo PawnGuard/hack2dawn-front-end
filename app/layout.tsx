@@ -32,7 +32,7 @@ const spaceGrotesk = Space_Grotesk({
 
 // -----Metadatos de la pàgina----- //
 export const metadata: Metadata = {
-  title: "Hack2Dawn | PawnGuard CTF",
+  title: "Hack2Dawn CTF",
   description: "PawnGuard CTF competition",
 };
 

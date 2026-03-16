@@ -184,3 +184,5 @@ No importes desde app/ hacia components/ — el flujo de dependencias va en una 
 Si necesitas compartir estado entre páginas, usa lib/ para centralizar esa lógica
 
 Antes de crear un componente nuevo, revisa si ya existe algo similar en components/ui/ o components/shared/
+
+ready v1.0.0 

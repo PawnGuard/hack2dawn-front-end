@@ -39,7 +39,7 @@ function SponsorItem({ sponsor }: { sponsor: Sponsor }) {
       rel="noopener noreferrer"
       aria-label={`Visitar sitio de ${sponsor.name}`}
       title={sponsor.name}
-      className="flex items-center justify-center px-16
+      className="flex items-center justify-center px-4 sm:px-8 md:px-12 lg:px-16
                  grayscale opacity-40
                  transition-[filter,opacity,transform] duration-300
                  hover:grayscale-0 hover:opacity-100 hover:scale-105"

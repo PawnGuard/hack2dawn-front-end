@@ -51,32 +51,31 @@ const questions: Omit<QAItem, 'id'>[] = [
 
 // Imágenes para las tarjetas decorativas blancas
 const beachImages = [
-    "/images/beach.jpeg",
-    "/images/beach2.jpeg",
-    "/images/beach3.jpeg",
-    "/images/beach4.jpeg",
-    "/images/beach5.jpeg",
-    "/images/beach6.jpeg",
-    "/images/beach7.jpeg",
-    "/images/beach8.jpeg"
+    "/images/beach.webp",
+    "/images/beach2.webp",
+    "/images/beach3.webp",
+    "/images/beach4.webp",
+    "/images/beach5.webp",
+    "/images/beach6.webp",
+    "/images/beach7.webp",
+    "/images/beach8.webp"
 ];
 
 // Generar 36 tarjetas (6x6) - solo cards 10, 11, 16, 17, 21 tienen preguntas
 export const qaData: QAItem[] = Array.from({ length: 36 }, (_, i) => {
     const colorIndex = i % colors.length;
-    
+
     // Cards con preguntas: 10, 11, 16, 17, 21 (índices 9, 10, 15, 16, 20)
     const questionPositions = [9, 10, 15, 16, 21];
     const positionIndex = questionPositions.indexOf(i);
-    
+
     if (positionIndex !== -1) {
         return {
             id: i + 1,
             ...questions[positionIndex]
-            // No se incluye 'image' para que el color de fondo sea sólido
         };
     }
-    
+
     // Tarjetas decorativas con imágenes de beach
     const imageIndex = i % beachImages.length;
     return {
