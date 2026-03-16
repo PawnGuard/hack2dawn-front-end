@@ -110,6 +110,48 @@
     0 0 24px rgba(249, 115, 22, 0.6),
     0 0 50px rgba(239, 68, 0, 0.3);
   line-height: 1;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* ── Mobile / small-screen About fixes ──────────────────────── */
+
+/* Portrait phones (≤ 640px wide) */
+@media screen and (max-width: 640px) {
+  .aboutTitle {
+    top: 3%;
+    /* Raise above the foreground mountain so text is readable */
+    z-index: 3;
+  }
+  .aboutTitleText {
+    font-size: clamp(2rem, 9vw, 2.8rem);
+  }
+  /* Reduce foreground opacity slightly so it doesn't fully block the title */
+  .aboutForeground {
+    opacity: 0.6;
+  }
+}
+
+/* Landscape phones (short viewport ≤ 500px tall) */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  .aboutTitle {
+    top: 2%;
+    /* Show above the foreground mountain on small landscape screens */
+    z-index: 3;
+    gap: 0.5rem;
+  }
+  .aboutTitleText {
+    /* Shrink enough to fit within the landscape vh without overflowing */
+    font-size: clamp(1.4rem, 5vh, 2rem);
+  }
+  /* Reduce card height so it doesn't fill the entire landscape viewport */
+  .aboutCardContainer {
+    height: 8rem !important;
+  }
+  .aboutForeground {
+    /* Fade the foreground so it doesn't hide the text block */
+    opacity: 0.45;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════

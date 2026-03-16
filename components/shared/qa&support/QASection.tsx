@@ -24,7 +24,6 @@ export default function QASection() {
     return `${base}em`;
   };
 
-
   useEffect(() => {
     const scrollGrid = () => {
       if (!cardsRef.current || !mainRef.current || !sectionRef.current) return;
@@ -32,12 +31,12 @@ export default function QASection() {
       const sectionRect = sectionRef.current.getBoundingClientRect();
       const mainHeight = mainRef.current.offsetHeight;
       const sectionHeight = sectionRef.current.offsetHeight;
-      
+
       // Calcular progreso del scroll dentro de la sección
       const scrollStart = Math.max(0, -sectionRect.top);
       const scrollEnd = Math.max(0, mainHeight - sectionHeight);
       const scrollProgress = scrollEnd > 0 ? scrollStart / scrollEnd : 0;
-      
+
       const transY = scrollProgress * 100;
       cardsRef.current.style.setProperty('--scroll', `${transY}%`);
     };
@@ -65,13 +64,13 @@ export default function QASection() {
   return (
     <section ref={sectionRef} className={styles.qaContainer}>
       <QABackground />
-      
+
       {/* Gradiente superior - Transición desde la sección anterior */}
       <div className="absolute top-0 left-0 right-0 h-[150px] qa-gradient-top z-[100] pointer-events-none" />
-      
+
       {/* Gradiente inferior - Transición hacia la sección siguiente */}
-      <div className="absolute bottom-0 left-0 right-0 h-[400px] qa-gradient-bottom z-[100] pointer-events-none" />
-      
+      <div className="absolute bottom-0 left-0 right-0 h-[180px] sm:h-[400px] qa-gradient-bottom z-[100] pointer-events-none" />
+
       {/* Header */}
       <div className={styles.header}>
         <span className={styles.headerLabel}>
@@ -95,134 +94,133 @@ export default function QASection() {
       </div>
 
       {/* 3D Cards Grid */}
-      <main 
+      <main
         ref={mainRef}
         className={styles.main}
       >
-        <div 
+        <div
           ref={cardsRef}
           className={styles.cards}
         >
           {qaData.map((item) => {
             const isExpanded = expandedCard === item.id;
             const isClosing = closingCard === item.id;
+            const isDecorative = !item.question;
             return (
-            <div 
-              key={item.id} 
-              className={styles.stack}
-              onClick={() => {
-                // Si tiene respuesta y no está expandida, expandir
-                if (item.answer && !isExpanded && !isClosing) {
-                  setExpandedCard(item.id);
-                }
-              }}
-              onMouseLeave={() => {
-                // Cerrar la 4ta capa cuando el mouse sale del stack
-                if (isExpanded) {
-                  handleCloseCard();
-                }
-              }}
-              style={{ cursor: item.answer ? 'pointer' : 'default' }}
-            >
-              {/* 4ta capa - Solo respuesta (aparece al hacer click) */}
-              {(isExpanded || isClosing) && item.answer && (
-                <div 
-                  className={`${styles.card} ${styles.answer} ${isClosing ? styles.answerClosing : ''}`}
-                  style={{ background: item.color }}
-                  onClick={(e) => {
-                    e.stopPropagation();
+              <div
+                key={item.id}
+                className={`${styles.stack} ${isDecorative ? styles.decorative : ''}`}
+                onClick={() => {
+                  if (item.answer && !isExpanded && !isClosing) {
+                    setExpandedCard(item.id);
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (isExpanded) {
                     handleCloseCard();
-                  }}
+                  }
+                }}
+                style={{ cursor: item.answer ? 'pointer' : 'default' }}
+              >
+                {/* 4ta capa - Solo respuesta (aparece al hacer click) */}
+                {(isExpanded || isClosing) && item.answer && (
+                  <div
+                    className={`${styles.card} ${styles.answer} ${isClosing ? styles.answerClosing : ''}`}
+                    style={{ background: item.color }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCloseCard();
+                    }}
+                  >
+                    <div className={styles.answerContent}>
+                      <p style={{ fontSize: getDynamicFontSize(item.answer) }}>
+                        {item.answer}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Top card - Solo pregunta o imagen */}
+                <div
+                  className={`${styles.card} ${styles.top}`}
+                  style={{ background: item.color }}
                 >
-                  <div className={styles.answerContent}>
-                    <p style={{ fontSize: getDynamicFontSize(item.answer) }}>
-                      {item.answer}
-                    </p>
-                  </div>
+                  {item.image ? (
+                    <div className={styles.imageContainer}>
+                      <Image
+                        src={item.image}
+                        alt="Beach decoration"
+                        fill
+                        style={{ objectFit: 'cover' }}
+                      />
+                    </div>
+                  ) : (
+                    <div className={styles.contents}>
+                      {item.question && (
+                        <div
+                          className={styles.questionOnly}
+                          style={{ fontSize: getDynamicFontSize(item.question) }}
+                        >
+                          <span className={styles.questionText}>{item.question}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
 
-              {/* Top card - Solo pregunta o im agen */}
-              <div 
-                className={`${styles.card} ${styles.top}`}
-                style={{ background: item.color }}
-              >
-                {item.image ? (
-                  <div className={styles.imageContainer}>
-                    <Image
-                      src={item.image}
-                      alt="Beach decoration"
-                      fill
-                      style={{ objectFit: 'cover' }}
-                    />
-                  </div>
-                ) : (
-                  <div className={styles.contents}>
-                    {item.question && (
-                      <div 
-                        className={styles.questionOnly}
-                        style={{ fontSize: getDynamicFontSize(item.question) }}
-                      >
-                        <span className={styles.questionText}>{item.question}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Mid card - Solo pregunta o imagen */}
+                <div
+                  className={`${styles.card} ${styles.mid}`}
+                  style={{ background: item.color }}
+                >
+                  {item.image ? (
+                    <div className={styles.imageContainer}>
+                      <Image
+                        src={item.image}
+                        alt="Beach decoration"
+                        fill
+                        style={{ objectFit: 'cover' }}
+                      />
+                    </div>
+                  ) : (
+                    <div className={styles.contents}>
+                      {item.question && (
+                        <div className={styles.questionOnly}>
+                          {item.question}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom card - Solo pregunta o imagen */}
+                <div
+                  className={`${styles.card} ${styles.bottom}`}
+                  style={{ background: item.color }}
+                >
+                  {item.image ? (
+                    <div className={styles.imageContainer}>
+                      <Image
+                        src={item.image}
+                        alt="Beach decoration"
+                        fill
+                        style={{ objectFit: 'cover' }}
+                      />
+                    </div>
+                  ) : (
+                    <div className={styles.contents}>
+                      {item.question && (
+                        <div className={styles.questionOnly}>
+                          {item.question}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Shadow */}
+                <div className={`${styles.card} ${styles.shadow}`} />
               </div>
-
-              {/* Mid card - Solo pregunta o imagen */}
-              <div 
-                className={`${styles.card} ${styles.mid}`}
-                style={{ background: item.color }}
-              >
-                {item.image ? (
-                  <div className={styles.imageContainer}>
-                    <Image
-                      src={item.image}
-                      alt="Beach decoration"
-                      fill
-                      style={{ objectFit: 'cover' }}
-                    />
-                  </div>
-                ) : (
-                  <div className={styles.contents}>
-                    {item.question && (
-                      <div className={styles.questionOnly}>
-                        {item.question}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom card - Solo pregunta o imagen */}
-              <div 
-                className={`${styles.card} ${styles.bottom}`}
-                style={{ background: item.color }}
-              >
-                {item.image ? (
-                  <div className={styles.imageContainer}>
-                    <Image
-                      src={item.image}
-                      alt="Beach decoration"
-                      fill
-                      style={{ objectFit: 'cover' }}
-                    />
-                  </div>
-                ) : (
-                  <div className={styles.contents}>
-                    {item.question && (
-                      <div className={styles.questionOnly}>
-                        {item.question}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Shadow */}
-              <div className={`${styles.card} ${styles.shadow}`} />
-            </div>
             );
           })}
         </div>
