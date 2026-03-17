@@ -29,10 +29,7 @@ function ChartTooltip({ active, payload, label }: any) {
       </p>
       {payload.map((entry: any) => (
         <div key={entry.name} className="flex items-center gap-2 text-xs">
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
           <span className="text-white/70 font-body">{entry.name}</span>
           <span className="text-white font-mono ml-auto">{entry.value}</span>
         </div>
@@ -75,10 +72,7 @@ export default function ProgressChart() {
         <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4 pt-6">
           <ResponsiveContainer width="100%" height={380}>
             <LineChart data={chartData}>
-              <CartesianGrid
-                stroke="rgba(148, 9, 146, 0.12)"
-                strokeDasharray="4 4"
-              />
+              <CartesianGrid stroke="rgba(148, 9, 146, 0.12)" strokeDasharray="4 4" />
               <XAxis
                 dataKey="timestamp"
                 tickFormatter={(ts: number) =>

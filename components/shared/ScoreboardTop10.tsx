@@ -63,9 +63,6 @@ export default function ScoreboardTop10() {
         </div>
       ) : (
         <div className="rounded-xl border border-white/[0.06] bg-black/30 overflow-hidden">
-          {/* ── Column header ── */}
-          {/* Mobile: 3 cols (rank | team | score)  */}
-          {/* sm+  : 5 cols (rank | indicator | team | score | flags) */}
           <div
             className="
               grid grid-cols-[2.5rem_1fr_4.5rem]
@@ -85,7 +82,6 @@ export default function ScoreboardTop10() {
             </span>
           </div>
 
-          {/* ── Rows ── */}
           <AnimatePresence mode="popLayout">
             {teams.map((team) => {
               const isPodium = team.position <= 3;
@@ -113,7 +109,6 @@ export default function ScoreboardTop10() {
                     hover:bg-white/[0.04] transition-colors relative
                   "
                 >
-                  {/* Podium left accent */}
                   {isPodium && (
                     <div
                       className="absolute left-0 top-0 bottom-0 w-0.5"
@@ -121,7 +116,6 @@ export default function ScoreboardTop10() {
                     />
                   )}
 
-                  {/* Rank */}
                   <span
                     className="font-mono text-sm font-bold flex items-center gap-0.5"
                     style={
@@ -131,30 +125,23 @@ export default function ScoreboardTop10() {
                     }
                   >
                     {team.position === 1 && (
-                      <Trophy
-                        className="w-3 h-3 shrink-0"
-                        style={{ color: podiumColor }}
-                      />
+                      <Trophy className="w-3 h-3 shrink-0" style={{ color: podiumColor }} />
                     )}
                     {team.position}
                   </span>
 
-                  {/* Position indicator — hidden on mobile */}
                   <span className="hidden sm:flex items-center">
                     <PositionIndicator team={team} />
                   </span>
 
-                  {/* Team name */}
                   <span className="font-heading text-sm text-white truncate flex items-center">
                     {team.teamName}
                   </span>
 
-                  {/* Score */}
                   <span className="font-mono text-sm text-white/80 text-right flex items-center justify-end tabular-nums">
                     {team.score.toLocaleString()}
                   </span>
 
-                  {/* Flags — hidden on mobile */}
                   <span className="hidden sm:flex font-mono text-sm text-white/50 items-center justify-end tabular-nums">
                     {team.flagsCaptured}
                   </span>

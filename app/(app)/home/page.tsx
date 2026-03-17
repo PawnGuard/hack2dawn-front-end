@@ -4,8 +4,8 @@ import HomeCountdown from "@/components/home/HomeCountdown";
 import HowItWorks from "@/components/home/HowItWorks";
 import RecommendedTools from "@/components/home/RecommendedTools";
 import ImportantNotes from "@/components/home/ImportantNotes";
-import ProgressChart from "@/components/home/ProgressChart";
-import ScoreboardTop10 from "@/components/home/ScoreboardTop10";
+import ProgressChart from "@/components/shared/ProgressChart";
+import ScoreboardTop10 from "@/components/shared/ScoreboardTop10";
 
 export default function HomePage() {
   return (
