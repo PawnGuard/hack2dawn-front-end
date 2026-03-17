@@ -9,9 +9,9 @@ export function middleware(request: NextRequest) {
   const hasTeam  = request.cookies.get('hasTeam')?.value;
 
   // Rutas que requieren estar logueado
-  const protectedRoutes = ['/home', '/challenges', '/dashboard', '/scoreboard'];
+  const protectedRoutes = [/* '/home', */ '/challenges', '/dashboard', '/scoreboard'];
   // Rutas que requieren tener equipo
-  const teamRoutes = ['/home', '/challenges'];
+  const teamRoutes = [/* '/home', */ '/challenges'];
   // Rutas solo para Admin
   const adminRoutes = ['/admin'];
 

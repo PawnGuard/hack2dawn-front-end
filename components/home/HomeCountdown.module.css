@@ -1,0 +1,46 @@
+.urgentPulse {
+  animation: urgentPulse 1.5s ease-in-out infinite;
+}
+
+.criticalPulse {
+  animation: criticalPulse 0.8s ease-in-out infinite;
+}
+
+.finishedReveal {
+  animation: finishedReveal 0.8s ease-out forwards;
+}
+
+@keyframes urgentPulse {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 8px #F77200;
+  }
+  50% {
+    opacity: 0.85;
+    text-shadow: 0 0 20px #F77200, 0 0 40px #ff4444;
+  }
+}
+
+@keyframes criticalPulse {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 12px #ff4444, 0 0 30px #ff0000;
+  }
+  50% {
+    opacity: 0.88;
+    text-shadow: 0 0 25px #ff4444, 0 0 50px #ff0000, 0 0 80px #ff000066;
+  }
+}
+
+@keyframes finishedReveal {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
