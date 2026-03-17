@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 const CUT = 18; // px — bottom-right corner cut size
 
@@ -26,6 +27,7 @@ export interface CtfCardProps {
   /** Slot for extra content rendered below the description */
   children?: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
 export function CtfCard({
@@ -39,6 +41,7 @@ export function CtfCard({
   animDelay = 0,
   children,
   className,
+  onClick,
 }: CtfCardProps) {
   const Tag = href ? "a" : "div";
   const linkProps = href
@@ -52,6 +55,7 @@ export function CtfCard({
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.4, delay: animDelay }}
       className={cn("relative mt-6", className)}
+      onClick={onClick}
     >
       {/* ── Label tab (sutera.ch-inspired) ── */}
       <div
@@ -106,28 +110,41 @@ export function CtfCard({
         )}
 
         {/* ── Main content ── */}
-        <div className="p-5 pt-6">
-          {icon && (
-            <div
-              className="w-10 h-10 flex items-center justify-center mb-4 shrink-0"
-              style={{
-                backgroundColor: `${accentColor}18`,
-                border: `1px solid ${accentColor}35`,
-              }}
-            >
-              {icon}
-            </div>
-          )}
+        <div className="relative p-5 pt-6">
 
-          <h3 className="font-heading text-base font-semibold text-white mb-2 pr-5 leading-snug">
-            {title}
-          </h3>
-          <p className="font-body text-sm text-white/55 leading-relaxed">
-            {description}
-          </p>
+          <GlowingEffect
+            spread={40}
+            glow={true}
+            disabled={false}
+            proximity={70}
+            inactiveZone={0.01}
+          />
+          
+          <div className="relative z-10 flex flex-col gap-4">
 
-          {children}
+            {icon && (
+              <div
+                className="w-10 h-10 flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: `${accentColor}18`,
+                  border: `1px solid ${accentColor}35`,
+                }}
+              >
+                {icon}
+              </div>
+            )}
+
+            <h3 className="font-heading text-base font-semibold text-white pr-5 leading-snug">
+              {title}
+            </h3>
+            <p className="font-body text-sm text-white/55 leading-relaxed">
+              {description}
+            </p>
+
+            {children}
+          </div>
         </div>
+
 
         {/* Cut-corner accent tint */}
         <div
