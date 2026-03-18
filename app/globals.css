@@ -101,12 +101,15 @@
 }
 
 @layer base {
-  html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased;
-    @apply font-sans; }
+  html { 
+    scroll-behavior: smooth; 
+    -webkit-font-smoothing: antialiased;
+    @apply font-sans; 
+  }
 
-  body {
-    font-family: var(--font-body);
-    @apply bg-background text-foreground;
+  /* Aplica el cursor al body por defecto */
+  body, a, button, input, select, textarea, .cursor-pointer, *:hover {
+    cursor: none !important;
   }
 
   h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
