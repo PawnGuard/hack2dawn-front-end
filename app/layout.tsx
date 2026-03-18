@@ -4,6 +4,7 @@ import "./globals.css";
 import localFont from 'next/font/local';
 import FuzzyOverlay from "@/components/shared/FuzzyOverlay";
 import { Analytics } from "@vercel/analytics/next"; 
+import { CustomCursor } from "@/components/ui/CustomCursor";
 
 // -----Fuentes Locales----- //
 const watchdogs = localFont({
@@ -48,6 +49,7 @@ export default function RootLayout({
         <FuzzyOverlay />
         {children}
         <Analytics />
+        <CustomCursor />
       </body>
     </html>
   );
