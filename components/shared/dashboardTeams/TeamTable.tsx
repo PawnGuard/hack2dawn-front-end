@@ -25,9 +25,17 @@ interface TeamTableProps {
   onLeave: (memberId: string) => void;
   onKick?: (memberId: string) => void;
   onPromote?: (memberId: string) => void;
+  canLeaveSelf?: boolean;
 }
 
-export function TeamTable({ members, currentUserRole, onLeave, onKick, onPromote }: TeamTableProps) {
+export function TeamTable({
+  members,
+  currentUserRole,
+  onLeave,
+  onKick,
+  onPromote,
+  canLeaveSelf = true,
+}: TeamTableProps) {
   return (
     <div className="w-full border border-white/10 bg-black/60 backdrop-blur-md relative">
       {/* Esquinas decorativas tipo HUD */}
@@ -43,9 +51,9 @@ export function TeamTable({ members, currentUserRole, onLeave, onKick, onPromote
       <Table>
         <TableHeader className="bg-white/5 border-b border-white/10 hover:bg-transparent">
           <TableRow className="border-none">
-            <TableHead className="font-mono text-xs text-white/50 tracking-wider">USUARIO</TableHead>
-            <TableHead className="font-mono text-xs text-white/50 tracking-wider text-center">FLAGS</TableHead>
-            <TableHead className="font-mono text-xs text-white/50 tracking-wider text-right">OPERACIONES</TableHead>
+            <TableHead className="font-mono text-xs text-white/50 tracking-wider">NOMBRE DE USUARIO</TableHead>
+            <TableHead className="font-mono text-xs text-white/50 tracking-wider text-center">PUNTAJE (FLAGS RESUELTOS)</TableHead>
+            <TableHead className="font-mono text-xs text-white/50 tracking-wider text-right">ACCION</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -83,9 +91,10 @@ export function TeamTable({ members, currentUserRole, onLeave, onKick, onPromote
                       variant="ghost" 
                       size="sm"
                       onClick={() => onLeave(member.id)}
-                      className="font-mono text-xs text-[#FF003C] hover:text-white hover:bg-[#FF003C] transition-colors rounded-none h-8"
+                      disabled={!canLeaveSelf}
+                      className="font-mono text-xs text-[#FF003C] hover:text-white hover:bg-[#FF003C] transition-colors rounded-none h-8 disabled:text-white/30 disabled:hover:bg-transparent"
                     >
-                      [ SALIR ]
+                      [ ABANDONAR ]
                     </Button>
                   )}
 
@@ -98,7 +107,7 @@ export function TeamTable({ members, currentUserRole, onLeave, onKick, onPromote
                         onClick={() => onPromote && onPromote(member.id)}
                         className="font-mono text-xs text-[#00F0FF] hover:text-black hover:bg-[#00F0FF] transition-colors rounded-none h-8"
                       >
-                        [ ASCENDER ]
+                        [ ASIGNAR CAPITAN ]
                       </Button>
                       <Button 
                         variant="ghost" 
@@ -106,7 +115,7 @@ export function TeamTable({ members, currentUserRole, onLeave, onKick, onPromote
                         onClick={() => onKick && onKick(member.id)}
                         className="font-mono text-xs text-[#FF003C] hover:text-white hover:bg-[#FF003C] transition-colors rounded-none h-8"
                       >
-                        [ KICK ]
+                        [ ELIMINAR ]
                       </Button>
                     </>
                   )}

@@ -18,6 +18,7 @@ export function middleware(request: NextRequest) {
   const isProtected = protectedRoutes.some(r => pathname.startsWith(r));
   const needsTeam   = teamRoutes.some(r => pathname.startsWith(r));
   const isAdmin     = adminRoutes.some(r => pathname.startsWith(r));
+  const isTeamDashboard = pathname.startsWith('/dashboard/team') && !pathname.startsWith('/dashboard/team/select');
 
   // 1. Sin sesión → /login
   if (isProtected && !session) {
@@ -26,6 +27,11 @@ export function middleware(request: NextRequest) {
 
   // 2. Sin equipo → /dashboard/team/select
   if (needsTeam && session && !hasTeam) {
+    return NextResponse.redirect(new URL('/dashboard/team/select', request.url));
+  }
+
+  // 2.b Sin equipo en Team Dashboard -> /dashboard/team/select
+  if (isTeamDashboard && session && !hasTeam) {
     return NextResponse.redirect(new URL('/dashboard/team/select', request.url));
   }
 
