@@ -1,20 +1,14 @@
 "use client";
 
-import {
-  Flag,
-  Users,
-  ShieldAlert,
-  MessageCircle,
-} from "lucide-react";
 import { importantNotes } from "@/data/home";
 import SectionHeader from "@/components/shared/SectionHeader";
 import { CtfCard } from "@/components/shared/CtfCard";
 
-const ICONS: Record<string, React.ElementType> = {
-  Flag,
-  Users,
-  ShieldAlert,
-  MessageCircle,
+const PIXEL_ICONS: Record<string, { className: string; colorClass: string }> = {
+  Flag: { className: "hn hn-flag-solid", colorClass: "text-pink" },
+  Users: { className: "hn hn-users-solid", colorClass: "text-orange" },
+  ShieldAlert: { className: "hn hn-trophy-solid", colorClass: "text-yellow" },
+  MessageCircle: { className: "hn hn-user-solid", colorClass: "text-purple" },
 };
 
 export default function ImportantNotes() {
@@ -28,7 +22,7 @@ export default function ImportantNotes() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
         {importantNotes.map((note, i) => {
-          const Icon = ICONS[note.icon];
+          const iconMeta = PIXEL_ICONS[note.icon];
           return (
             <CtfCard
               key={note.title}
@@ -37,10 +31,10 @@ export default function ImportantNotes() {
               description={note.content}
               accentColor={note.accentColor}
               icon={
-                Icon && (
-                  <Icon
-                    className="w-5 h-5"
-                    style={{ color: note.accentColor }}
+                iconMeta && (
+                  <i
+                    className={`${iconMeta.className} ${iconMeta.colorClass} text-lg`}
+                    aria-hidden="true"
                   />
                 )
               }
