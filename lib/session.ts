@@ -1,4 +1,4 @@
-import { getIronSession, IronSession } from 'iron-session'
+import { getIronSession, IronSession, unsealData } from 'iron-session'
 import { cookies } from 'next/headers'
 
 export interface SessionData {
@@ -20,11 +20,13 @@ export const sessionOptions = {
   },
 }
 
+// Para Route Handlers y Server Components (pueden leer Y escribir)
 export async function getSession(): Promise<IronSession<SessionData>> {
   const cookieStore = await cookies()
   return getIronSession<SessionData>(cookieStore, sessionOptions)
 }
 
+// Para verificar si hay sesión activa (solo lectura)
 export async function getSessionUser(): Promise<SessionData | null> {
   const session = await getSession()
   if (!session.userId) return null
@@ -36,3 +38,8 @@ export async function getSessionUser(): Promise<SessionData | null> {
     teamId: session.teamId,
   }
 }
+
+// Para el Middleware (solo descifra, no escribe)
+export const COOKIE_NAME = 'hack2dawn_session'  // ← Exporta el nombre para el Middleware
+export const SESSION_PASSWORD = process.env.SESSION_SECRET as string
+export { unsealData }  // ← Re-exporta unsealData para usar en middleware
