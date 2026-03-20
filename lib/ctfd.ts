@@ -69,3 +69,14 @@ export async function ctfdGetUser(userId: number): Promise<CTFdUser | null> {
   const body: CTFdResponse<CTFdUser> = await res.json()
   return body.success ? (body.data ?? null) : null
 }
+
+// ─── Obtener equipo del usuario por ID (con admin token) ───────────────────
+export async function ctfdGetUserTeam(userId: number): Promise<number | null> {
+  const res = await fetch(`${BASE}/api/v1/users/${userId}`, {
+    headers: ctfdHeaders(),
+    cache: 'no-store',
+  })
+  if (!res.ok) return null
+  const body: CTFdResponse<CTFdUser> = await res.json()
+  return body.data?.team_id ?? null
+}

@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
     session.username = newUser.name
     session.email = newUser.email
     session.isAdmin = newUser.type === 'admin'
+    session.teamId   = null // Nuevo usuario no tiene equipo aún
     await session.save() // ← Firma, encripta y setea la cookie httpOnly
 
     return NextResponse.json({

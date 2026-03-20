@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
-import { ctfdVerifyCredentials } from '@/lib/ctfd'
+import { ctfdGetUserTeam, ctfdVerifyCredentials } from '@/lib/ctfd'
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,12 +35,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const teamId = await ctfdGetUserTeam(user.id)
+
     // ── Crear sesión ────────────────────────────────────────────
     const session = await getSession()
     session.userId = user.id
     session.username = user.name
     session.email = user.email
     session.isAdmin = user.type === 'admin'
+    session.teamId   = teamId
     await session.save()
 
     return NextResponse.json({

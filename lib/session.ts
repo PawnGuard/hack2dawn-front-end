@@ -6,6 +6,7 @@ export interface SessionData {
   username: string
   email: string
   isAdmin: boolean
+  teamId: number | null
 }
 
 export const sessionOptions = {
@@ -32,5 +33,6 @@ export async function getSessionUser(): Promise<SessionData | null> {
     username: session.username,
     email: session.email,
     isAdmin: session.isAdmin,
+    teamId: session.teamId,
   }
 }
