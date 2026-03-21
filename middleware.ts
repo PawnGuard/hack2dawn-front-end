@@ -34,7 +34,8 @@ export async function middleware(request: NextRequest) {
     r => pathname.startsWith(r)
   )
 
-  const requiresTeam = ['/home', '/challenges'].some(r => pathname.startsWith(r))
+  const requiresTeam = ['/home', '/challenges'].some(r => pathname.startsWith(r)) ||
+  (pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/team'))
 
   const isAdminRoute    = pathname.startsWith('/admin')
   const isTeamSelect    = pathname.startsWith('/dashboard/team/select')
