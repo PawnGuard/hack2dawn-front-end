@@ -29,3 +29,18 @@ export interface CTFdUser {
   score?: number
   place?: string
 }
+
+export interface CTFdTeam {
+  id: number
+  name: string
+  email: string | null
+  password: string | null
+  secret: string | null
+  website: string | null
+  affiliation: string | null
+  country: string | null
+  hidden: boolean
+  banned: boolean
+  captain_id: number | null
+  created: string
+}

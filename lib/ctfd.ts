@@ -1,4 +1,4 @@
-import { CTFdResponse, CTFdUser } from "./types/ctfd"
+import { CTFdResponse, CTFdTeam, CTFdUser } from "./types/ctfd"
 
 const BASE = process.env.CTFD_BASE_URL!
 const ADMIN_TOKEN = process.env.CTFD_ADMIN_TOKEN!
@@ -172,6 +172,8 @@ export async function ctfdGetUser(userId: number): Promise<CTFdUser | null> {
   return body.success ? (body.data ?? null) : null
 }
 
+{/* ENDPOINTS DE EQUIPOS */}
+
 // ─── Obtener equipo del usuario por ID (con admin token) ───────────────────
 export async function ctfdGetUserTeam(userId: number): Promise<number | null> {
   const res = await fetch(`${BASE}/api/v1/users/${userId}`, {
@@ -181,4 +183,58 @@ export async function ctfdGetUserTeam(userId: number): Promise<number | null> {
   if (!res.ok) return null
   const body: CTFdResponse<CTFdUser> = await res.json()
   return body.data?.team_id ?? null
+}
+
+// ─── Crear equipo ───────────────────────────────────────────────
+export async function ctfdCreateTeam(payload: {
+  name: string
+  password: string    // contraseña para que otros se unan al equipo
+}): Promise<CTFdResponse<CTFdTeam>> {
+  const res = await fetch(`${BASE}/api/v1/teams`, {
+    method: 'POST',
+    headers: ctfdHeaders(),
+    body: JSON.stringify({
+      name: payload.name,
+      password: payload.password,
+      hidden: false,
+      banned: false,
+      fields: [],
+    }),
+    cache: 'no-store',
+  })
+  const text = await res.text()
+  try { return JSON.parse(text) }
+  catch { throw new Error(`CTFd error (${res.status}): ${text.substring(0, 200)}`) }
+}
+
+// ─── Agregar usuario a un equipo ────────────────────────────────
+// POST /api/v1/teams/{teamId}/members
+export async function ctfdAddTeamMember(
+  teamId: number,
+  userId: number,
+): Promise<boolean> {
+  const res = await fetch(`${BASE}/api/v1/teams/${teamId}/members`, {
+    method: 'POST',
+    headers: ctfdHeaders(),
+    body: JSON.stringify({ user_id: userId }),
+    cache: 'no-store',
+  })
+  const body = await res.json()
+  return body.success === true
+}
+
+// ─── Establecer capitán del equipo ──────────────────────────────
+// PATCH /api/v1/teams/{teamId} con captain_id
+export async function ctfdSetTeamCaptain(
+  teamId: number,
+  userId: number,
+): Promise<boolean> {
+  const res = await fetch(`${BASE}/api/v1/teams/${teamId}`, {
+    method: 'PATCH',
+    headers: ctfdHeaders(),
+    body: JSON.stringify({ captain_id: userId }),
+    cache: 'no-store',
+  })
+  const body = await res.json()
+  return body.success === true
 }

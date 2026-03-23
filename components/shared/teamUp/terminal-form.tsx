@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useRouter } from 'next/navigation'
 import { AngleLeftSolidIcon } from "@/components/icons/AngleLeftSolid";
+import { generateTeamCode } from "@/lib/team-utils"
 
 interface TerminalFormProps {
   mode: "join" | "create";
@@ -15,27 +16,111 @@ interface TerminalFormProps {
 }
 
 export function TerminalForm({ mode, onBack, colorBlue, colorRed }: TerminalFormProps) {
+  const router = useRouter() 
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [error, setError] = useState("");
+  const [teamCode, setTeamCode] = useState<string | null>(null)
 
   const isJoin = mode === "join";
   const activeColor = isJoin ? colorBlue : colorRed;
   const terminalPath = isJoin ? "~/team/join/token_" : "~/team/create/name_";
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    
-    // Simulación de llamada API
-    setTimeout(() => {
-      setIsLoading(false);
-      if (isJoin && inputValue !== "123") {
-        setError("Error: El token ingresado no es válido.");
+
+    if (isJoin) {
+      setTimeout(() => {
+        setIsLoading(false);
+        if (inputValue !== "123") setError("Error: El token ingresado no es válido.");
+      }, 1500);
+      return;
+    }
+
+    // ── Modo CREATE ───────────────────────────────────────────────
+    const generatedCode = generateTeamCode(); // generamos ANTES del fetch
+
+    try {
+      const res = await fetch("/api/teams/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: inputValue, password: generatedCode }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error ?? "Algo salió mal, intenta de nuevo.");
+        setIsLoading(false);
+        return;
       }
-    }, 1500);
+
+      setTeamCode(generatedCode); // revela pantalla de éxito con el token
+      setIsLoading(false);
+    } catch {
+      setError("No se pudo conectar con el servidor.");
+      setIsLoading(false);
+    }
   };
+
+  if (teamCode) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative max-w-md w-full"
+      >
+        {/* Mismo tab de path que el formulario */}
+        <div
+          className="inline-block px-3 py-1 text-xs font-mono mb-0 rounded-t border border-b-0"
+          style={{ borderColor: activeColor, color: activeColor }}
+        >
+          ~/team/create/success_
+        </div>
+
+        {/* Mismo contenedor que el formulario */}
+        <div
+          className="relative border rounded-b-lg rounded-tr-lg p-8 font-mono"
+          style={{ borderColor: activeColor }}
+        >
+          {/* Mismo decorativo de esquina */}
+          <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2"
+            style={{ borderColor: activeColor }}
+          />
+
+          <p className="text-green-400 text-sm mb-1">[✓] EQUIPO INICIALIZADO</p>
+          <p className="text-white/40 text-sm mb-8">
+            Comparte este token con tu equipo para que puedan unirse:
+          </p>
+
+          {/* Token destacado */}
+          <div
+            className="text-4xl font-bold tracking-[0.3em] text-center py-5 px-6 rounded-md border mb-3"
+            style={{ color: activeColor, borderColor: `${activeColor}44`, backgroundColor: `${activeColor}0F` }}
+          >
+            {teamCode}
+          </div>
+
+          <p className="text-white/30 text-xs text-center mb-8">
+            ⚠ Guárdalo ahora — no se volverá a mostrar.
+          </p>
+
+          <Button
+            onClick={() => {
+              router.refresh()
+              router.push("/dashboard/team")
+            }}
+            className="w-full font-mono font-bold"
+            style={{ backgroundColor: activeColor }}
+          >
+            IR AL DASHBOARD →
+          </Button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div 

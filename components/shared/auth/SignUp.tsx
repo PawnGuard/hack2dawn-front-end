@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { AuthBackground } from "./auth-background";
@@ -13,6 +13,7 @@ import {
 export function SignupForm() {
 
   const router = useRouter();
+  const submitLockRef = useRef(false);
 
   // ─── States originales del UI ────────────────────────────────
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -29,6 +30,10 @@ export function SignupForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
+
     setErrors({});
 
     const form = new FormData(e.currentTarget);
@@ -55,6 +60,7 @@ export function SignupForm() {
 
     if (Object.keys(clientErrors).length > 0) {
       setErrors(clientErrors);
+      submitLockRef.current = false;
       return;
     }
 
@@ -78,14 +84,15 @@ export function SignupForm() {
         } else {
           setErrors({ server: data.error || "Error al crear la cuenta" });
         }
-        setLoading(false);
         return;
       }
 
-      router.push("/dashboard/team-select");
+      router.push("/dashboard/team/select");
       router.refresh();
     } catch {
       setErrors({ server: "No se pudo conectar al servidor. Intenta de nuevo." });
+    } finally {
+      submitLockRef.current = false;
       setLoading(false);
     }
   };

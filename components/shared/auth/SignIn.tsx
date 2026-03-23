@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
@@ -17,6 +17,7 @@ import {
 
 export function LoginForm() {
   const router = useRouter();
+  const submitLockRef = useRef(false);
 
   // ─── States originales del UI ────────────────────────────────
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -29,6 +30,10 @@ export function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
+
     setLoading(true);
     setError("");
 
@@ -38,6 +43,7 @@ export function LoginForm() {
 
     if (!identifier || !password) {
       setError("Todos los campos son requeridos");
+      submitLockRef.current = false;
       setLoading(false);
       return;
     }
@@ -53,15 +59,16 @@ export function LoginForm() {
 
       if (!res.ok) {
         setError(data.error || "Error al iniciar sesión");
-        setLoading(false);
         return;
       }
 
       // iron-session ya seteó la cookie httpOnly → redirigir
-      router.push("/dashboard");
       router.refresh(); // ← Actualiza el Server Component layout para que UserProvider tenga los datos frescos
+      router.push("/dashboard");
     } catch {
       setError("No se pudo conectar al servidor. Intenta de nuevo.");
+    } finally {
+      submitLockRef.current = false;
       setLoading(false);
     }
   };
