@@ -9,14 +9,11 @@ export function middleware(request: NextRequest) {
   const hasTeam  = request.cookies.get('hasTeam')?.value;
 
   // Rutas que requieren estar logueado
-  const protectedRoutes = [/* '/home', */ '/challenges', /*'/dashboard',*/ '/scoreboard'];
-  // Rutas que requieren tener equipo
-  const teamRoutes = [/* '/home', */ '/challenges'];
+  const protectedRoutes = [/* '/home', */ /*'/dashboard',*/ '/scoreboard'];
   // Rutas solo para Admin
   const adminRoutes = ['/admin'];
 
   const isProtected = protectedRoutes.some(r => pathname.startsWith(r));
-  const needsTeam   = teamRoutes.some(r => pathname.startsWith(r));
   const isAdmin     = adminRoutes.some(r => pathname.startsWith(r));
   const isTeamDashboard = pathname.startsWith('/dashboard/team') && !pathname.startsWith('/dashboard/team/select');
 
@@ -25,12 +22,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // 2. Sin equipo → /dashboard/team/select
-  if (needsTeam && session && !hasTeam) {
-    return NextResponse.redirect(new URL('/dashboard/team/select', request.url));
-  }
-
-  // 2.b Sin equipo en Team Dashboard -> /dashboard/team/select
+  // 2. Sin equipo en Team Dashboard -> /dashboard/team/select
   if (isTeamDashboard && session && !hasTeam) {
     return NextResponse.redirect(new URL('/dashboard/team/select', request.url));
   }
@@ -45,5 +37,5 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   // Solo aplica el middleware a estas rutas (ignora _next, api, assets)
-  matcher: ['/home/:path*', '/challenges/:path*', '/dashboard/:path*', '/admin/:path*'],
+  matcher: ['/home/:path*', '/dashboard/:path*', '/admin/:path*'],
 };
