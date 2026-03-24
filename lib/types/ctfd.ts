@@ -30,6 +30,15 @@ export interface CTFdUser {
   place?: string
 }
 
+export interface CTFdFieldEntry {
+  id: number          // ID del field definition
+  name: string        // "invite_code"
+  value: string       // el valor guardado
+  field_id: number    // mismo que id
+  type: string        // "text"
+  description: string
+}
+
 export interface CTFdTeam {
   id: number
   name: string
@@ -43,4 +52,22 @@ export interface CTFdTeam {
   banned: boolean
   captain_id: number | null
   created: string
+  fields: CTFdFieldEntry[]
+}
+
+export interface TeamMemberData {
+  id: number
+  username: string
+  score: number
+  isCaptain: boolean
+  isMe: boolean
+}
+
+export interface TeamDashboardData {
+  teamId: number
+  teamName: string
+  inviteCode: string | null
+  captainId: number | null
+  isCaptain: boolean
+  members: TeamMemberData[]
 }

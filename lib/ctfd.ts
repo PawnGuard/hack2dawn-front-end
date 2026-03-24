@@ -3,6 +3,7 @@ import { CTFdResponse, CTFdTeam, CTFdUser } from "./types/ctfd"
 const BASE = process.env.CTFD_BASE_URL!
 const ADMIN_TOKEN = process.env.CTFD_ADMIN_TOKEN!
 const NGINX_SECRET = process.env.NGINX_INTERNAL_SECRET!
+const INVITE_CODE_FIELD_ID = 3  
 
 function ctfdHeaders(): HeadersInit {
   return {
@@ -198,11 +199,22 @@ export async function ctfdCreateTeam(payload: {
       password: payload.password,
       hidden: false,
       banned: false,
-      fields: [],
+      fields: [
+        {
+          field_id: INVITE_CODE_FIELD_ID,
+          value: payload.password,
+        }
+      ],
     }),
     cache: 'no-store',
   })
+  
+  // ── LOG TEMPORAL ─────────────────────────────────────────────
   const text = await res.text()
+  console.log('[createTeam] status:', res.status)
+  console.log('[createTeam] response:', text.substring(0, 500))
+  // ─────────────────────────────────────────────────────────────
+
   try { return JSON.parse(text) }
   catch { throw new Error(`CTFd error (${res.status}): ${text.substring(0, 200)}`) }
 }
@@ -233,6 +245,94 @@ export async function ctfdSetTeamCaptain(
     method: 'PATCH',
     headers: ctfdHeaders(),
     body: JSON.stringify({ captain_id: userId }),
+    cache: 'no-store',
+  })
+  const body = await res.json()
+  return body.success === true
+}
+
+// ─── Buscar equipo por nombre (q + field) ────────────────────────────────
+export async function ctfdFindTeamByName(name: string): Promise<CTFdTeam | null> {
+  const url = new URL(`${BASE}/api/v1/teams`)
+  url.searchParams.set('q', name)
+  url.searchParams.set('field', 'name')
+
+  const res = await fetch(url.toString(), {
+    headers: ctfdHeaders(),
+    cache: 'no-store',
+  })
+  if (!res.ok) return null
+  const body: CTFdResponse<CTFdTeam[]> = await res.json()
+
+  // Encuentra el equipo exacto en la lista
+  const teamBasic = body.data?.find(t => t.name === name) ?? null
+  if (!teamBasic) return null
+
+  // Consulta el equipo por ID para obtener los fields completos
+  const teamRes = await fetch(`${BASE}/api/v1/teams/${teamBasic.id}`, {
+    headers: ctfdHeaders(),
+    cache: 'no-store',
+  })
+  if (!teamRes.ok) return null
+  const teamBody: CTFdResponse<CTFdTeam> = await teamRes.json()
+
+  // ── LOG TEMPORAL ─────────────────────────────────────────────
+  console.log('[findTeam] fields recibidos:', JSON.stringify(teamBody.data?.fields))
+  // ─────────────────────────────────────────────────────────────
+
+  return teamBody.data ?? null
+}
+
+export function getTeamInviteCode(team: CTFdTeam): string | null {
+  const field = team.fields?.find(
+    f => f.name === 'invite_code' || f.field_id === INVITE_CODE_FIELD_ID
+  )
+  return field?.value ?? null
+}
+
+// ─── Obtener equipo completo con fields ─────────────────────────
+export async function ctfdGetTeam(teamId: number): Promise<CTFdTeam | null> {
+  const res = await fetch(`${BASE}/api/v1/teams/${teamId}`, {
+    headers: ctfdHeaders(),
+    cache: 'no-store',
+  })
+  if (!res.ok) return null
+  const body: CTFdResponse<CTFdTeam> = await res.json()
+  return body.data ?? null
+}
+
+// ─── Obtener IDs de miembros del equipo ─────────────────────────
+export async function ctfdGetTeamMemberIds(teamId: number): Promise<number[]> {
+  const res = await fetch(`${BASE}/api/v1/teams/${teamId}/members`, {
+    headers: ctfdHeaders(),
+    cache: 'no-store',
+  })
+  if (!res.ok) return []
+  const body: CTFdResponse<number[]> = await res.json()
+  return body.data ?? []
+}
+
+// ─── Cambiar nombre del equipo ───────────────────────────────────
+// PATCH /api/v1/teams/{teamId} { name }
+export async function ctfdRenameTeam(teamId: number, name: string): Promise<CTFdResponse<CTFdTeam>> {
+  const res = await fetch(`${BASE}/api/v1/teams/${teamId}`, {
+    method: 'PATCH',
+    headers: ctfdHeaders(),
+    body: JSON.stringify({ name }),
+    cache: 'no-store',
+  })
+  const text = await res.text()
+  try { return JSON.parse(text) }
+  catch { throw new Error(`CTFd error (${res.status}): ${text.substring(0, 200)}`) }
+}
+
+// ─── Expulsar miembro del equipo ─────────────────────────────────
+// DELETE /api/v1/teams/{teamId}/members { user_id }
+export async function ctfdKickTeamMember(teamId: number, userId: number): Promise<boolean> {
+  const res = await fetch(`${BASE}/api/v1/teams/${teamId}/members`, {
+    method: 'DELETE',
+    headers: ctfdHeaders(),
+    body: JSON.stringify({ user_id: userId }),
     cache: 'no-store',
   })
   const body = await res.json()
