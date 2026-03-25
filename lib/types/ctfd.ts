@@ -82,3 +82,35 @@ export interface CTFdStanding {
   name: string
   score: number
 }
+
+export interface CTFdSolve {
+  account_id: number
+  challenge_id: number
+  challenge_name: string // CTFd a veces devuelve el nombre, a veces solo el id
+  date: string
+  id: number
+  type: string
+  user_id: number
+}
+
+export interface ProfileDashboardData {
+  id: number
+  username: string
+  email: string
+  affiliation: string | null
+  website: string | null
+  country: string | null
+  teamId: number | null
+  teamName: string | null
+  score: number
+  place: string | null
+  usernameChangeCount?: number   // opcional
+  totalAttempts?: number         // opcional
+  solves: {
+    id: number
+    challenge_id: number
+    challenge_name: string
+    date: string
+    value: number // Puntos
+  }[]
+}

@@ -1,4 +1,4 @@
-import { CTFdResponse, CTFdTeam, CTFdUser, CTFdStanding } from "./types/ctfd"
+import { CTFdResponse, CTFdTeam, CTFdUser, CTFdStanding, CTFdSolve } from "./types/ctfd"
 
 const BASE = process.env.CTFD_BASE_URL!
 const ADMIN_TOKEN = process.env.CTFD_ADMIN_TOKEN!
@@ -12,6 +12,8 @@ function ctfdHeaders(): HeadersInit {
     'x-internal-key': NGINX_SECRET,
   }
 }
+
+{/* Crear usuarios */}
 
 // ─── Crear usuario en CTFd ──────────────────────────────────────
 export async function ctfdCreateUser(payload: {
@@ -355,4 +357,46 @@ export async function ctfdGetTeamRank(teamId: number): Promise<number | null> {
   } catch {
     return null
   }
+}
+
+{/* ENDPOINTS DE USUARIO */}
+
+// ─── Obtener Solves de un usuario ─────────────────────────────────
+export async function ctfdGetUserSolves(userId: number): Promise<CTFdSolve[]> {
+  const res = await fetch(`${BASE}/api/v1/users/${userId}/solves`, {
+    headers: ctfdHeaders(),
+    cache: 'no-store',
+  })
+  if (!res.ok) return []
+  const body: CTFdResponse<CTFdSolve[]> = await res.json()
+  return body.data ?? []
+}
+
+// ─── Obtener detalles de un reto ──────────────────────────────────
+// Para obtener los puntos (value) y el nombre real del reto
+export async function ctfdGetChallenge(challengeId: number): Promise<{ name: string, value: number } | null> {
+  const res = await fetch(`${BASE}/api/v1/challenges/${challengeId}`, {
+    headers: ctfdHeaders(),
+    next: { revalidate: 60 }, // Cacheable por 1 minuto, los retos cambian poco
+  })
+  if (!res.ok) return null
+  const body: CTFdResponse<any> = await res.json()
+  return body.data ? { name: body.data.name, value: body.data.value } : null
+}
+
+// ─── Actualizar perfil de usuario ─────────────────────────────────
+// PATCH /api/v1/users/{id}
+export async function ctfdUpdateUser(
+  userId: number,
+  payload: { name?: string; affiliation?: string; website?: string }
+): Promise<CTFdResponse<CTFdUser>> {
+  const res = await fetch(`${BASE}/api/v1/users/${userId}`, {
+    method: 'PATCH',
+    headers: ctfdHeaders(),
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  })
+  const text = await res.text()
+  try { return JSON.parse(text) }
+  catch { throw new Error(`CTFd error (${res.status}): ${text.substring(0, 200)}`) }
 }

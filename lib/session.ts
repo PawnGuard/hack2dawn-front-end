@@ -8,6 +8,7 @@ export interface SessionData {
   isAdmin: boolean
   teamId: number | null
   ctfdUserToken: string | null
+  usernameChangeCount?: number
 }
 
 export const sessionOptions = {
