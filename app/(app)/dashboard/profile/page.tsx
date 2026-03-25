@@ -12,6 +12,37 @@ import { ProfileDashboardData } from "@/lib/types/ctfd";
 
 const MAX_USERNAME_CHANGES: number = 2;
 
+function getWebsiteIconClass(website: string): string {
+  const fallbackIcon = "hn hn-web3";
+
+  try {
+    const normalizedUrl = website.startsWith("http") ? website : `https://${website}`;
+    const hostname = new URL(normalizedUrl).hostname.replace(/^www\./, "").toLowerCase();
+
+    if (hostname === "github.com" || hostname.endsWith(".github.com")) {
+      return "hn hn-github";
+    }
+
+    if (hostname === "linkedin.com" || hostname.endsWith(".linkedin.com")) {
+      return "hn hn-linkedin";
+    }
+
+    return fallbackIcon;
+  } catch {
+    const websiteLower = website.toLowerCase();
+
+    if (websiteLower.includes("github.com")) {
+      return "hn hn-github";
+    }
+
+    if (websiteLower.includes("linkedin.com")) {
+      return "hn hn-linkedin";
+    }
+
+    return fallbackIcon;
+  }
+}
+
 // ── Componentes reutilizables ────────────────────────────────────
 
 function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
@@ -171,7 +202,8 @@ export default function ProfileDashboardPage() {
   const usernameChangesLeft = MAX_USERNAME_CHANGES;
   const canChangeUsername = usernameChangesLeft > 0;
   const totalSolves = profile.solves.length;
-  const accuracy: number | null = null  // sin calcular hasta tener fails
+  const accuracy: number | null = null; // sin calcular hasta tener fails
+  const websiteIconClass = profile.website ? getWebsiteIconClass(profile.website) : "hn hn-web3";
 
   return (
     <main className="min-h-screen relative overflow-hidden bg-[#090013] text-white px-4 py-12">
@@ -270,7 +302,15 @@ export default function ProfileDashboardPage() {
                     <span>{profile.email}</span>
                     {profile.affiliation && <span>// {profile.affiliation}</span>}
                     {profile.teamName && (
-                      <span className="text-[#00F0FF]/60">⊂ {profile.teamName}</span>
+                      <span className="inline-flex items-center gap-1 text-[#00F0FF]/60">
+                        <i className="hn hn-users-solid text-[11px]" aria-hidden="true" />
+                        <a
+                          href={`/dashboard/team`}
+                          className="hover:text-[#00F0FF] transition-colors"
+                        >
+                          {profile.teamName}
+                        </a>
+                      </span>
                     )}
                   </div>
                   {profile.website && (
@@ -278,9 +318,11 @@ export default function ProfileDashboardPage() {
                       href={profile.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-block font-mono text-xs text-[#EF01BA]/60 hover:text-[#EF01BA] transition-colors mt-1"
+                      className="inline-flex items-center gap-2 font-mono text-xs text-[#EF01BA]/60 hover:text-[#EF01BA] transition-colors mt-1"
                     >
-                      {profile.website} ↗
+                      <i className={`${websiteIconClass} text-[11px]`} aria-hidden="true" />
+                      <span>{profile.website}</span>
+                      <i className="hn hn-external-link text-[10px]" aria-hidden="true" />
                     </a>
                   )}
                   <div className="pt-3">

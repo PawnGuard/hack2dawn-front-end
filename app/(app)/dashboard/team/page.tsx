@@ -85,10 +85,79 @@ export default function TeamDashboardPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-[#090013] text-white flex items-center justify-center">
-        <p className="font-mono text-white/40 animate-pulse">Cargando equipo...</p>
+      <main className="min-h-screen relative overflow-hidden bg-[#090013] text-white px-4 py-12">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(0,240,255,0.15),transparent_55%)] pointer-events-none" />
+
+        <div className="relative z-20 mx-auto w-full max-w-4xl space-y-6 animate-pulse">
+
+          {/* Header — nombre del equipo */}
+          <section className="border border-white/10 bg-black/55 backdrop-blur-md p-6 md:p-8">
+            <div className="h-3 w-36 bg-white/10 rounded mb-6" />
+            <div className="h-9 w-56 bg-white/10 rounded" />
+          </section>
+
+          {/* Stats bar — Score / Posición / Miembros */}
+          <section className="border border-white/10 bg-black/55 backdrop-blur-md p-5">
+            <div className="flex flex-col sm:flex-row sm:divide-x divide-white/10 gap-5 sm:gap-0">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex-1 sm:px-6 first:pl-0 last:pr-0 space-y-2">
+                  <div className="h-2 w-20 bg-white/10 rounded" />
+                  <div className="h-7 w-28 bg-white/10 rounded" />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Panel de capitán — solo aparece para capitanes, simulamos el bloque */}
+          <section className="border border-white/10 bg-black/55 backdrop-blur-md p-6 space-y-4">
+            <div className="h-3 w-40 bg-white/10 rounded" />
+            <div className="flex gap-3 items-center">
+              <div className="h-8 w-48 bg-white/10 rounded" />
+            </div>
+            {/* Token de invitación */}
+            <div className="border border-white/5 bg-black/30 p-4 flex items-center justify-between gap-4">
+              <div className="space-y-2 flex-1">
+                <div className="h-2 w-24 bg-white/10 rounded" />
+                <div className="h-3 w-64 bg-white/5 rounded font-mono" />
+              </div>
+              <div className="h-8 w-20 bg-white/10 rounded" />
+            </div>
+          </section>
+
+          {/* TeamTable skeleton */}
+          <section className="border border-white/10 bg-black/55 backdrop-blur-md">
+            {/* Header de columnas */}
+            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 py-3 border-b border-white/10">
+              {["w-16", "w-12", "w-10", "w-20"].map((w, i) => (
+                <div key={i} className={`h-2 ${w} bg-white/10 rounded`} />
+              ))}
+            </div>
+            {/* Filas de miembros (4 simulados) */}
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center px-4 py-3 border-b border-white/5"
+              >
+                {/* Username con badge de rol */}
+                <div className="flex items-center gap-2">
+                  <div className="h-4 bg-white/10 rounded" style={{ width: `${40 + i * 12}%` }} />
+                  {i === 0 && (
+                    <div className="h-4 w-16 bg-[#EF01BA]/20 rounded-full" /> // badge capitán
+                  )}
+                </div>
+                {/* Score */}
+                <div className="h-3 w-16 bg-[#00F0FF]/10 rounded" />
+                {/* Acción 1 */}
+                <div className="h-7 w-16 bg-white/5 rounded" />
+                {/* Acción 2 */}
+                <div className="h-7 w-16 bg-white/5 rounded" />
+              </div>
+            ))}
+          </section>
+
+        </div>
       </main>
-    )
+    );
   }
 
   if (!data) return null
