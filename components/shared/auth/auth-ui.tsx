@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 // ─── Tipos compartidos ─────────────────────────────────────────────
 export interface SynthwaveFieldProps {
   id: string;
+  name?: string;
   label: string;
   placeholder: string;
   type?: string;
@@ -18,6 +19,7 @@ export interface SynthwaveFieldProps {
 // ─── Input con estilo Synthwave terminal ──────────────────────────
 export function SynthwaveField({
   id,
+  name,
   label,
   placeholder,
   type = "text",
@@ -38,6 +40,7 @@ export function SynthwaveField({
       <div className="relative">
         <Input
           id={id}
+          name={name ?? id}
           placeholder={placeholder}
           type={type}
           onFocus={() => setFocusedField(id)}
@@ -89,25 +92,40 @@ export function SunsetBottomGradient({ active }: { active: boolean }) {
 }
 
 // ─── Botón con gradiente Sunset ────────────────────────────────────
-export function SunsetButton({ label }: { label: string }) {
+export function SunsetButton({
+  label,
+  children,
+  type = "submit",
+  disabled = false,
+}: {
+  label?: string;
+  children?: React.ReactNode;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+}) {
+  const content = children ?? label;
+
   return (
     <button
-      type="submit"
-      className="group/btn relative w-full h-11 font-mono font-bold tracking-widest text-black text-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+      type={type}
+      disabled={disabled}
+      className="group/btn relative w-full h-11 font-mono font-bold tracking-widest text-black text-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 disabled:active:scale-100"
       style={{
         background: "linear-gradient(90deg, #EF01BA, #F77200, #FEF759)",
         boxShadow: "0 0 20px #EF01BA50, 0 0 40px #F7720020",
       }}
       onMouseEnter={(e) => {
+        if (disabled) return;
         (e.currentTarget as HTMLButtonElement).style.boxShadow =
           "0 0 30px #EF01BA80, 0 0 60px #F7720040";
       }}
       onMouseLeave={(e) => {
+        if (disabled) return;
         (e.currentTarget as HTMLButtonElement).style.boxShadow =
           "0 0 20px #EF01BA50, 0 0 40px #F7720020";
       }}
     >
-      {label}
+      {content}
       <span className="absolute inset-x-0 -bottom-px block h-px w-full bg-gradient-to-r from-transparent via-white to-transparent opacity-0 transition duration-500 group-hover/btn:opacity-30" />
     </button>
   );

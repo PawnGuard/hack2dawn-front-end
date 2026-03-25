@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { AuthBackground } from "./auth-background";
 import {
@@ -10,11 +11,90 @@ import {
 } from "./auth-ui";
 
 export function SignupForm() {
+
+  const router = useRouter();
+  const submitLockRef = useRef(false);
+
+  // ─── States originales del UI ────────────────────────────────
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // ─── States de lógica de auth ─────────────────────────────────
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+    confirm?: string;
+    server?: string;
+  }>({});
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // TODO: conectar con /api/auth/register (iron-session)
+
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
+
+    setErrors({});
+
+    const form = new FormData(e.currentTarget);
+    const name = (form.get("name") as string)?.trim();
+    const email = (form.get("email") as string)?.trim();
+    const password = form.get("password") as string;
+    const confirm = form.get("confirm") as string;
+
+    // ── Validaciones en cliente ───────────────────────────────
+    const clientErrors: typeof errors = {};
+
+    if (!name || name.length < 3 || name.length > 20 || /\s/.test(name)) {
+      clientErrors.name = "3-20 caracteres, sin espacios";
+    }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      clientErrors.email = "Email inválido";
+    }
+    if (!password || password.length < 8) {
+      clientErrors.password = "Mínimo 8 caracteres";
+    }
+    if (password !== confirm) {
+      clientErrors.confirm = "Las contraseñas no coinciden";
+    }
+
+    if (Object.keys(clientErrors).length > 0) {
+      setErrors(clientErrors);
+      submitLockRef.current = false;
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // El Route Handler nos dice qué campo falló (duplicado de username o email)
+        if (data.field === "name") {
+          setErrors({ name: data.error });
+        } else if (data.field === "email") {
+          setErrors({ email: data.error });
+        } else {
+          setErrors({ server: data.error || "Error al crear la cuenta" });
+        }
+        return;
+      }
+
+      router.push("/dashboard/team/select");
+      router.refresh();
+    } catch {
+      setErrors({ server: "No se pudo conectar al servidor. Intenta de nuevo." });
+    } finally {
+      submitLockRef.current = false;
+      setLoading(false);
+    }
   };
 
   return (
@@ -76,17 +156,79 @@ export function SignupForm() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            <SynthwaveField id="firstname" label="Nombre" placeholder="John Doe"
-                focusedField={focusedField} setFocusedField={setFocusedField} />
-            <SynthwaveField id="email" label="Email" placeholder="JohnDoe@whatfck.com"
-              type="email" focusedField={focusedField} setFocusedField={setFocusedField} />
-            <SynthwaveField id="password" label="Contraseña" placeholder="••••••••"
-              type="password" focusedField={focusedField} setFocusedField={setFocusedField} />
-            <SynthwaveField id="confirm" label="Confirmar Contraseña" placeholder="••••••••"
-              type="password" focusedField={focusedField} setFocusedField={setFocusedField} />
+            <div>
+              <SynthwaveField
+                id="name"
+                name="name"
+                label="Username"
+                placeholder="Username"
+                focusedField={focusedField}
+                setFocusedField={setFocusedField}
+              />
+              {errors.name && (
+                <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.name}</span>
+              )}
+            </div>
+
+            <div>
+              <SynthwaveField
+                id="email"
+                name="email"
+                label="Email"
+                placeholder="Email"
+                type="email"
+                focusedField={focusedField}
+                setFocusedField={setFocusedField}
+              />
+              {errors.email && (
+                <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.email}</span>
+              )}
+            </div>
+
+            <div>
+              <SynthwaveField
+                id="password"
+                name="password"
+                label="Contraseña"
+                placeholder="Password"
+                type="password"
+                focusedField={focusedField}
+                setFocusedField={setFocusedField}
+              />
+              {errors.password && (
+                <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.password}</span>
+              )}
+            </div>
+
+            <div>
+              <SynthwaveField
+                id="confirm"
+                name="confirm"
+                label="Confirmar Contraseña"
+                placeholder="Confirmar Password"
+                type="password"
+                focusedField={focusedField}
+                setFocusedField={setFocusedField}
+              />
+              {errors.confirm && (
+                <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.confirm}</span>
+              )}
+            </div>
 
             <SunsetDivider />
-            <SunsetButton label="REGISTRAR AGENTE →" />
+            {errors.server && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="font-mono text-xs text-red-400 text-center tracking-wider"
+              >
+                ⚠ {errors.server}
+              </motion.p>
+            )}
+
+            <SunsetButton type="submit" disabled={loading}>
+              {loading ? "REGISTRANDO AGENTE..." : "CREAR IDENTIDAD"}
+            </SunsetButton>
 
             <p className="font-mono text-xs text-center mt-4" style={{ color: "rgba(255,255,255,0.3)" }}>
               ¿Ya tienes acceso?{" "}
