@@ -117,10 +117,53 @@ export default function ProfileDashboardPage() {
   // ── Loading ────────────────────────────────────────────────────
   if (isLoading || !profile) {
     return (
-      <main className="min-h-screen bg-[#090013] text-white flex items-center justify-center">
-        <p className="font-mono text-white/40 tracking-widest animate-pulse">
-          // Cargando operador...
-        </p>
+      <main className="min-h-screen relative overflow-hidden bg-[#090013] text-white px-4 py-12">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(239,1,186,0.25),transparent_55%)] pointer-events-none" />
+        <div className="relative z-20 mx-auto w-full max-w-5xl space-y-6 animate-pulse">
+
+          {/* Header skeleton */}
+          <section className="border border-white/10 bg-black/55 backdrop-blur-md p-6 md:p-8">
+            <div className="h-3 w-40 bg-white/10 rounded mb-6" />
+            <div className="flex gap-6 items-start">
+              {/* Avatar */}
+              <div className="shrink-0 w-24 h-24 sm:w-28 sm:h-28 bg-white/10 border border-[#EF01BA]/20" />
+              {/* Texto */}
+              <div className="flex-1 space-y-3 pt-1">
+                <div className="h-8 w-48 bg-white/10 rounded" />
+                <div className="h-3 w-64 bg-white/5 rounded" />
+                <div className="h-3 w-32 bg-white/5 rounded" />
+                <div className="h-7 w-32 bg-white/10 rounded mt-4" />
+              </div>
+            </div>
+          </section>
+
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="border border-white/10 bg-black/40 p-4 space-y-2">
+                <div className="h-2 w-16 bg-white/10 rounded" />
+                <div className="h-7 w-12 bg-white/10 rounded" />
+              </div>
+            ))}
+          </div>
+
+          {/* Activity log skeleton */}
+          <section className="border border-white/10 bg-black/55 backdrop-blur-md">
+            <div className="px-6 py-4 border-b border-white/10">
+              <div className="h-3 w-48 bg-white/10 rounded" />
+            </div>
+            <div className="divide-y divide-white/5">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="grid grid-cols-[1fr_auto_auto] gap-4 px-3 py-3 items-center">
+                  <div className="h-3 bg-white/10 rounded" style={{ width: `${55 + i * 7}%` }} />
+                  <div className="h-3 w-14 bg-[#00F0FF]/10 rounded" />
+                  <div className="h-3 w-12 bg-white/5 rounded" />
+                </div>
+              ))}
+            </div>
+          </section>
+
+        </div>
       </main>
     );
   }
