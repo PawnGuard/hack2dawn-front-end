@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { unsealData } from 'iron-session'
 import { SessionData, COOKIE_NAME, SESSION_PASSWORD } from '@/lib/session'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ── Leer y descifrar la sesión (solo lectura, sin escribir) ──
