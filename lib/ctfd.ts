@@ -1,4 +1,4 @@
-import { CTFdResponse, CTFdTeam, CTFdUser } from "./types/ctfd"
+import { CTFdResponse, CTFdTeam, CTFdUser, CTFdStanding } from "./types/ctfd"
 
 const BASE = process.env.CTFD_BASE_URL!
 const ADMIN_TOKEN = process.env.CTFD_ADMIN_TOKEN!
@@ -337,4 +337,22 @@ export async function ctfdKickTeamMember(teamId: number, userId: number): Promis
   })
   const body = await res.json()
   return body.success === true
+}
+
+export async function ctfdGetTeamRank(teamId: number): Promise<number | null> {
+  try {
+    const res = await fetch(`${BASE}/api/v1/scoreboard`, {
+      headers: ctfdHeaders(),
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+
+    const body: CTFdResponse<CTFdStanding[]> = await res.json()
+    if (!body.data) return null
+
+    const standing = body.data.find(s => s.account_id === teamId)
+    return standing?.pos ?? null
+  } catch {
+    return null
+  }
 }

@@ -1,43 +1,36 @@
-// data/sidebar.ts
-import {
-  IconHome,
-  IconFlag,
-  IconTrophy,
-  IconUser,
-  IconUsers,
-} from "@tabler/icons-react";
+import "@hackernoon/pixel-icon-library/fonts/iconfont.css";
 import type { ComponentType } from "react";
 
 export type SidebarLinkData = {
   label: string;
   href: string;
-  icon: ComponentType<{ className?: string }>;
+  iconClass: string;
 };
 
 export const sidebarLinks: SidebarLinkData[] = [
   {
     label: "Home",
     href: "/home",
-    icon: IconHome,
+    iconClass: "hn hn-home-solid",
   },
   {
     label: "Challenges",
     href: "/challenges",
-    icon: IconFlag,
+    iconClass: "hn hn-flag-solid",
   },
   {
     label: "Scoreboard",
-    href: "/scoreboard",
-    icon: IconTrophy,
+    href: "/home#scoreboard",
+    iconClass: "hn hn-trophy-solid",
   },
   {
     label: "Profile",
     href: "/dashboard/profile",
-    icon: IconUser,
+    iconClass: "hn hn-user-solid",
   },
   {
     label: "Team",
     href: "/dashboard/team",
-    icon: IconUsers,
+    iconClass: "hn hn-users-solid",
   },
 ];

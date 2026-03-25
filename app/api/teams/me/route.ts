@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { sessionOptions, SessionData } from '@/lib/session'
-import { ctfdGetTeam, ctfdGetTeamMemberIds, ctfdGetUser, getTeamInviteCode } from '@/lib/ctfd'
+import { ctfdGetTeam, ctfdGetTeamMemberIds, ctfdGetUser, getTeamInviteCode, ctfdGetTeamRank } from '@/lib/ctfd'
 import { TeamDashboardData } from '@/lib/types/ctfd'
 
 export async function GET() {
@@ -16,7 +16,11 @@ export async function GET() {
   }
 
   // ── Paso 1: Datos del equipo (nombre, captain_id, fields) ──────
-  const team = await ctfdGetTeam(session.teamId)
+  const [team, rank] = await Promise.all([
+    ctfdGetTeam(session.teamId),
+    ctfdGetTeamRank(session.teamId),
+  ])
+
   if (!team) {
     return NextResponse.json({ error: 'Equipo no encontrado' }, { status: 404 })
   }
@@ -38,11 +42,13 @@ export async function GET() {
       isCaptain: u.id === team.captain_id,
       isMe: u.id === session.userId,
     }))
-    .sort((a, b) => b.score - a.score)  // ordenar por score desc
+    .sort((a, b) => b.score - a.score)
 
   const payload: TeamDashboardData = {
     teamId: team.id,
     teamName: team.name,
+    teamScore: team.score,
+    teamRank: team.rank ?? null,
     inviteCode: getTeamInviteCode(team),
     captainId: team.captain_id,
     isCaptain: team.captain_id === session.userId,

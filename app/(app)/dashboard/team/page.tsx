@@ -118,6 +118,49 @@ export default function TeamDashboardPage() {
             {data.teamName}
           </h1>
 
+          {/* Score total del equipo */}
+          <div className="mt-4 flex items-center gap-6 flex-wrap">
+
+            {/* Puntaje */}
+            <div className="flex flex-col">
+              <span className="font-mono text-[10px] tracking-[0.3em] text-white/30 uppercase">
+                Score Total
+              </span>
+              <span
+                className="font-mono text-2xl font-bold text-[#EF01BA]"
+                style={{ textShadow: "0 0 12px rgba(239,1,186,0.4)" }}
+              >
+                {data.teamScore.toLocaleString()} <span className="text-sm text-white/30">pts</span>
+              </span>
+            </div>
+
+            {/* Separador vertical */}
+            <div className="w-px h-10 bg-white/10 hidden sm:block" />
+
+            {/* Ranking */}
+            <div className="flex flex-col">
+              <span className="font-mono text-[10px] tracking-[0.3em] text-white/30 uppercase">
+                Posición
+              </span>
+              <span className="font-mono text-2xl font-bold text-[#00F0FF]">
+                #{data.teamRank ?? "—"}
+              </span>
+            </div>
+
+            {/* Separador vertical */}
+            <div className="w-px h-10 bg-white/10 hidden sm:block" />
+
+            {/* Miembros activos */}
+            <div className="flex flex-col">
+              <span className="font-mono text-[10px] tracking-[0.3em] text-white/30 uppercase">
+                Miembros
+              </span>
+              <span className="font-mono text-2xl font-bold text-white/60">
+                {data.members.length}
+              </span>
+            </div>
+          </div>
+
           {error && (
             <p className="font-mono text-xs text-red-400 mt-3">[!] {error}</p>
           )}
@@ -160,8 +203,12 @@ export default function TeamDashboardPage() {
                 <h2 className="font-mono text-xs tracking-[0.25em] text-[#00F0FF] uppercase mb-3">Token de invitación</h2>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Input value={data.inviteCode ?? "—"} readOnly className="bg-black/60 border-white/20 rounded-none" />
-                  <Button variant="ghost" onClick={handleCopyToken}
-                    className="font-mono text-xs text-[#00F0FF] hover:text-black hover:bg-[#00F0FF] rounded-none">
+                  <Button
+                    variant="ghost"
+                    onClick={handleCopyToken}
+                    className="font-mono text-xs text-[#00F0FF] hover:text-black hover:bg-[#00F0FF] rounded-none"
+                  >
+                    <i className="hn hn-copy text-base" aria-hidden="true" />
                     [ COPIAR ]
                   </Button>
                 </div>

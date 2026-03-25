@@ -51,6 +51,8 @@ export interface CTFdTeam {
   hidden: boolean
   banned: boolean
   captain_id: number | null
+  score: number;
+  rank?: number;
   created: string
   fields: CTFdFieldEntry[]
 }
@@ -66,8 +68,17 @@ export interface TeamMemberData {
 export interface TeamDashboardData {
   teamId: number
   teamName: string
+  teamScore: number
+  teamRank: number | null
   inviteCode: string | null
   captainId: number | null
   isCaptain: boolean
   members: TeamMemberData[]
+}
+
+export interface CTFdStanding {
+  pos: number
+  account_id: number
+  name: string
+  score: number
 }

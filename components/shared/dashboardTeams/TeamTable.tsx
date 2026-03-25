@@ -68,9 +68,12 @@ export function TeamTable({
                     {member.username}
                   </span>
                   {member.role === "captain" && (
-                    <span className="px-2 py-0.5 text-[10px] bg-[#EF01BA]/20 text-[#EF01BA] border border-[#EF01BA]/50 rounded-sm">
-                      CAPITÁN
-                    </span>
+                    <i
+                      className="hn hn-crown-solid text-[#EF01BA] text-sm"
+                      style={{ filter: "drop-shadow(0 0 4px #EF01BA)" }}
+                      aria-label="Capitán"
+                      title="Capitán"
+                    />
                   )}
                   {member.isMe && (
                     <span className="text-[10px] text-white/40 ml-2">(Tú)</span>
@@ -101,14 +104,15 @@ export function TeamTable({
                   {/* ACCIONES DE CAPITÁN: Promover y Expulsar (Visible en filas de otros) */}
                   {currentUserRole === "captain" && !member.isMe && (
                     <>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => onPromote && onPromote(member.id)}
-                        className="font-mono text-xs text-[#00F0FF] hover:text-black hover:bg-[#00F0FF] transition-colors rounded-none h-8"
-                      >
-                        [ ASIGNAR CAPITAN ]
-                      </Button>
+                      <Button
+  variant="ghost"
+  size="sm"
+  onClick={() => onPromote && onPromote(member.id)}
+  className="font-mono text-xs text-[#00F0FF] hover:text-black hover:bg-[#00F0FF] transition-colors rounded-none h-8"
+>
+  <i className="hn hn-crown-solid text-sm" aria-hidden="true" />
+  [ ASIGNAR CAPITÁN ]
+</Button>
                       <Button 
                         variant="ghost" 
                         size="sm"
