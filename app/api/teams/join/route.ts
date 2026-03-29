@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { sessionOptions, SessionData } from '@/lib/session'
-import { ctfdFindTeamByName, ctfdAddTeamMember, getTeamInviteCode } from '@/lib/ctfd'
+import { ctfdFindTeamByName, ctfdAddTeamMember, getTeamInviteCode, ctfdGetTeamMemberIds } from '@/lib/ctfd'
+
+const MAX_TEAM_SIZE = process.env.NEXT_PUBLIC_MAX_TEAM_SIZE;
 
 export async function POST(req: Request) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -33,6 +35,17 @@ export async function POST(req: Request) {
   const inviteCode = getTeamInviteCode(team)
   if (!inviteCode || inviteCode !== token.trim()) {
     return NextResponse.json({ field: 'token', error: 'Token de invitación incorrecto' }, { status: 401 })
+  }
+
+  if (MAX_TEAM_SIZE) {
+    console.log('[join] Verificando tamaño del equipo...')
+    const memberIds = await ctfdGetTeamMemberIds(team.id)
+    if (memberIds.length >= parseInt(MAX_TEAM_SIZE, 10)) {
+      return NextResponse.json(
+        { field: 'name', error: `El equipo ya está lleno (máx. ${MAX_TEAM_SIZE} miembros)` },
+        { status: 400 }
+      )
+    }
   }
 
   // Agregar miembro vía admin token

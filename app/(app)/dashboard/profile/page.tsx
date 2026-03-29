@@ -377,7 +377,7 @@ export default function ProfileDashboardPage() {
               <p className="font-mono text-white/20 text-sm">
                 Sin actividad registrada. Ve a{" "}
                 <button
-                  onClick={() => router.push("/dashboard/challenges")}
+                  onClick={() => router.push("/challenges")}
                   className="text-[#EF01BA]/60 hover:text-[#EF01BA] transition-colors underline"
                 >
                   Challenges

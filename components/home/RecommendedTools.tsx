@@ -5,12 +5,9 @@ import SectionHeader from "@/components/shared/SectionHeader";
 import { CtfCard } from "@/components/shared/CtfCard";
 
 const TOOL_STYLES: Record<string, { iconClass: string; colorClass: string; metaColorClass: string }> = {
-  Docker: { iconClass: "hn hn-users-solid", colorClass: "text-cyan-300", metaColorClass: "text-cyan-300/80" },
-  "Kali Linux": { iconClass: "hn hn-user-solid", colorClass: "text-purple", metaColorClass: "text-purple/80" },
-  "Burp Suite": { iconClass: "hn hn-flag-solid", colorClass: "text-orange", metaColorClass: "text-orange/80" },
-  Wireshark: { iconClass: "hn hn-calender-solid", colorClass: "text-yellow", metaColorClass: "text-yellow/80" },
-  CyberChef: { iconClass: "hn hn-trophy-solid", colorClass: "text-pink", metaColorClass: "text-pink/80" },
-  Ghidra: { iconClass: "hn hn-flag-solid", colorClass: "text-red-400", metaColorClass: "text-red-400/80" },
+  Docker: { iconClass: "hn hn-download-alt-solid", colorClass: "text-cyan-300", metaColorClass: "text-cyan-300/80" },
+  "Kali Linux": { iconClass: "hn hn-download-alt-solid", colorClass: "text-purple", metaColorClass: "text-purple/80" },
+  "Burp Suite": { iconClass: "hn hn-download-alt-solid", colorClass: "text-orange", metaColorClass: "text-orange/80" },
 };
 
 export default function RecommendedTools() {

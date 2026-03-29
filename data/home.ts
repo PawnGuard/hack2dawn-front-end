@@ -9,13 +9,13 @@ export const howItWorksSteps: Step[] = [
   {
     number: 1,
     title: "Registrarse",
-    description: "Crea tu cuenta en la plataforma y verifica tu correo institucional.",
+    description: "Crea tu cuenta en la plataforma e incia sesión.",
     icon: "UserPlus",
   },
   {
     number: 2,
     title: "Unirse a equipo",
-    description: "Forma un equipo con tus compañeros o únete a uno existente.",
+    description: "Forma un equipo y comparte el token con tus compañeros o unete a uno.",
     icon: "Users",
   },
   {
@@ -27,8 +27,8 @@ export const howItWorksSteps: Step[] = [
   {
     number: 4,
     title: "Correr lab",
-    description: "Levanta el entorno con Docker y comienza a explorar las vulnerabilidades.",
-    icon: "Terminal",
+    description: "Levanta el entorno con Docker y comienza a explorar las vulnerabilidades. Ve a /challenges para revisar como correr los labs localmente.",
+    icon: "Run",
   },
   {
     number: 5,
@@ -54,47 +54,26 @@ export interface Tool {
 
 export const recommendedTools: Tool[] = [
   {
-    name: "Docker",
-    description: "Plataforma de contenedores para correr los laboratorios del CTF.",
-    iconSlug: "docker",
-    downloadUrl: "https://www.docker.com/get-started/",
-    color: "#2496ED",
-  },
-  {
     name: "Kali Linux",
-    description: "Distribución Linux con herramientas de pentesting preinstaladas.",
-    iconSlug: "kalilinux",
+    description: "Distribución Linux con herramientas de pentesting preinstaladas. O cualquier distro de tu preferencia.",
+    iconSlug: "Download",
     downloadUrl: "https://www.kali.org/get-kali/",
     color: "#557C94",
   },
   {
+    name: "Docker",
+    description: "Plataforma de contenedores para correr los laboratorios del CTF.",
+    iconSlug: "Download",
+    downloadUrl: "https://www.docker.com/get-started/",
+    color: "#2496ED",
+  },
+  {
     name: "Burp Suite",
     description: "Proxy de interceptación para análisis de tráfico web.",
-    iconSlug: "burpsuite",
+    iconSlug: "Download",
     downloadUrl: "https://portswigger.net/burp/communitydownload",
     color: "#FF6633",
-  },
-  {
-    name: "Wireshark",
-    description: "Analizador de protocolos de red para inspeccionar paquetes.",
-    iconSlug: "wireshark",
-    downloadUrl: "https://www.wireshark.org/download.html",
-    color: "#1679A7",
-  },
-  {
-    name: "CyberChef",
-    description: "Herramienta web para decodificar, cifrar y analizar datos.",
-    iconSlug: "cyberchef",
-    downloadUrl: "https://gchq.github.io/CyberChef/",
-    color: "#00B4D8",
-  },
-  {
-    name: "Ghidra",
-    description: "Framework de ingeniería inversa de la NSA para análisis de binarios.",
-    iconSlug: "ghidra",
-    downloadUrl: "https://ghidra-sre.org/",
-    color: "#E4002B",
-  },
+  }
 ];
 
 export interface ImportantNote {
@@ -106,6 +85,12 @@ export interface ImportantNote {
 
 export const importantNotes: ImportantNote[] = [
   {
+    title: "Infraestructura TEC y H2D",
+    content: "Queda prohibido atacar la infraestructura del Tec o la plataforma del CTF. Todo movimineto en la red esta siendo monitoreado y cualquier actividad sospechosa será sancionada con la descalificación inmediata y reporte al TEC.",
+    icon: "ShieldAlert",
+    accentColor: "#FEF759",
+  },
+  {
     title: "Formato de flag",
     content: "Todas las flags siguen el formato H2D{texto_aqui}. Asegúrate de incluir el prefijo completo.",
     icon: "Flag",
@@ -113,15 +98,9 @@ export const importantNotes: ImportantNote[] = [
   },
   {
     title: "Límite de equipo",
-    content: "Máximo 4 integrantes por equipo. No se permite cambiar de equipo una vez iniciado el CTF.",
+    content: "Máximo 4 integrantes por equipo. No se permiten equipos con más miembros, ni compartir cuentas entre equipos.",
     icon: "Users",
     accentColor: "#F77200",
-  },
-  {
-    title: "Infraestructura",
-    content: "Queda prohibido atacar la infraestructura del Tec o la plataforma del CTF. Solo ataca los labs.",
-    icon: "ShieldAlert",
-    accentColor: "#FEF759",
   },
   {
     title: "Canal de Discord",

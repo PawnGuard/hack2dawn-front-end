@@ -1,6 +1,7 @@
 // components/shared/hero/HeroContent.tsx
 import { EncryptedText } from "@/components/ui/encrypted-text";
-import { EVENT_DATE } from "@/data/event";
+
+const EVENT_DATE = process.env.NEXT_PUBLIC_EVENT_START!;
 
 const formattedDateMX = new Intl.DateTimeFormat("es-MX", {
   day: "2-digit",
@@ -10,7 +11,7 @@ const formattedDateMX = new Intl.DateTimeFormat("es-MX", {
   minute: "2-digit",
   timeZone: "America/Mexico_City",
   hour12: false,
-}).format(EVENT_DATE).toUpperCase().replace(",", " ·");
+}).format(new Date(EVENT_DATE)).toUpperCase().replace(",", " ·");
 
 export default function HeroContent() {
   return (

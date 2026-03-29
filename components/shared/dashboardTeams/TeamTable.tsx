@@ -9,6 +9,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import ConfirmDialog, { type ConfirmOptions } from "@/components/shared/ConfirmDialog";
+import { useState } from "react";
 
 // Interfaces basadas en tu SRS
 export interface TeamMember {
@@ -22,9 +24,9 @@ export interface TeamMember {
 interface TeamTableProps {
   members: TeamMember[];
   currentUserRole: "captain" | "member";
-  onLeave: (memberId: string) => void;
-  onKick?: (memberId: string) => void;
-  onPromote?: (memberId: string) => void;
+  onLeave: (memberId: string) => void | Promise<void>;
+  onKick?: (memberId: string) => void | Promise<void>;
+  onPromote?: (memberId: string) => void | Promise<void>;
   canLeaveSelf?: boolean;
 }
 
@@ -36,6 +38,67 @@ export function TeamTable({
   onPromote,
   canLeaveSelf = true,
 }: TeamTableProps) {
+  const [confirm, setConfirm] = useState<ConfirmOptions | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const openConfirm = (opts: ConfirmOptions) => setConfirm(opts);
+
+  const closeConfirm = () => {
+    if (actionLoading) return;
+    setConfirm(null);
+  };
+
+  const runConfirmedAction = async (action: () => void | Promise<void>) => {
+    setActionLoading(true);
+    try {
+      await Promise.resolve(action());
+      setConfirm(null);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleLeave = (memberId: string) => {
+    openConfirm({
+      title: "ABANDONAR EQUIPO",
+      message: "Vas a salir de tu equipo actual. Esta acción no se puede deshacer.",
+      confirmLabel: "ABANDONAR",
+      cancelLabel: "CANCELAR",
+      variant: "danger",
+      onConfirm: () => {
+        void runConfirmedAction(() => onLeave(memberId));
+      },
+    });
+  };
+
+  const handleKick = (memberId: string, username: string) => {
+    if (!onKick) return;
+    openConfirm({
+      title: "ELIMINAR INTEGRANTE",
+      message: `Se expulsara a ${username} del equipo. Esta acción no se puede deshacer.`,
+      confirmLabel: "ELIMINAR",
+      cancelLabel: "CANCELAR",
+      variant: "danger",
+      onConfirm: () => {
+        void runConfirmedAction(() => onKick(memberId));
+      },
+    });
+  };
+
+  const handlePromote = (memberId: string, username: string) => {
+    if (!onPromote) return;
+    openConfirm({
+      title: "ASIGNAR CAPITAN",
+      message: `${username} pasara a ser capitan del equipo.`,
+      confirmLabel: "CONFIRMAR",
+      cancelLabel: "CANCELAR",
+      variant: "warning",
+      onConfirm: () => {
+        void runConfirmedAction(() => onPromote(memberId));
+      },
+    });
+  };
+
   return (
     <div className="w-full border border-white/10 bg-black/60 backdrop-blur-md relative">
       {/* Esquinas decorativas tipo HUD */}
@@ -93,8 +156,8 @@ export function TeamTable({
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => onLeave(member.id)}
-                      disabled={!canLeaveSelf}
+                      onClick={() => handleLeave(member.id)}
+                      disabled={!canLeaveSelf || actionLoading}
                       className="font-mono text-xs text-[#FF003C] hover:text-white hover:bg-[#FF003C] transition-colors rounded-none h-8 disabled:text-white/30 disabled:hover:bg-transparent"
                     >
                       [ ABANDONAR ]
@@ -105,19 +168,21 @@ export function TeamTable({
                   {currentUserRole === "captain" && !member.isMe && (
                     <>
                       <Button
-  variant="ghost"
-  size="sm"
-  onClick={() => onPromote && onPromote(member.id)}
-  className="font-mono text-xs text-[#00F0FF] hover:text-black hover:bg-[#00F0FF] transition-colors rounded-none h-8"
->
-  <i className="hn hn-crown-solid text-sm" aria-hidden="true" />
-  [ ASIGNAR CAPITÁN ]
-</Button>
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handlePromote(member.id, member.username)}
+                        disabled={actionLoading || !onPromote}
+                        className="font-mono text-xs text-[#00F0FF] hover:text-black hover:bg-[#00F0FF] transition-colors rounded-none h-8 disabled:text-white/30 disabled:hover:bg-transparent"
+                      >
+                        <i className="hn hn-crown-solid text-sm" aria-hidden="true" />
+                        [ ASIGNAR CAPITÁN ]
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        onClick={() => onKick && onKick(member.id)}
-                        className="font-mono text-xs text-[#FF003C] hover:text-white hover:bg-[#FF003C] transition-colors rounded-none h-8"
+                        onClick={() => handleKick(member.id, member.username)}
+                        disabled={actionLoading || !onKick}
+                        className="font-mono text-xs text-[#FF003C] hover:text-white hover:bg-[#FF003C] transition-colors rounded-none h-8 disabled:text-white/30 disabled:hover:bg-transparent"
                       >
                         [ ELIMINAR ]
                       </Button>
@@ -129,6 +194,15 @@ export function TeamTable({
           ))}
         </TableBody>
       </Table>
+
+      {confirm && (
+        <ConfirmDialog
+          open={Boolean(confirm)}
+          onCancel={closeConfirm}
+          loading={actionLoading}
+          {...confirm}
+        />
+      )}
     </div>
   );
 }

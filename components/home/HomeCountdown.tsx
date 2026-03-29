@@ -15,7 +15,7 @@ function DigitReel({ value, max }: { value: number; max: number }) {
   return (
     <div
       className="relative overflow-hidden digit-slot"
-      style={{ height: "var(--digit-h)", width: "clamp(28px, 3vw, 48px)" }}
+      style={{ height: "var(--digit-h)", width: "clamp(38px, 4.4vw, 68px)" }}
     >
       <div
         className="flex flex-col"
@@ -30,7 +30,7 @@ function DigitReel({ value, max }: { value: number; max: number }) {
             className="font-heading tabular-nums flex items-center justify-center"
             style={{
               height: "var(--digit-h)",
-              fontSize: "clamp(1.75rem, 3vw, 3.25rem)",
+              fontSize: "clamp(2.35rem, 5vw, 5.2rem)",
               lineHeight: 1,
             }}
           >
@@ -58,7 +58,7 @@ function TimeUnit({
         <DigitReel value={Math.floor(clamped / 10)} max={maxTens} />
         <DigitReel value={clamped % 10} max={9} />
       </div>
-      <span className="font-mono text-[10px] tracking-widest mt-1 opacity-50 uppercase">
+      <span className="font-mono text-[11px] md:text-xs tracking-[0.22em] mt-2 opacity-85 uppercase">
         {label}
       </span>
     </div>
@@ -67,11 +67,11 @@ function TimeUnit({
 
 function Separator() {
   return (
-    <div className="flex items-end pb-6">
+    <div className="flex items-end pb-7 md:pb-8">
       <span
-        className="font-display opacity-40"
+        className="font-display opacity-80"
         style={{
-          fontSize: "clamp(1.75rem, 3vw, 3.25rem)",
+          fontSize: "clamp(2.35rem, 5vw, 5.2rem)",
           lineHeight: 1,
         }}
       >
@@ -149,12 +149,12 @@ export default function HomeCountdown() {
 
   return (
     <div className="text-center">
-      <p className="font-heading text-sm md:text-base tracking-widest uppercase opacity-60 mb-6">
+      <p className="font-heading text-base md:text-xl tracking-[0.18em] uppercase opacity-85 mb-7 md:mb-9">
         {label}
       </p>
 
       <div
-        className={`inline-flex items-start gap-1 md:gap-3 ${pulseClass}`}
+        className={`inline-flex items-start gap-2 md:gap-4 [--digit-h:clamp(2.9rem,5.3vw,5.9rem)] ${pulseClass}`}
         style={{ color: accentColor }}
       >
         {isBefore && (
