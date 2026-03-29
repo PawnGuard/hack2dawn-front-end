@@ -71,7 +71,7 @@ This project uses a modern, component-based architecture.
 
 ## 📂 Project Structure
 
-### Estructura General
+### Estructura General (no actualizado)
 ```text
 ├── app                 → Todas las páginas del proyecto (Next.js App Router)
 │   ├── (app)           → Páginas privadas (requieren autenticación)
