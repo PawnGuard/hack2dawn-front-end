@@ -107,9 +107,11 @@
     @apply font-sans; 
   }
 
-  /* Aplica el cursor al body por defecto */
-  body, a, button, input, select, textarea, .cursor-pointer, *:hover {
-    cursor: none !important;
+  /* Oculta cursor nativo solo en dispositivos con puntero fino (mouse/trackpad) */
+  @media (pointer: fine) {
+    body, a, button, input, select, textarea, .cursor-pointer, *:hover {
+      cursor: none !important;
+    }
   }
 
   h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
