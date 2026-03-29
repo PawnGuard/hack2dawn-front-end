@@ -1,4 +1,3 @@
-// HeroSection.tsx
 'use client';
 
 import { useState } from 'react';
@@ -6,7 +5,8 @@ import CallToAction from './CallToAction';
 import HeroBackground from './HeroBackground';
 import HeroContent from './HeroContent';
 import HeroCountdown from './HeroCountdown';
-import { EVENT_DATE } from '@/data/event';
+
+const EVENT_DATE = process.env.NEXT_PUBLIC_EVENT_START!;
 
 export default function HeroSection() {
   const [videoReady, setVideoReady] = useState(false);
@@ -30,7 +30,7 @@ export default function HeroSection() {
         }}
       >
         <HeroContent />
-        <HeroCountdown targetDate={EVENT_DATE} />
+        <HeroCountdown targetDate={new Date(EVENT_DATE)} />
         <CallToAction />
       </div>
 
