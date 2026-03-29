@@ -64,7 +64,7 @@ export function LoginForm() {
 
       // iron-session ya seteó la cookie httpOnly → redirigir
       router.refresh(); // ← Actualiza el Server Component layout para que UserProvider tenga los datos frescos
-      router.push("/dashboard");
+      router.push("/dashboard/team");
     } catch {
       setError("No se pudo conectar al servidor. Intenta de nuevo.");
     } finally {
@@ -178,7 +178,7 @@ export function LoginForm() {
             </LabelInputContainer>
 
             {/* Recuérdame */}
-            <div className="flex items-center justify-between pt-1">
+            {/* <div className="flex items-center justify-between pt-1">
               <label className="flex items-center gap-2 cursor-pointer">
                 <div
                   onClick={() => setRememberMe(!rememberMe)}
@@ -205,7 +205,7 @@ export function LoginForm() {
                 style={{ color: "rgba(255,255,255,0.3)" }}>
                 ¿Olvidaste tu contraseña?
               </a>
-            </div>
+            </div> */}
 
             <SunsetDivider />
             {error && (

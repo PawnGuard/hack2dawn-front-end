@@ -1,8 +1,8 @@
 import type { CtfPhase, CtfConfig, CtfState, CountdownTime } from "@/types/ctf";
 
 export function getCtfConfig(): CtfConfig {
-  const startStr = process.env.NEXT_PUBLIC_CTF_START;
-  const endStr = process.env.NEXT_PUBLIC_CTF_END;
+  const startStr = process.env.NEXT_PUBLIC_EVENT_START;
+  const endStr = process.env.NEXT_PUBLIC_EVENT_END;
 
   const fallbackStart = new Date("2026-05-09T21:00:00Z");
   const fallbackEnd = new Date("2026-05-10T07:00:00Z");

@@ -39,4 +39,5 @@ export const footerConfig: FooterConfig = {
     { label: 'Instagram',    href: 'https://www.instagram.com/pawnguard/', icon: InstagramIcon    },
     { label: 'Linkedin',    href: 'https://www.linkedin.com/company/pawnguard', icon: LinkedinIcon    },
   ],
+  
 };

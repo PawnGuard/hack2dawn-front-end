@@ -42,7 +42,6 @@ export default function TeamDashboardPage() {
   }
 
   const handlePromote = async (memberId: string) => {
-    if (!window.confirm(`¿Asignar capitanía a este miembro?`)) return
     const res = await fetch("/api/teams/me/captain", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -52,7 +51,6 @@ export default function TeamDashboardPage() {
   }
 
   const handleKick = async (memberId: string) => {
-    if (!window.confirm("¿Expulsar a este miembro?")) return
     const res = await fetch("/api/teams/me/members", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -62,7 +60,6 @@ export default function TeamDashboardPage() {
   }
 
   const handleLeave = async () => {
-    if (!window.confirm("¿Abandonar el equipo?")) return
     const res = await fetch("/api/teams/me/members", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -289,7 +286,7 @@ export default function TeamDashboardPage() {
         <TeamTable
           members={members}
           currentUserRole={isCaptain ? "captain" : "member"}
-          onLeave={() => handleLeave()}
+          onLeave={handleLeave}
           onKick={handleKick}
           onPromote={handlePromote}
           canLeaveSelf={!isCaptain}

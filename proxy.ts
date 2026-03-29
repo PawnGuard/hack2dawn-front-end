@@ -3,14 +3,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import { unsealData } from 'iron-session'
 import { SessionData, COOKIE_NAME, SESSION_PASSWORD } from '@/lib/session'
 
+function getEventWindow() {
+  return {
+    start: new Date(process.env.EVENT_START!),
+    end:   new Date(process.env.EVENT_END!),
+  }
+}
+
+function isEventActive(): boolean {
+  const now = new Date()
+  const { start, end } = getEventWindow()
+  return now >= start && now <= end
+}
+
+function isEventOver(): boolean {
+  return new Date() > new Date(process.env.EVENT_END!)
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ── Leer y descifrar la sesión (solo lectura, sin escribir) ──
   let session: Partial<SessionData> = {}
-
   const cookieValue = request.cookies.get(COOKIE_NAME)?.value
-
   if (cookieValue) {
     try {
       // unsealData solo descifra → no necesita acceso de escritura
@@ -28,6 +43,8 @@ export async function proxy(request: NextRequest) {
   const isAdmin    = session.isAdmin === true
 
   // ── Grupos de rutas ──────────────────────────────────────────
+  const EVENT_LOCKED_ROUTES = ['/challenges']
+
   const isAuthRoute = ['/login', '/register'].some(r => pathname.startsWith(r))
 
   const isProtectedRoute = ['/home', '/challenges', '/scoreboard', '/dashboard'].some(
@@ -42,6 +59,15 @@ export async function proxy(request: NextRequest) {
   const isTeamDashboard = pathname.startsWith('/dashboard/team') && !isTeamSelect
 
   // ── Reglas en orden de prioridad ─────────────────────────────
+  const isEventRoute = EVENT_LOCKED_ROUTES.some(r => pathname.startsWith(r))
+
+  if (isEventRoute && isLoggedIn && !isAdmin) {
+    if (!isEventActive()) {
+      // Redirigir a página de countdown/locked
+      const dest = isEventOver() ? '/event-ended' : '/home'
+      return NextResponse.redirect(new URL(dest, request.url))
+    }
+  }
 
   // REGLA 1: Auth routes → si ya estás logueado, redirigir fuera
   if (isAuthRoute && isLoggedIn) {
