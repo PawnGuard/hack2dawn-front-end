@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
+import { Sidebar, SidebarLink } from "@/components/ui/sidebar";
 import { sidebarLinks } from "@/data/sidebar";
 import Image from "next/image";
 
@@ -39,13 +39,19 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
-  // El contenido interno del sidebar (idéntico al original)
-  const sidebarContent = (
-    <Sidebar open={open} setOpen={setOpen}>
-      <SidebarBody className="flex flex-col justify-between gap-10 bg-[#08000f]">
+  const renderSidebarContent = (mobile: boolean) => (
+    <Sidebar open={mobile ? true : open} setOpen={setOpen}>
+      <motion.div
+        className="flex h-full flex-col justify-between gap-10 bg-[#08000f] px-4 py-4"
+        animate={{
+          width: mobile ? "260px" : (open ? "180px" : "60px"),
+        }}
+        onMouseEnter={mobile ? undefined : () => setOpen(true)}
+        onMouseLeave={mobile ? undefined : () => setOpen(false)}
+      >
         {/* ── Logo + Nav ── */}
         <div className="flex flex-col flex-1 overflow-x-hidden overflow-y-auto">
-          {open ? <Logo /> : <LogoIcon />}
+          {mobile || open ? <Logo /> : <LogoIcon />}
           <div className="mt-4 mb-2 h-px bg-[#2a003f]" />
           <nav className="mt-2 flex flex-col gap-1">
             {sidebarLinks.map((link) => (
@@ -79,7 +85,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
             height={28}
             className="flex-shrink-0 rounded-none"
           />
-          {open && (
+          {(mobile || open) && (
             <>
               <motion.div
                 initial={{ opacity: 0 }}
@@ -106,12 +112,12 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
             </>
           )}
         </div>
-      </SidebarBody>
+      </motion.div>
     </Sidebar>
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0a0006]">
+    <div className="flex h-[100dvh] overflow-hidden bg-[#0a0006]">
 
       {/* ── BOTÓN HAMBURGUESA — solo visible en móvil ─────────── */}
       <button
@@ -176,12 +182,12 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
         className="relative z-50 flex-shrink-0 hidden md:block"
         style={{ borderRight: "1px solid #2a003f" }}
       >
-        {sidebarContent}
+        {renderSidebarContent(false)}
       </div>
 
       {/* ── SIDEBAR MÓVIL — drawer deslizable ─────────────────── */}
       <motion.div
-        className="md:hidden fixed top-0 left-0 h-full z-40"
+        className="md:hidden fixed top-0 left-0 h-[100dvh] z-40"
         style={{ borderRight: "1px solid #2a003f" }}
         initial={false}
         animate={{
@@ -189,11 +195,11 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
         }}
         transition={{ type: "tween", duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       >
-        {sidebarContent}
+        {renderSidebarContent(true)}
       </motion.div>
 
       {/* ── CONTENIDO PRINCIPAL ───────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
+      <main className="flex-1 min-w-0 overflow-y-auto pt-14 md:pt-0">
         {/*
           pt-14 en móvil → deja espacio libre para el botón hamburguesa.
           md:pt-0 → en desktop no hay botón, el padding desaparece.

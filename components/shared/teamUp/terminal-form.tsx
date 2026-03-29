@@ -21,7 +21,6 @@ export function TerminalForm({ mode, onBack, colorBlue, colorRed }: TerminalForm
   const [inputValue, setInputValue] = useState("");      // nombre del equipo (join) o nombre del equipo (create)
   const [tokenValue, setTokenValue] = useState("");      // token de invitación (solo join)
   const [error, setError] = useState("");
-  const [teamCode, setTeamCode] = useState<string | null>(null)
 
   const isJoin = mode === "join";
   const activeColor = isJoin ? colorBlue : colorRed;
@@ -67,7 +66,7 @@ export function TerminalForm({ mode, onBack, colorBlue, colorRed }: TerminalForm
       const res = await fetch("/api/teams/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: inputValue, password: generatedCode }),
+        body: JSON.stringify({ name: inputValue.trim(), password: generatedCode }),
       });
 
       const data = await res.json();
@@ -78,58 +77,13 @@ export function TerminalForm({ mode, onBack, colorBlue, colorRed }: TerminalForm
         return;
       }
 
-      setTeamCode(generatedCode);
-      setIsLoading(false);
+      router.refresh();
+      router.push("/dashboard/team");
     } catch {
       setError("No se pudo conectar con el servidor.");
       setIsLoading(false);
     }
   };
-
-  if (teamCode) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative max-w-md w-full"
-      >
-        <div
-          className="inline-block px-3 py-1 text-xs font-mono mb-0 rounded-t border border-b-0"
-          style={{ borderColor: activeColor, color: activeColor }}
-        >
-          ~/team/create/success_
-        </div>
-        <div
-          className="relative border rounded-b-lg rounded-tr-lg p-8 font-mono"
-          style={{ borderColor: activeColor }}
-        >
-          <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2"
-            style={{ borderColor: activeColor }}
-          />
-          <p className="text-green-400 text-sm mb-1">[✓] EQUIPO INICIALIZADO</p>
-          <p className="text-white/40 text-sm mb-8">
-            Comparte este token con tu equipo para que puedan unirse:
-          </p>
-          <div
-            className="text-4xl font-bold tracking-[0.3em] text-center py-5 px-6 rounded-md border mb-3"
-            style={{ color: activeColor, borderColor: `${activeColor}44`, backgroundColor: `${activeColor}0F` }}
-          >
-            {teamCode}
-          </div>
-          <p className="text-white/30 text-xs text-center mb-8">
-            ⚠ Guárdalo ahora — no se volverá a mostrar.
-          </p>
-          <Button
-            onClick={() => { router.refresh(); router.push("/dashboard/team"); }}
-            className="w-full font-mono font-bold"
-            style={{ backgroundColor: activeColor }}
-          >
-            IR AL DASHBOARD →
-          </Button>
-        </div>
-      </motion.div>
-    );
-  }
 
   return (
     <motion.div
