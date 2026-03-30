@@ -4,6 +4,7 @@ const BASE = process.env.CTFD_BASE_URL!
 const ADMIN_TOKEN = process.env.CTFD_ADMIN_TOKEN!
 const NGINX_SECRET = process.env.NGINX_INTERNAL_SECRET!
 const INVITE_CODE_FIELD_ID = 3  
+const TEC_CAMPUS_FIELD_ID = Number(process.env.CTFD_TEC_CAMPUS_FIELD_ID)
 
 function ctfdHeaders(): HeadersInit {
   return {
@@ -20,9 +21,18 @@ export async function ctfdCreateUser(payload: {
   name: string
   email: string
   password: string
+  isTecCampus: boolean
 }): Promise<CTFdResponse<CTFdUser>> {
 
   const url = `${BASE}/api/v1/users`
+  const customFields = Number.isFinite(TEC_CAMPUS_FIELD_ID)
+    ? [
+        {
+          field_id: TEC_CAMPUS_FIELD_ID,
+          value: payload.isTecCampus ? 'true' : 'false',
+        },
+      ]
+    : []
 
   const res = await fetch(url, {
     method: 'POST',
@@ -35,7 +45,7 @@ export async function ctfdCreateUser(payload: {
       verified: true,
       hidden: false,
       banned: false,
-      fields: [],
+      fields: customFields,
     }),
     cache: 'no-store', // Mutación → nunca cachear
   })
