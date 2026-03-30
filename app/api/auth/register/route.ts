@@ -5,10 +5,11 @@ import { ctfdCreateUser } from '@/lib/ctfd'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { name, email, password } = body as {
+    const { name, email, password, isTecCampus } = body as {
       name: string
       email: string
       password: string
+      isTecCampus?: boolean
     }
 
     // ── Validación básica en el servidor (nunca confíes solo en el cliente) ──
@@ -30,9 +31,15 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       )
     }
+    if (typeof isTecCampus !== 'boolean') {
+      return NextResponse.json(
+        { error: 'El campo de campus TEC es inválido', field: 'isTecCampus' },
+        { status: 400 },
+      )
+    }
 
     // ── Crear usuario en CTFd via admin token ───────────────────
-    const result = await ctfdCreateUser({ name, email, password })
+    const result = await ctfdCreateUser({ name, email, password, isTecCampus })
 
     if (!result.success || !result.data) {
       const ctfdErrors = result.errors ?? {}
