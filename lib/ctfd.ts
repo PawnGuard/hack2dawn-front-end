@@ -43,6 +43,7 @@ export async function ctfdCreateUser(payload: {
       name: payload.name,
       email: payload.email,
       password: payload.password,
+      ...(payload.isTecCampus ? { affiliation: 'ITESM' } : {}),
       type: 'user',
       verified: true,
       hidden: false,
