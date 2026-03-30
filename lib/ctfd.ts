@@ -25,14 +25,16 @@ export async function ctfdCreateUser(payload: {
 }): Promise<CTFdResponse<CTFdUser>> {
 
   const url = `${BASE}/api/v1/users`
-  const customFields = Number.isFinite(TEC_CAMPUS_FIELD_ID)
-    ? [
-        {
-          field_id: TEC_CAMPUS_FIELD_ID,
-          value: payload.isTecCampus ? 'true' : 'false',
-        },
-      ]
-    : []
+  if (!Number.isFinite(TEC_CAMPUS_FIELD_ID)) {
+    throw new Error('CTFD_TEC_CAMPUS_FIELD_ID no está definido o no es numérico')
+  }
+
+  const customFields = [
+    {
+      field_id: TEC_CAMPUS_FIELD_ID,
+      value: payload.isTecCampus ? 'true' : 'false',
+    },
+  ]
 
   const res = await fetch(url, {
     method: 'POST',
