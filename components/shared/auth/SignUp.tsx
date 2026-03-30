@@ -200,6 +200,9 @@ export function SignupForm() {
               {errors.password && (
                 <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.password}</span>
               )}
+              <p className="font-mono text-[10px] tracking-[0.08em] mt-2 text-white/40">
+                Mínimo 8 caracteres. Recomendado: mayúscula, minúscula y número.
+              </p>
             </div>
 
             <div>
