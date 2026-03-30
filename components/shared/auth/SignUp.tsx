@@ -25,6 +25,7 @@ export function SignupForm() {
     email?: string;
     password?: string;
     confirm?: string;
+    isTecCampus?: string;
     server?: string;
   }>({});
 
@@ -41,6 +42,7 @@ export function SignupForm() {
     const email = (form.get("email") as string)?.trim();
     const password = form.get("password") as string;
     const confirm = form.get("confirm") as string;
+    const isTecCampus = form.get("isTecCampus") === "on";
 
     // ── Validaciones en cliente ───────────────────────────────
     const clientErrors: typeof errors = {};
@@ -70,7 +72,7 @@ export function SignupForm() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, isTecCampus }),
       });
 
       const data = await res.json();
@@ -212,6 +214,23 @@ export function SignupForm() {
               />
               {errors.confirm && (
                 <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.confirm}</span>
+              )}
+            </div>
+
+            <div className="rounded-md border border-white/20 bg-black/30 px-3 py-2">
+              <label htmlFor="isTecCampus" className="flex items-start gap-3 cursor-pointer">
+                <input
+                  id="isTecCampus"
+                  name="isTecCampus"
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-white/30 bg-black text-[#EF01BA]"
+                />
+                <span className="font-mono text-xs tracking-wider text-white/85">
+                  Soy parte del campus TEC
+                </span>
+              </label>
+              {errors.isTecCampus && (
+                <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.isTecCampus}</span>
               )}
             </div>
 
