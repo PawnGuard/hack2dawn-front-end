@@ -22,7 +22,7 @@ export default function HeroContent() {
                        border border-sw-cyan/60 px-4 py-1.5
                        shadow-[0_0_10px_rgba(0,255,255,0.3)]
                        backdrop-blur-sm bg-sw-cyan/5">
-        CTF · {formattedDateMX} MX
+        CTF · {formattedDateMX} - 19:30 MX
       </span>
 
       <h1 className="font-display text-4xl md:text-8xl text-sw-text leading-tight

@@ -62,12 +62,28 @@
   --color-white:        var(--ctf-lavender-mint);
 
   --animate-marquee: marquee 30s linear infinite;
+  --animate-sw-arrow: swArrow 1.4s ease-in-out infinite;
   --ease-slot: cubic-bezier(1,0,1,0);
   --digit-h: clamp(50px, 5.5vw, 80px);
 
   @keyframes marquee {
     from { transform: translateX(0); }
     to   { transform: translateX(-100%); }  /* ✅ -100% para dos contenedores separados */
+  }
+
+  @keyframes swArrow {
+    0%, 100% {
+      transform: translateY(0px);
+      opacity: 1;
+    }
+    40% {
+      transform: translateY(7px);
+      opacity: 0.6;
+    }
+    60% {
+      transform: translateY(7px);
+      opacity: 0.6;
+    }
   }
 
 }
