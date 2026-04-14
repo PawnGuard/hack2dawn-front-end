@@ -10,8 +10,76 @@ import {
   SunsetDivider,
 } from "./auth-ui";
 
-export function SignupForm() {
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DIGITS_REGEX = /^\d+$/;
+const STUDY_LEVEL_OPTIONS = ["Preparatoria", "Licenciatura", "Maestria", "Doctorado"];
+const SHIRT_SIZE_OPTIONS = ["CH", "M", "G", "XG", "XXG"];
 
+interface SynthwaveSelectFieldProps {
+  id: string;
+  name?: string;
+  label: string;
+  options: string[];
+  focusedField: string | null;
+  setFocusedField: (id: string | null) => void;
+  required?: boolean;
+}
+
+function SynthwaveSelectField({
+  id,
+  name,
+  label,
+  options,
+  focusedField,
+  setFocusedField,
+  required = false,
+}: SynthwaveSelectFieldProps) {
+  const isFocused = focusedField === id;
+
+  return (
+    <div className="flex w-full flex-col space-y-2">
+      <label
+        htmlFor={id}
+        className="font-mono text-xs tracking-widest transition-colors duration-300"
+        style={{ color: isFocused ? "#EF01BA" : "rgba(255,255,255,0.45)" }}
+      >
+        {label}
+      </label>
+      <div className="relative">
+        <select
+          id={id}
+          name={name ?? id}
+          required={required}
+          onFocus={() => setFocusedField(id)}
+          onBlur={() => setFocusedField(null)}
+          defaultValue=""
+          className="font-mono bg-transparent border-0 border-b-2 rounded-none text-white px-0 py-2 h-10 w-full focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none transition-all duration-300 text-sm appearance-none"
+          style={{
+            borderBottomColor: isFocused ? "#EF01BA" : "rgba(255,255,255,0.15)",
+            boxShadow: isFocused ? "0 4px 12px -4px #EF01BA60" : "none",
+          }}
+        >
+          <option value="" className="bg-[#140010] text-white/50">
+            Selecciona una opción
+          </option>
+          {options.map((option) => (
+            <option key={option} value={option} className="bg-[#140010] text-white">
+              {option}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute right-0 bottom-2 text-xs text-white/60">▾</span>
+      </div>
+    </div>
+  );
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {message}</span>;
+}
+
+export function SignupForm() {
   const router = useRouter();
   const submitLockRef = useRef(false);
 
@@ -21,8 +89,23 @@ export function SignupForm() {
   // ─── States de lógica de auth ─────────────────────────────────
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
+    firstName?: string;
+    lastName?: string;
     name?: string;
+    age?: string;
     email?: string;
+    phone?: string;
+    matricula?: string;
+    country?: string;
+    career?: string;
+    studyLevel?: string;
+    ctfsAttended?: string;
+    shirtSize?: string;
+    heardFrom?: string;
+    emergencyName?: string;
+    emergencyRelation?: string;
+    emergencyPhone?: string;
+    emergencyEmail?: string;
     password?: string;
     confirm?: string;
     isTecCampus?: string;
@@ -38,20 +121,87 @@ export function SignupForm() {
     setErrors({});
 
     const form = new FormData(e.currentTarget);
+    const getString = (key: string) => ((form.get(key) as string) ?? "").trim();
+
+    const firstName = getString("firstName");
+    const lastName = getString("lastName");
     const name = (form.get("name") as string)?.trim();
+    const ageRaw = getString("age");
     const email = (form.get("email") as string)?.trim();
+    const phone = getString("phone");
+    const matriculaRaw = getString("matricula");
+    const country = getString("country");
+    const career = getString("career");
+    const studyLevel = getString("studyLevel");
+    const ctfsAttendedRaw = getString("ctfsAttended");
+    const shirtSize = getString("shirtSize");
+    const heardFrom = getString("heardFrom");
+    const emergencyName = getString("emergencyName");
+    const emergencyRelation = getString("emergencyRelation");
+    const emergencyPhone = getString("emergencyPhone");
+    const emergencyEmail = getString("emergencyEmail");
     const password = form.get("password") as string;
     const confirm = form.get("confirm") as string;
     const isTecCampus = form.get("isTecCampus") === "on";
+    const age = Number(ageRaw);
+    const matricula = matriculaRaw ? Number(matriculaRaw) : null;
+    const ctfsAttended = ctfsAttendedRaw ? Number(ctfsAttendedRaw) : null;
 
     // ── Validaciones en cliente ───────────────────────────────
     const clientErrors: typeof errors = {};
 
+    if (!firstName || firstName.length < 2) {
+      clientErrors.firstName = "Ingresa al menos 2 caracteres";
+    }
+    if (!lastName || lastName.length < 2) {
+      clientErrors.lastName = "Ingresa al menos 2 caracteres";
+    }
     if (!name || name.length < 3 || name.length > 20 || /\s/.test(name)) {
       clientErrors.name = "3-20 caracteres, sin espacios";
     }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!ageRaw || !DIGITS_REGEX.test(ageRaw) || !Number.isInteger(age) || age < 12 || age > 99) {
+      clientErrors.age = "Edad inválida (12-99)";
+    }
+    if (!email || !EMAIL_REGEX.test(email)) {
       clientErrors.email = "Email inválido";
+    }
+    if (!phone || !DIGITS_REGEX.test(phone) || phone.length < 8 || phone.length > 15) {
+      clientErrors.phone = "Teléfono inválido (8-15 dígitos)";
+    }
+    if (!country) {
+      clientErrors.country = "Campo obligatorio";
+    }
+    if (studyLevel && !STUDY_LEVEL_OPTIONS.includes(studyLevel)) {
+      clientErrors.studyLevel = "Nivel de estudios inválido";
+    }
+    if (
+      ctfsAttendedRaw &&
+      (!DIGITS_REGEX.test(ctfsAttendedRaw) || ctfsAttended === null || !Number.isInteger(ctfsAttended) || ctfsAttended < 0)
+    ) {
+      clientErrors.ctfsAttended = "Solo números enteros positivos";
+    }
+    if (!shirtSize || !SHIRT_SIZE_OPTIONS.includes(shirtSize)) {
+      clientErrors.shirtSize = "Selecciona una talla válida";
+    }
+    if (!heardFrom || heardFrom.length < 3) {
+      clientErrors.heardFrom = "Cuéntanos cómo te enteraste";
+    }
+    if (!emergencyName || emergencyName.length < 2) {
+      clientErrors.emergencyName = "Campo obligatorio";
+    }
+    if (!emergencyRelation || emergencyRelation.length < 2) {
+      clientErrors.emergencyRelation = "Campo obligatorio";
+    }
+    if (
+      !emergencyPhone ||
+      !DIGITS_REGEX.test(emergencyPhone) ||
+      emergencyPhone.length < 8 ||
+      emergencyPhone.length > 15
+    ) {
+      clientErrors.emergencyPhone = "Teléfono inválido (8-15 dígitos)";
+    }
+    if (!emergencyEmail || !EMAIL_REGEX.test(emergencyEmail)) {
+      clientErrors.emergencyEmail = "Email inválido";
     }
     if (!password || password.length < 8) {
       clientErrors.password = "Mínimo 8 caracteres";
@@ -72,17 +222,37 @@ export function SignupForm() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, isTecCampus }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          isTecCampus,
+          profile: {
+            firstName,
+            lastName,
+            age,
+            phone,
+            matricula,
+            country,
+            career,
+            studyLevel,
+            ctfsAttended,
+            shirtSize,
+            heardFrom,
+            emergencyName,
+            emergencyRelation,
+            emergencyPhone,
+            emergencyEmail,
+          },
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        // El Route Handler nos dice qué campo falló (duplicado de username o email)
-        if (data.field === "name") {
-          setErrors({ name: data.error });
-        } else if (data.field === "email") {
-          setErrors({ email: data.error });
+        // El Route Handler puede regresar un campo específico para mostrar el error inline.
+        if (typeof data.field === "string" && data.field.length > 0) {
+          setErrors({ [data.field]: data.error || "Campo inválido" } as typeof errors);
         } else {
           setErrors({ server: data.error || "Error al crear la cuenta" });
         }
@@ -101,7 +271,6 @@ export function SignupForm() {
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#0a0006]">
-
       {/* Fondo compartido */}
       <AuthBackground />
 
@@ -110,7 +279,7 @@ export function SignupForm() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-md mx-4 py-10"
+        className="relative z-10 w-full max-w-5xl mx-4 py-10"
       >
         {/* Label Tab */}
         <div className="flex items-end mb-[-1px] ml-4">
@@ -157,67 +326,203 @@ export function SignupForm() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <SynthwaveField
-                id="name"
-                name="name"
-                label="Username"
-                placeholder="Username"
-                focusedField={focusedField}
-                setFocusedField={setFocusedField}
-              />
-              {errors.name && (
-                <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.name}</span>
-              )}
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <p className="font-mono text-[10px] tracking-[0.08em] text-white/45">* Campos obligatorios</p>
 
-            <div>
-              <SynthwaveField
-                id="email"
-                name="email"
-                label="Email"
-                placeholder="Email"
-                type="email"
-                focusedField={focusedField}
-                setFocusedField={setFocusedField}
-              />
-              {errors.email && (
-                <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.email}</span>
-              )}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+              <div>
+                <SynthwaveField
+                  id="firstName"
+                  name="firstName"
+                  label="Nombre *"
+                  placeholder="Nombre"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.firstName} />
+              </div>
 
-            <div>
-              <SynthwaveField
-                id="password"
-                name="password"
-                label="Contraseña"
-                placeholder="Password"
-                type="password"
-                focusedField={focusedField}
-                setFocusedField={setFocusedField}
-              />
-              {errors.password && (
-                <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.password}</span>
-              )}
-              <p className="font-mono text-[10px] tracking-[0.08em] mt-2 text-white/40">
-                Mínimo 8 caracteres. Recomendado: mayúscula, minúscula y número.
-              </p>
-            </div>
+              <div>
+                <SynthwaveField
+                  id="lastName"
+                  name="lastName"
+                  label="Apellido *"
+                  placeholder="Apellido"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.lastName} />
+              </div>
 
-            <div>
-              <SynthwaveField
-                id="confirm"
-                name="confirm"
-                label="Confirmar Contraseña"
-                placeholder="Confirmar Password"
-                type="password"
-                focusedField={focusedField}
-                setFocusedField={setFocusedField}
-              />
-              {errors.confirm && (
-                <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.confirm}</span>
-              )}
+              <div>
+                <SynthwaveField
+                  id="name"
+                  name="name"
+                  label="Username *"
+                  placeholder="Username"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.name} />
+              </div>
+
+              <div>
+                <SynthwaveField
+                  id="email"
+                  name="email"
+                  label="Correo Electrónico *"
+                  placeholder="Email"
+                  type="email"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.email} />
+              </div>
+
+              <div>
+                <SynthwaveField
+                  id="age"
+                  name="age"
+                  label="Edad *"
+                  placeholder="Ej. 21"
+                  type="text"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.age} />
+              </div>
+
+              <div>
+                <SynthwaveField
+                  id="phone"
+                  name="phone"
+                  label="Número Telefónico *"
+                  placeholder="Ej. 5512345678"
+                  type="text"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.phone} />
+              </div>
+
+              <div>
+                <SynthwaveField
+                  id="matricula"
+                  name="matricula"
+                  label="Matrícula"
+                  placeholder="Opcional"
+                  type="text"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.matricula} />
+              </div>
+
+              <div>
+                <SynthwaveField
+                  id="country"
+                  name="country"
+                  label="País de Residencia *"
+                  placeholder="México"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.country} />
+              </div>
+
+              <div>
+                <SynthwaveField
+                  id="career"
+                  name="career"
+                  label="Carrera"
+                  placeholder="Ej. ITC"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.career} />
+              </div>
+
+              <div>
+                <SynthwaveSelectField
+                  id="studyLevel"
+                  name="studyLevel"
+                  label="Nivel Actual de Estudios"
+                  options={STUDY_LEVEL_OPTIONS}
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.studyLevel} />
+              </div>
+
+              <div>
+                <SynthwaveField
+                  id="ctfsAttended"
+                  name="ctfsAttended"
+                  label="CTF's Asistidos"
+                  placeholder="Ej. 3"
+                  type="text"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.ctfsAttended} />
+              </div>
+
+              <div>
+                <SynthwaveSelectField
+                  id="shirtSize"
+                  name="shirtSize"
+                  label="Talla de Camisa * (No sabemos si tendremos lol)"
+                  options={SHIRT_SIZE_OPTIONS}
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                  required
+                />
+                <FieldError message={errors.shirtSize} />
+              </div>
+
+              <div className="md:col-span-2">
+                <SynthwaveField
+                  id="heardFrom"
+                  name="heardFrom"
+                  label="¿Cómo te enteraste del evento? *"
+                  placeholder="Cuéntanos en una línea"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.heardFrom} />
+              </div>
+
+              <div>
+                <SynthwaveField
+                  id="password"
+                  name="password"
+                  label="Contraseña *"
+                  placeholder="Password"
+                  type="password"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.password} />
+              </div>
+
+              <div>
+                <SynthwaveField
+                  id="confirm"
+                  name="confirm"
+                  label="Confirmar Contraseña *"
+                  placeholder="Confirmar Password"
+                  type="password"
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                />
+                <FieldError message={errors.confirm} />
+              </div>
+
+              <div className="md:col-span-2">
+                <p className="font-mono text-[10px] tracking-[0.08em] mt-1 text-white/40">
+                  Mínimo 8 caracteres. Recomendado: mayúscula, minúscula y número.
+                </p>
+              </div>
             </div>
 
             <div className="rounded-md border border-white/20 bg-black/30 px-3 py-2">
@@ -232,9 +537,64 @@ export function SignupForm() {
                   Soy parte del campus TEC
                 </span>
               </label>
-              {errors.isTecCampus && (
-                <span className="font-mono text-xs text-red-400 mt-1 block">⚠ {errors.isTecCampus}</span>
-              )}
+              <FieldError message={errors.isTecCampus} />
+            </div>
+
+            <div>
+              <p className="font-mono text-[10px] tracking-[0.3em] uppercase mb-4" style={{ color: "#00F0FF" }}>
+                // CONTACTO DE EMERGENCIA *
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                <div>
+                  <SynthwaveField
+                    id="emergencyName"
+                    name="emergencyName"
+                    label="Nombre *"
+                    placeholder="Nombre completo"
+                    focusedField={focusedField}
+                    setFocusedField={setFocusedField}
+                  />
+                  <FieldError message={errors.emergencyName} />
+                </div>
+
+                <div>
+                  <SynthwaveField
+                    id="emergencyRelation"
+                    name="emergencyRelation"
+                    label="Relación *"
+                    placeholder="Ej. Madre, Padre, Tutor"
+                    focusedField={focusedField}
+                    setFocusedField={setFocusedField}
+                  />
+                  <FieldError message={errors.emergencyRelation} />
+                </div>
+
+                <div>
+                  <SynthwaveField
+                    id="emergencyPhone"
+                    name="emergencyPhone"
+                    label="Teléfono *"
+                    placeholder="Ej. 5512345678"
+                    type="text"
+                    focusedField={focusedField}
+                    setFocusedField={setFocusedField}
+                  />
+                  <FieldError message={errors.emergencyPhone} />
+                </div>
+
+                <div>
+                  <SynthwaveField
+                    id="emergencyEmail"
+                    name="emergencyEmail"
+                    label="Correo Electrónico *"
+                    placeholder="correo@ejemplo.com"
+                    type="email"
+                    focusedField={focusedField}
+                    setFocusedField={setFocusedField}
+                  />
+                  <FieldError message={errors.emergencyEmail} />
+                </div>
+              </div>
             </div>
 
             <SunsetDivider />
