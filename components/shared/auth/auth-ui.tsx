@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 export interface SynthwaveFieldProps {
   id: string;
   name?: string;
-  label: string;
+  label: React.ReactNode;
   placeholder: string;
   type?: string;
   focusedField: string | null;
@@ -33,7 +33,7 @@ export function SynthwaveField({
       <Label
         htmlFor={id}
         className="font-mono text-xs tracking-widest transition-colors duration-300"
-        style={{ color: isFocused ? "#EF01BA" : "rgba(255,255,255,0.45)" }}
+        style={{ color: isFocused ? "#EF01BA" : "rgba(255,255,255,0.58)" }}
       >
         {label}
       </Label>

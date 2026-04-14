@@ -18,11 +18,19 @@ const SHIRT_SIZE_OPTIONS = ["CH", "M", "G", "XG", "XXG"];
 interface SynthwaveSelectFieldProps {
   id: string;
   name?: string;
-  label: string;
+  label: React.ReactNode;
   options: string[];
   focusedField: string | null;
   setFocusedField: (id: string | null) => void;
   required?: boolean;
+}
+
+function requiredLabel(text: string) {
+  return (
+    <>
+      {text} <span style={{ color: "#00F0FF" }}>*</span>
+    </>
+  );
 }
 
 function SynthwaveSelectField({
@@ -41,7 +49,7 @@ function SynthwaveSelectField({
       <label
         htmlFor={id}
         className="font-mono text-xs tracking-widest transition-colors duration-300"
-        style={{ color: isFocused ? "#EF01BA" : "rgba(255,255,255,0.45)" }}
+        style={{ color: isFocused ? "#EF01BA" : "rgba(255,255,255,0.58)" }}
       >
         {label}
       </label>
@@ -334,7 +342,7 @@ export function SignupForm() {
                 <SynthwaveField
                   id="firstName"
                   name="firstName"
-                  label="Nombre *"
+                  label={requiredLabel("Nombre")}
                   placeholder="Nombre"
                   focusedField={focusedField}
                   setFocusedField={setFocusedField}
@@ -346,7 +354,7 @@ export function SignupForm() {
                 <SynthwaveField
                   id="lastName"
                   name="lastName"
-                  label="Apellido *"
+                  label={requiredLabel("Apellido")}
                   placeholder="Apellido"
                   focusedField={focusedField}
                   setFocusedField={setFocusedField}
@@ -358,7 +366,7 @@ export function SignupForm() {
                 <SynthwaveField
                   id="name"
                   name="name"
-                  label="Username *"
+                  label={requiredLabel("Username")}
                   placeholder="Username"
                   focusedField={focusedField}
                   setFocusedField={setFocusedField}
@@ -370,7 +378,7 @@ export function SignupForm() {
                 <SynthwaveField
                   id="email"
                   name="email"
-                  label="Correo Electrónico *"
+                  label={requiredLabel("Correo Electrónico")}
                   placeholder="Email"
                   type="email"
                   focusedField={focusedField}
@@ -383,7 +391,7 @@ export function SignupForm() {
                 <SynthwaveField
                   id="age"
                   name="age"
-                  label="Edad *"
+                  label={requiredLabel("Edad")}
                   placeholder="Ej. 21"
                   type="text"
                   focusedField={focusedField}
@@ -396,7 +404,7 @@ export function SignupForm() {
                 <SynthwaveField
                   id="phone"
                   name="phone"
-                  label="Número Telefónico *"
+                  label={requiredLabel("Número Telefónico")}
                   placeholder="Ej. 5512345678"
                   type="text"
                   focusedField={focusedField}
@@ -422,7 +430,7 @@ export function SignupForm() {
                 <SynthwaveField
                   id="country"
                   name="country"
-                  label="País de Residencia *"
+                  label={requiredLabel("País de Residencia")}
                   placeholder="México"
                   focusedField={focusedField}
                   setFocusedField={setFocusedField}
@@ -471,7 +479,11 @@ export function SignupForm() {
                 <SynthwaveSelectField
                   id="shirtSize"
                   name="shirtSize"
-                  label="Talla de Camisa * (No sabemos si tendremos lol)"
+                  label={
+                    <>
+                      Talla de Camisa <span style={{ color: "#00F0FF" }}>*</span> (No sabemos si tendremos lol)
+                    </>
+                  }
                   options={SHIRT_SIZE_OPTIONS}
                   focusedField={focusedField}
                   setFocusedField={setFocusedField}
@@ -484,7 +496,7 @@ export function SignupForm() {
                 <SynthwaveField
                   id="heardFrom"
                   name="heardFrom"
-                  label="¿Cómo te enteraste del evento? *"
+                  label={requiredLabel("¿Cómo te enteraste del evento?")}
                   placeholder="Cuéntanos en una línea"
                   focusedField={focusedField}
                   setFocusedField={setFocusedField}
@@ -496,7 +508,7 @@ export function SignupForm() {
                 <SynthwaveField
                   id="password"
                   name="password"
-                  label="Contraseña *"
+                  label={requiredLabel("Contraseña")}
                   placeholder="Password"
                   type="password"
                   focusedField={focusedField}
@@ -509,7 +521,7 @@ export function SignupForm() {
                 <SynthwaveField
                   id="confirm"
                   name="confirm"
-                  label="Confirmar Contraseña *"
+                  label={requiredLabel("Confirmar Contraseña")}
                   placeholder="Confirmar Password"
                   type="password"
                   focusedField={focusedField}
@@ -549,7 +561,7 @@ export function SignupForm() {
                   <SynthwaveField
                     id="emergencyName"
                     name="emergencyName"
-                    label="Nombre *"
+                    label={requiredLabel("Nombre")}
                     placeholder="Nombre completo"
                     focusedField={focusedField}
                     setFocusedField={setFocusedField}
@@ -561,7 +573,7 @@ export function SignupForm() {
                   <SynthwaveField
                     id="emergencyRelation"
                     name="emergencyRelation"
-                    label="Relación *"
+                    label={requiredLabel("Relación")}
                     placeholder="Ej. Madre, Padre, Tutor"
                     focusedField={focusedField}
                     setFocusedField={setFocusedField}
@@ -573,7 +585,7 @@ export function SignupForm() {
                   <SynthwaveField
                     id="emergencyPhone"
                     name="emergencyPhone"
-                    label="Teléfono *"
+                    label={requiredLabel("Teléfono")}
                     placeholder="Ej. 5512345678"
                     type="text"
                     focusedField={focusedField}
@@ -586,7 +598,7 @@ export function SignupForm() {
                   <SynthwaveField
                     id="emergencyEmail"
                     name="emergencyEmail"
-                    label="Correo Electrónico *"
+                    label={requiredLabel("Correo Electrónico")}
                     placeholder="correo@ejemplo.com"
                     type="email"
                     focusedField={focusedField}
