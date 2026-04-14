@@ -5,6 +5,49 @@ const ADMIN_TOKEN = process.env.CTFD_ADMIN_TOKEN!
 const NGINX_SECRET = process.env.NGINX_INTERNAL_SECRET!
 const INVITE_CODE_FIELD_ID = 3  
 const TEC_CAMPUS_FIELD_ID = Number(process.env.CTFD_TEC_CAMPUS_FIELD_ID)
+const FIRST_NAME_FIELD_ID = Number(process.env.CTFD_FIRST_NAME_FIELD_ID)
+const LAST_NAME_FIELD_ID = Number(process.env.CTFD_LAST_NAME_FIELD_ID)
+const AGE_FIELD_ID = Number(process.env.CTFD_AGE_FIELD_ID)
+const PHONE_FIELD_ID = Number(process.env.CTFD_PHONE_FIELD_ID)
+const MATRICULA_FIELD_ID = Number(process.env.CTFD_MATRICULA_FIELD_ID)
+const COUNTRY_FIELD_ID = Number(process.env.CTFD_COUNTRY_FIELD_ID ?? 10)
+const CAREER_FIELD_ID = Number(process.env.CTFD_CAREER_FIELD_ID)
+const STUDY_LEVEL_FIELD_ID = Number(process.env.CTFD_STUDY_LEVEL_FIELD_ID)
+const CTFS_ATTENDED_FIELD_ID = Number(process.env.CTFD_CTFS_ATTENDED_FIELD_ID)
+const SHIRT_SIZE_FIELD_ID = Number(process.env.CTFD_SHIRT_SIZE_FIELD_ID)
+const HEARD_FROM_FIELD_ID = Number(process.env.CTFD_HEARD_FROM_FIELD_ID)
+const EMERGENCY_NAME_FIELD_ID = Number(process.env.CTFD_EMERGENCY_NAME_FIELD_ID)
+const EMERGENCY_RELATION_FIELD_ID = Number(process.env.CTFD_EMERGENCY_RELATION_FIELD_ID)
+const EMERGENCY_PHONE_FIELD_ID = Number(process.env.CTFD_EMERGENCY_PHONE_FIELD_ID)
+const EMERGENCY_EMAIL_FIELD_ID = Number(process.env.CTFD_EMERGENCY_EMAIL_FIELD_ID)
+
+type RegisterProfileData = {
+  firstName: string
+  lastName: string
+  age: number
+  phone: string
+  matricula?: number | null
+  country: string
+  career?: string
+  studyLevel?: string
+  ctfsAttended?: number | null
+  shirtSize: string
+  heardFrom: string
+  emergencyName: string
+  emergencyRelation: string
+  emergencyPhone: string
+  emergencyEmail: string
+}
+
+function addCustomField(
+  customFields: Array<{ field_id: number; value: string }>,
+  fieldId: number,
+  value: string | number | null | undefined,
+) {
+  if (!Number.isFinite(fieldId)) return
+  if (value === null || value === undefined || `${value}`.trim() === '') return
+  customFields.push({ field_id: fieldId, value: String(value) })
+}
 
 function ctfdHeaders(): HeadersInit {
   return {
@@ -22,6 +65,7 @@ export async function ctfdCreateUser(payload: {
   email: string
   password: string
   isTecCampus: boolean
+  profile: RegisterProfileData
 }): Promise<CTFdResponse<CTFdUser>> {
 
   const url = `${BASE}/api/v1/users`
@@ -29,12 +73,30 @@ export async function ctfdCreateUser(payload: {
     throw new Error('CTFD_TEC_CAMPUS_FIELD_ID no está definido o no es numérico')
   }
 
-  const customFields = [
+  const customFields: Array<{ field_id: number; value: string }> = [
     {
       field_id: TEC_CAMPUS_FIELD_ID,
       value: payload.isTecCampus ? 'true' : 'false',
     },
   ]
+
+  addCustomField(customFields, FIRST_NAME_FIELD_ID, payload.profile.firstName)
+  addCustomField(customFields, LAST_NAME_FIELD_ID, payload.profile.lastName)
+  addCustomField(customFields, AGE_FIELD_ID, payload.profile.age)
+  addCustomField(customFields, PHONE_FIELD_ID, payload.profile.phone)
+  addCustomField(customFields, MATRICULA_FIELD_ID, payload.profile.matricula)
+  addCustomField(customFields, COUNTRY_FIELD_ID, payload.profile.country)
+  addCustomField(customFields, CAREER_FIELD_ID, payload.profile.career)
+  addCustomField(customFields, STUDY_LEVEL_FIELD_ID, payload.profile.studyLevel)
+  addCustomField(customFields, CTFS_ATTENDED_FIELD_ID, payload.profile.ctfsAttended)
+  addCustomField(customFields, SHIRT_SIZE_FIELD_ID, payload.profile.shirtSize)
+  addCustomField(customFields, HEARD_FROM_FIELD_ID, payload.profile.heardFrom)
+  addCustomField(customFields, EMERGENCY_NAME_FIELD_ID, payload.profile.emergencyName)
+  addCustomField(customFields, EMERGENCY_RELATION_FIELD_ID, payload.profile.emergencyRelation)
+  addCustomField(customFields, EMERGENCY_PHONE_FIELD_ID, payload.profile.emergencyPhone)
+  addCustomField(customFields, EMERGENCY_EMAIL_FIELD_ID, payload.profile.emergencyEmail)
+
+  const affiliation = payload.profile.career || (payload.isTecCampus ? 'ITESM' : undefined)
 
   const res = await fetch(url, {
     method: 'POST',
@@ -43,7 +105,7 @@ export async function ctfdCreateUser(payload: {
       name: payload.name,
       email: payload.email,
       password: payload.password,
-      ...(payload.isTecCampus ? { affiliation: 'ITESM' } : {}),
+      ...(affiliation ? { affiliation } : {}),
       type: 'user',
       verified: true,
       hidden: false,
