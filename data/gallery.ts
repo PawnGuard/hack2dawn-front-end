@@ -36,11 +36,9 @@ const dayMonth = new Intl.DateTimeFormat("es-MX", {
 // Resultado: "16 MAY"
 
 export const galleryItems: GalleryItem[] = [
-    /* { id: 1,  type: "image", src: "images/palm_tree.webp", alt: "Gallery 1",  size: "normal", orientation: "vertical",   scrollSpeed: 2 },
-    { id: 2,  type: "image", src: "images/palm_tree.webp", alt: "Gallery 2",  size: "big",    orientation: "vertical",   scrollSpeed: 1 }, */
     { id: 3,  type: "card",  text: "HACK2DAWN",    time: dayMonth, description: "TEC de Monterrey, Edificio negiocios",                               charColor: "#1fffd2", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
-    { id: 4,  type: "card",  text: "BIENVENIDA",    time: "13:30", description: "TEC de Monterrey, Edificio negiocios",                               charColor: "#FF1F8C", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
-    { id: 5,  type: "card",  text: "REGISTRO",    time: "14:00", description: "No guardamos tus datos... o si?",               charColor: "#bf14ff", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 4,  type: "card",  text: "REGISTRO",    time: "13:00", description: "No guardamos tus datos... o si?",                               charColor: "#FF1F8C", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 5,  type: "card",  text: "BIENVENIDA",    time: "14:00", description: "Te damos la bienvenida!",               charColor: "#bf14ff", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
     { id: 6,  type: "card",  text: "CTF",    time: "15:00", description: "Hora de hackear... eticamente",                       charColor: "#4ab9de", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
     { id: 7,  type: "card",  text: "COMIDA",         time: "17:00", description: "Nuestros hackers necesitan energia",                                      charColor: "#f97316", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
     { id: 8,  type: "card",  text: "PREMIACIÓN",        time: "19:00", description: "Quién ganara los premios???",                                  charColor: "#f838cb", size: "normal", orientation: "horizontal", scrollSpeed: 1 },

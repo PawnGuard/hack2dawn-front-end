@@ -5,6 +5,7 @@ import CallToAction from './CallToAction';
 import HeroBackground from './HeroBackground';
 import HeroContent from './HeroContent';
 import HeroCountdown from './HeroCountdown';
+import ScrollCTA from './ScrollCTA';
 
 const EVENT_DATE = process.env.NEXT_PUBLIC_EVENT_START!;
 
@@ -32,6 +33,7 @@ export default function HeroSection() {
         <HeroContent />
         <HeroCountdown targetDate={new Date(EVENT_DATE)} />
         <CallToAction />
+        <ScrollCTA />
       </div>
 
     </section>
