@@ -5,7 +5,7 @@ import { useCallback } from "react";
 
 export default function ScrollCTA() {
   const handleScroll = useCallback(() => {
-    const target = document.getElementById("schedule");
+    const target = document.getElementById("about");
     if (target) {
       target.scrollIntoView({ behavior: "smooth", block: "start" });
     }

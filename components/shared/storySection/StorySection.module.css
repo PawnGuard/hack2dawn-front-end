@@ -188,17 +188,6 @@
   pointer-events: auto;
 }
 
-/* Invisible anchor for CTA smooth-scroll target (schedule phase) */
-.scheduleAnchor {
-  position: absolute;
-  top: 220vh;
-  left: 0;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
 /* ── Section (horizontal track) ────────────────────────────── */
 .scrollSection {
   padding: 10vh 10vh 10vh 10vmax;

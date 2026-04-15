@@ -448,9 +448,6 @@ export default function StorySection() {
                 </div>
             </div>
 
-            {/* Anchor used by hero CTA to jump directly to schedule phase */}
-            <section id="schedule" className={styles.scheduleAnchor} aria-hidden="true" />
-
             {/* Gallery layer — fades in over the shared mountain background */}
             <div
                 ref={galleryLayerRef}
