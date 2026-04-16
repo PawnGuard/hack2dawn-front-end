@@ -1,6 +1,7 @@
 // components/shared/hero/HeroContent.tsx
 import { EncryptedText } from "@/components/ui/encrypted-text";
-import { EVENT_DATE } from "@/data/event";
+
+const EVENT_DATE = process.env.NEXT_PUBLIC_EVENT_START!;
 
 const formattedDateMX = new Intl.DateTimeFormat("es-MX", {
   day: "2-digit",
@@ -10,7 +11,7 @@ const formattedDateMX = new Intl.DateTimeFormat("es-MX", {
   minute: "2-digit",
   timeZone: "America/Mexico_City",
   hour12: false,
-}).format(EVENT_DATE).toUpperCase().replace(",", " ·");
+}).format(new Date(EVENT_DATE)).toUpperCase().replace(",", " ·");
 
 export default function HeroContent() {
   return (
@@ -21,7 +22,7 @@ export default function HeroContent() {
                        border border-sw-cyan/60 px-4 py-1.5
                        shadow-[0_0_10px_rgba(0,255,255,0.3)]
                        backdrop-blur-sm bg-sw-cyan/5">
-        CTF · {formattedDateMX} MX
+        CTF · {formattedDateMX} - 19:30 MX
       </span>
 
       <h1 className="font-display text-4xl md:text-8xl text-sw-text leading-tight

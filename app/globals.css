@@ -62,12 +62,28 @@
   --color-white:        var(--ctf-lavender-mint);
 
   --animate-marquee: marquee 30s linear infinite;
+  --animate-sw-arrow: swArrow 1.4s ease-in-out infinite;
   --ease-slot: cubic-bezier(1,0,1,0);
   --digit-h: clamp(50px, 5.5vw, 80px);
 
   @keyframes marquee {
     from { transform: translateX(0); }
     to   { transform: translateX(-100%); }  /* ✅ -100% para dos contenedores separados */
+  }
+
+  @keyframes swArrow {
+    0%, 100% {
+      transform: translateY(0px);
+      opacity: 1;
+    }
+    40% {
+      transform: translateY(7px);
+      opacity: 0.6;
+    }
+    60% {
+      transform: translateY(7px);
+      opacity: 0.6;
+    }
   }
 
 }
@@ -107,9 +123,11 @@
     @apply font-sans; 
   }
 
-  /* Aplica el cursor al body por defecto */
-  body, a, button, input, select, textarea, .cursor-pointer, *:hover {
-    cursor: none !important;
+  /* Oculta cursor nativo solo en dispositivos con puntero fino (mouse/trackpad) */
+  @media (pointer: fine) {
+    body, a, button, input, select, textarea, .cursor-pointer, *:hover {
+      cursor: none !important;
+    }
   }
 
   h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
@@ -149,14 +167,14 @@
   --chart-3:     oklch(0.546 0.245 262.881);
   --chart-4:     oklch(0.488 0.243 264.376);
   --chart-5:     oklch(0.424 0.199 265.638);
-  --sidebar:     oklch(0.205 0 0);
-  --sidebar-foreground:     oklch(0.985 0 0);
-  --sidebar-primary:     oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground:     oklch(0.985 0 0);
-  --sidebar-accent:     oklch(0.269 0 0);
-  --sidebar-accent-foreground:     oklch(0.985 0 0);
-  --sidebar-border:     oklch(1 0 0 / 10%);
-  --sidebar-ring:     oklch(0.556 0 0);
+  --sidebar:                  #08000f;
+  --sidebar-foreground:       #F4EDF2;
+  --sidebar-primary:          #EF01BA;
+  --sidebar-primary-foreground: #F4EDF2;
+  --sidebar-accent:           #150020;
+  --sidebar-accent-foreground: #F4EDF2;
+  --sidebar-border:           #2a003f;
+  --sidebar-ring:             #EF01BA;
 }
 
 @theme inline {

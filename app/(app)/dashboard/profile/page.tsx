@@ -1,435 +1,410 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Boxes } from "@/components/ui/background-boxes";
-import SectionHeader from "@/components/shared/SectionHeader";
-import { CtfCard } from "@/components/shared/CtfCard";
-import { cn } from "@/lib/utils";
-import { UserProfile, UsernameValidation } from "@/types/user";
-import "@hackernoon/pixel-icon-library/fonts/iconfont.css";
+import { EncryptedText } from "@/components/ui/encrypted-text";
+import { getIdenticonUrl } from "@/lib/utils";
+import { ProfileDashboardData } from "@/lib/types/ctfd";
 
-const mockUserProfile: UserProfile = {
-  id: "1",
-  username: "C4rnage",
-  email: "c4rnage@hack2dawn.com",
-  avatar: null,
-  teamId: "team-1",
-  teamName: "NullPointers",
-  registeredAt: "2026-03-14T10:30:00Z",
-  flagsCaptured: 42,
-  userRank: 7,
-  usernameChangeCount: 0,
-};
+const MAX_USERNAME_CHANGES: number = 2;
 
-interface Toast {
-  id: number;
-  message: string;
-  type: "success" | "error";
+function getWebsiteIconClass(website: string): string {
+  const fallbackIcon = "hn hn-web3";
+
+  try {
+    const normalizedUrl = website.startsWith("http") ? website : `https://${website}`;
+    const hostname = new URL(normalizedUrl).hostname.replace(/^www\./, "").toLowerCase();
+
+    if (hostname === "github.com" || hostname.endsWith(".github.com")) {
+      return "hn hn-github";
+    }
+
+    if (hostname === "linkedin.com" || hostname.endsWith(".linkedin.com")) {
+      return "hn hn-linkedin";
+    }
+
+    return fallbackIcon;
+  } catch {
+    const websiteLower = website.toLowerCase();
+
+    if (websiteLower.includes("github.com")) {
+      return "hn hn-github";
+    }
+
+    if (websiteLower.includes("linkedin.com")) {
+      return "hn hn-linkedin";
+    }
+
+    return fallbackIcon;
+  }
 }
 
-const MAX_USERNAME_CHANGES = 2;
-const USERNAME_REGEX = /^[a-zA-Z0-9_-]{3,20}$/;
-const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+// ── Componentes reutilizables ────────────────────────────────────
 
-export default function ProfilePage() {
-  const [profile, setProfile] = useState<UserProfile>(mockUserProfile);
-  const [isEditingUsername, setIsEditingUsername] = useState(false);
-  const [tempUsername, setTempUsername] = useState(profile.username);
-  const [usernameValidation, setUsernameValidation] = useState<UsernameValidation>({ isValid: true });
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div className="border border-white/10 bg-black/40 p-4 flex flex-col gap-1">
+      <p className="font-mono text-[10px] tracking-[0.25em] uppercase" style={{ color }}>
+        {label}
+      </p>
+      <p className="font-heading text-2xl font-bold text-white">{value}</p>
+    </div>
+  );
+}
 
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imageError, setImageError] = useState<string | null>(null);
-
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, 4000);
-  };
-
-  const removeToast = (id: number) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  };
-
-  useEffect(() => {
-    if (!isEditingUsername) return;
-
-    const validateUsername = async () => {
-      const trimmed = tempUsername.trim();
-
-      if (!USERNAME_REGEX.test(trimmed)) {
-        setUsernameValidation({
-          isValid: false,
-          error: "El username debe tener 3-20 caracteres (letras, numeros, _ o -)",
-        });
-        return;
-      }
-
-      if (trimmed === profile.username) {
-        setUsernameValidation({
-          isValid: false,
-          error: "El nuevo username no puede ser igual al anterior",
-        });
-        return;
-      }
-
-      setIsCheckingUsername(true);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setIsCheckingUsername(false);
-
-      if (trimmed.toLowerCase() === "admin") {
-        setUsernameValidation({
-          isValid: false,
-          error: "Este nombre de usuario no esta disponible",
-        });
-        return;
-      }
-
-      setUsernameValidation({ isValid: true });
-    };
-
-    validateUsername();
-  }, [tempUsername, isEditingUsername, profile.username]);
-
-  const handleEditUsername = () => {
-    if (profile.usernameChangeCount >= MAX_USERNAME_CHANGES) {
-      showToast(`Solo puedes cambiar tu username ${MAX_USERNAME_CHANGES} veces durante el evento`, "error");
-      return;
-    }
-    setIsEditingUsername(true);
-  };
-
-  const handleSaveUsername = async () => {
-    if (!usernameValidation.isValid) return;
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    setProfile((prev) => ({
-      ...prev,
-      username: tempUsername,
-      usernameChangeCount: prev.usernameChangeCount + 1,
-    }));
-
-    setIsEditingUsername(false);
-    showToast("Username actualizado correctamente", "success");
-  };
-
-  const handleCancelUsername = () => {
-    setTempUsername(profile.username);
-    setIsEditingUsername(false);
-    setUsernameValidation({ isValid: true });
-  };
-
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      setImageError("Solo se permiten archivos .jpg, .jpeg, .png o .webp");
-      return;
-    }
-
-    if (file.size > MAX_IMAGE_SIZE) {
-      setImageError("La imagen no debe superar 2MB");
-      return;
-    }
-
-    setImageError(null);
-    setSelectedFile(file);
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleConfirmImage = async () => {
-    if (!selectedFile) return;
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setProfile((prev) => ({
-      ...prev,
-      avatar: imagePreview,
-    }));
-
-    showToast("Foto de perfil actualizada", "success");
-    setImagePreview(null);
-    setSelectedFile(null);
-  };
-
-  const handleCancelImage = () => {
-    setImagePreview(null);
-    setSelectedFile(null);
-    setImageError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-ES", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(date);
-  };
-
-  const canChangeUsername = profile.usernameChangeCount < MAX_USERNAME_CHANGES;
+function SolveRow({ name, value, date }: { name: string; value: number; date: string }) {
+  const relativeTime = (() => {
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    const hrs = Math.floor(mins / 60);
+    const days = Math.floor(hrs / 24);
+    if (days > 0) return `Hace ${days}d`;
+    if (hrs > 0) return `Hace ${hrs}h`;
+    return `Hace ${mins}m`;
+  })();
 
   return (
-    <main className="min-h-screen relative w-full overflow-hidden bg-[#0a0006] px-4 py-12">
-      <div className="absolute inset-0 z-0 hidden md:block">
-        <Boxes />
-      </div>
-      <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(239,1,186,0.22),transparent_55%),linear-gradient(180deg,rgba(10,0,6,0.12)_0%,rgba(10,0,6,0.94)_100%)] pointer-events-none" />
+    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-4 py-2 px-3 border-b border-white/5 hover:bg-white/5 transition-colors font-mono text-sm">
+      <span className="text-white/80 truncate">{name}</span>
+      <span className="text-[#00F0FF] font-bold whitespace-nowrap">+{value} pts</span>
+      <span className="text-white/30 text-xs whitespace-nowrap">{relativeTime}</span>
+    </div>
+  );
+}
 
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={cn(
-              "flex items-center gap-2 px-4 py-3 border shadow-lg backdrop-blur-sm animate-in slide-in-from-right",
-              toast.type === "success"
-                ? "bg-green-900/90 border-green-500/50 text-green-100"
-                : "bg-red-900/90 border-red-500/50 text-red-100"
-            )}
-          >
-            <span className="flex-1 text-sm font-medium">{toast.message}</span>
-            <button
-              onClick={() => removeToast(toast.id)}
-              className="text-white/70 hover:text-white transition-colors"
-              aria-label="Cerrar"
-            >
-              x
-            </button>
-          </div>
-        ))}
-      </div>
+// ── Página principal ─────────────────────────────────────────────
 
-      <div className="relative z-20 mx-auto w-full max-w-6xl space-y-7">
-        <SectionHeader
-          label="// account.profile"
-          title="Perfil de Operador"
-          accentColor="#EF01BA"
-          className="mb-3"
-        />
+export default function ProfileDashboardPage() {
+  const router = useRouter();
 
-        <section className="border border-white/10 bg-black/55 backdrop-blur-md p-6 md:p-8">
-          <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-            <div className="space-y-6">
-              <div className="border border-white/10 bg-black/40 p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <i className="hn hn-user-solid text-[#EF01BA] text-lg" aria-hidden="true" />
-                  <h2 className="font-mono text-xs uppercase tracking-[0.24em] text-white/65">
-                    Identidad del jugador
-                  </h2>
-                </div>
+  // ── Estado del perfil ──────────────────────────────────────────
+  const [profile, setProfile] = useState<ProfileDashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-                <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
-                  <div className="relative group">
-                    <div
-                      onClick={handleAvatarClick}
-                      className="relative w-28 h-28 border-2 border-[#EF01BA]/50 overflow-hidden cursor-pointer transition-transform hover:scale-105 bg-black/40"
-                    >
-                      {imagePreview || profile.avatar ? (
-                        <Image
-                          src={imagePreview || profile.avatar!}
-                          alt="Avatar"
-                          fill
-                          unoptimized
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl text-[#EF01BA]">
-                          @
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/65 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="font-mono text-[10px] tracking-widest text-white/85">UPLOAD</span>
-                      </div>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".jpg,.jpeg,.png,.webp"
-                      onChange={handleFileSelect}
-                      aria-label="Subir foto de perfil"
-                      title="Subir foto de perfil"
-                      className="hidden"
-                    />
-                  </div>
+  // ── Estado de edición ──────────────────────────────────────────
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftUsername, setDraftUsername] = useState("");
+  const [draftAffiliation, setDraftAffiliation] = useState("");
+  const [draftWebsite, setDraftWebsite] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
-                  <div className="w-full space-y-3">
-                    {imageError && <p className="text-red-400 text-sm">{imageError}</p>}
+  // ── Cargar perfil ──────────────────────────────────────────────
+  const fetchProfile = useCallback(async () => {
+    const res = await fetch("/api/profile/me");
+    if (!res.ok) { router.push("/dashboard"); return; }
+    const data: ProfileDashboardData = await res.json();
+    setProfile(data);
+    setDraftUsername(data.username);
+    setDraftAffiliation(data.affiliation ?? "");
+    setDraftWebsite(data.website ?? "");
+    setIsLoading(false);
+  }, [router]);
 
-                    {imagePreview && (
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={handleConfirmImage}
-                          variant="ghost"
-                          size="sm"
-                          className="font-mono text-xs text-[#00F0FF] hover:text-black hover:bg-[#00F0FF] rounded-none"
-                        >
-                          [ CONFIRMAR ]
-                        </Button>
-                        <Button
-                          onClick={handleCancelImage}
-                          variant="ghost"
-                          size="sm"
-                          className="font-mono text-xs text-white/70 hover:text-white hover:bg-white/10 rounded-none"
-                        >
-                          [ CANCELAR ]
-                        </Button>
-                      </div>
-                    )}
+  useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
-                    <p className="text-xs text-white/50">Click en la imagen para cambiarla (max. 2MB).</p>
-                  </div>
-                </div>
-              </div>
+  // ── Guardar cambios ────────────────────────────────────────────
+  const handleSave = async () => {
+    if (!profile) return;
+    setSaveError("");
+    setIsSaving(true);
 
-              <div className="border border-white/10 bg-black/40 p-5 space-y-5">
-                <div>
-                  <label className="block text-xs font-mono tracking-widest text-white/60 mb-2">USERNAME</label>
-                  {isEditingUsername ? (
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <Input
-                            value={tempUsername}
-                            onChange={(e) => setTempUsername(e.target.value)}
-                            className={cn(
-                              "rounded-none bg-black/50 border-white/20 focus:border-[#EF01BA]",
-                              !usernameValidation.isValid && "border-red-500"
-                            )}
-                            placeholder="Ingresa tu username"
-                            maxLength={20}
-                          />
-                          {!usernameValidation.isValid && usernameValidation.error && (
-                            <p className="mt-1 text-sm text-red-400">{usernameValidation.error}</p>
-                          )}
-                          {isCheckingUsername && (
-                            <p className="mt-1 text-sm text-white/50">Verificando disponibilidad...</p>
-                          )}
-                        </div>
-                        <Button
-                          onClick={handleSaveUsername}
-                          disabled={!usernameValidation.isValid || isCheckingUsername}
-                          variant="ghost"
-                          className="font-mono text-xs text-[#00F0FF] hover:text-black hover:bg-[#00F0FF] rounded-none"
-                        >
-                          [ OK ]
-                        </Button>
-                        <Button
-                          onClick={handleCancelUsername}
-                          variant="ghost"
-                          className="font-mono text-xs text-white/70 hover:text-white hover:bg-white/10 rounded-none"
-                        >
-                          [ X ]
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 px-3 py-2 border border-white/20 bg-black/45">
-                        <p className="text-white font-medium">{profile.username}</p>
-                      </div>
-                      <Button
-                        onClick={handleEditUsername}
-                        variant="ghost"
-                        size="sm"
-                        disabled={!canChangeUsername}
-                        title={
-                          !canChangeUsername
-                            ? "Has alcanzado el limite de cambios de username"
-                            : "Editar username"
-                        }
-                        className="font-mono text-xs text-[#EF01BA] hover:text-black hover:bg-[#EF01BA] rounded-none"
-                      >
-                        [ EDITAR ]
-                      </Button>
-                    </div>
-                  )}
-                  <p className="mt-1 text-xs text-white/50">
-                    {canChangeUsername
-                      ? `Puedes cambiar tu username ${MAX_USERNAME_CHANGES - profile.usernameChangeCount} vez${MAX_USERNAME_CHANGES - profile.usernameChangeCount === 1 ? "" : "es"} mas`
-                      : "Has alcanzado el limite de cambios de username"}
-                  </p>
-                </div>
+    const res = await fetch("/api/profile/update", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: draftUsername !== profile.username ? draftUsername : undefined,
+        affiliation: draftAffiliation,
+        website: draftWebsite,
+      }),
+    });
 
-                <div>
-                  <label className="block text-xs font-mono tracking-widest text-white/60 mb-2">EMAIL</label>
-                  <div className="px-3 py-2 border border-white/10 bg-black/30 opacity-70">
-                    <p className="text-white">{profile.email}</p>
-                  </div>
-                  <p className="mt-1 text-xs text-white/50">El email no puede ser modificado.</p>
-                </div>
+    const json = await res.json();
+
+    if (!res.ok) {
+      setSaveError(json.error ?? "Error al guardar cambios");
+      setIsSaving(false);
+      return;
+    }
+
+    setIsEditing(false);
+    setIsSaving(false);
+    fetchProfile(); // Recargar datos frescos
+  };
+
+  const handleCancel = () => {
+    if (!profile) return;
+    setDraftUsername(profile.username);
+    setDraftAffiliation(profile.affiliation ?? "");
+    setDraftWebsite(profile.website ?? "");
+    setSaveError("");
+    setIsEditing(false);
+  };
+
+  // ── Loading ────────────────────────────────────────────────────
+  if (isLoading || !profile) {
+    return (
+      <main className="min-h-screen relative overflow-hidden bg-[#090013] text-white px-4 py-12">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(239,1,186,0.25),transparent_55%)] pointer-events-none" />
+        <div className="relative z-20 mx-auto w-full max-w-5xl space-y-6 animate-pulse">
+
+          {/* Header skeleton */}
+          <section className="border border-white/10 bg-black/55 backdrop-blur-md p-6 md:p-8">
+            <div className="h-3 w-40 bg-white/10 rounded mb-6" />
+            <div className="flex gap-6 items-start">
+              {/* Avatar */}
+              <div className="shrink-0 w-24 h-24 sm:w-28 sm:h-28 bg-white/10 border border-[#EF01BA]/20" />
+              {/* Texto */}
+              <div className="flex-1 space-y-3 pt-1">
+                <div className="h-8 w-48 bg-white/10 rounded" />
+                <div className="h-3 w-64 bg-white/5 rounded" />
+                <div className="h-3 w-32 bg-white/5 rounded" />
+                <div className="h-7 w-32 bg-white/10 rounded mt-4" />
               </div>
             </div>
+          </section>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-              <CtfCard
-                label="team"
-                title={profile.teamName ?? "Sin equipo"}
-                description={profile.teamId ? "Equipo activo en competencia." : "Unete a un equipo para competir."}
-                accentColor="#00F0FF"
-                icon={<i className="hn hn-users-solid text-[#00F0FF] text-xl" aria-hidden="true" />}
-                badge="01"
-              >
-                {profile.teamId && (
-                  <Link href="/dashboard/team" className="font-mono text-xs text-[#00F0FF] hover:text-white">
-                    [ VER TEAM DASHBOARD ]
-                  </Link>
-                )}
-              </CtfCard>
+          {/* Stats skeleton */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="border border-white/10 bg-black/40 p-4 space-y-2">
+                <div className="h-2 w-16 bg-white/10 rounded" />
+                <div className="h-7 w-12 bg-white/10 rounded" />
+              </div>
+            ))}
+          </div>
 
-              <CtfCard
-                label="flags"
-                title={`${profile.flagsCaptured}`}
-                description="Flags resueltas durante el evento."
-                accentColor="#FEF759"
-                icon={<i className="hn hn-flag-solid text-[#FEF759] text-xl" aria-hidden="true" />}
-                badge="02"
+          {/* Activity log skeleton */}
+          <section className="border border-white/10 bg-black/55 backdrop-blur-md">
+            <div className="px-6 py-4 border-b border-white/10">
+              <div className="h-3 w-48 bg-white/10 rounded" />
+            </div>
+            <div className="divide-y divide-white/5">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="grid grid-cols-[1fr_auto_auto] gap-4 px-3 py-3 items-center">
+                  <div className="h-3 bg-white/10 rounded" style={{ width: `${55 + i * 7}%` }} />
+                  <div className="h-3 w-14 bg-[#00F0FF]/10 rounded" />
+                  <div className="h-3 w-12 bg-white/5 rounded" />
+                </div>
+              ))}
+            </div>
+          </section>
+
+        </div>
+      </main>
+    );
+  }
+
+  const usernameChangesLeft = MAX_USERNAME_CHANGES;
+  const canChangeUsername = usernameChangesLeft > 0;
+  const totalSolves = profile.solves.length;
+  const accuracy: number | null = null; // sin calcular hasta tener fails
+  const websiteIconClass = profile.website ? getWebsiteIconClass(profile.website) : "hn hn-web3";
+
+  return (
+    <main className="min-h-screen relative overflow-hidden bg-[#090013] text-white px-4 py-12">
+      {/* Fondo */}
+      <div className="absolute inset-0 z-0 hidden md:block"><Boxes /></div>
+      <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(239,1,186,0.25),transparent_55%),linear-gradient(180deg,rgba(0,0,0,0)_0%,rgba(0,0,0,0.75)_100%)] pointer-events-none" />
+
+      <div className="relative z-20 mx-auto w-full max-w-5xl space-y-6">
+
+        {/* ── Header: Identidad ──────────────────────────────────── */}
+        <section className="border border-white/10 bg-black/55 backdrop-blur-md p-6 md:p-8">
+          <p className="font-mono text-white/50 text-xs tracking-[0.35em] uppercase mb-6">
+            <EncryptedText text="// Operator Profile" revealDelayMs={60} flipDelayMs={30} />
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-6 items-start">
+
+            {/* Avatar DiceBear */}
+            <div className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28 bg-black/40 overflow-hidden">
+              <Image
+                src={getIdenticonUrl(profile.username, 112)}
+                alt={`Avatar de ${profile.username}`}
+                fill
+                className="object-cover opacity-80"
+                unoptimized // SVG externo → sin optimización de Next
               />
+              <div className="absolute inset-0 bg-[#EF01BA]/10 pointer-events-none mix-blend-screen" />
+            </div>
 
-              <CtfCard
-                label="member"
-                title={formatDate(profile.registeredAt)}
-                description="Fecha de ingreso al evento."
-                accentColor="#F77200"
-                icon={<i className="hn hn-calender-solid text-[#F77200] text-xl" aria-hidden="true" />}
-                badge="03"
-              />
-
-              <CtfCard
-                label="rank"
-                title={`#${profile.userRank}`}
-                description="Posicion individual en el scoreboard."
-                accentColor="#940992"
-                icon={<i className="hn hn-trophy-solid text-[#940992] text-xl" aria-hidden="true" />}
-                badge="04"
-              />
+            {/* Datos de identidad */}
+            <div className="flex-1 min-w-0">
+              {isEditing ? (
+                // ── Modo edición ─────────────────────────────────
+                <div className="space-y-4">
+                  <div>
+                    <label className="font-mono text-[10px] text-white/40 tracking-widest uppercase">
+                      Username {canChangeUsername
+                        ? `(${usernameChangesLeft} cambio${usernameChangesLeft === 1 ? "" : "s"} restante${usernameChangesLeft === 1 ? "" : "s"})`
+                        : "(límite alcanzado)"}
+                    </label>
+                    <Input
+                      value={draftUsername}
+                      onChange={e => setDraftUsername(e.target.value)}
+                      disabled={!canChangeUsername}
+                      className="mt-1 bg-black/60 border-white/20 rounded-none font-mono text-white disabled:opacity-40"
+                      placeholder="Nuevo username"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-mono text-[10px] text-white/40 tracking-widest uppercase">Afiliación</label>
+                    <Input
+                      value={draftAffiliation}
+                      onChange={e => setDraftAffiliation(e.target.value)}
+                      className="mt-1 bg-black/60 border-white/20 rounded-none font-mono text-white"
+                      placeholder="Universidad / Empresa"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-mono text-[10px] text-white/40 tracking-widest uppercase">Website / GitHub</label>
+                    <Input
+                      value={draftWebsite}
+                      onChange={e => setDraftWebsite(e.target.value)}
+                      className="mt-1 bg-black/60 border-white/20 rounded-none font-mono text-white"
+                      placeholder="https://github.com/usuario"
+                    />
+                  </div>
+                  {saveError && (
+                    <p className="font-mono text-xs text-red-400">[!] {saveError}</p>
+                  )}
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="font-mono text-xs text-black rounded-none px-6"
+                      style={{ backgroundColor: "#EF01BA" }}
+                    >
+                      {isSaving ? "GUARDANDO..." : "[ GUARDAR ]"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={handleCancel}
+                      disabled={isSaving}
+                      className="font-mono text-xs text-white/50 hover:text-white rounded-none"
+                    >
+                      [ CANCELAR ]
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                // ── Modo vista ───────────────────────────────────
+                <div className="space-y-2">
+                  <h1 className="font-heading text-3xl sm:text-4xl font-bold text-[#EF01BA] tracking-wider drop-shadow-[0_0_12px_rgba(239,1,186,0.45)] truncate">
+                    {profile.username}
+                  </h1>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-white/40">
+                    <span>{profile.email}</span>
+                    {profile.affiliation && <span>// {profile.affiliation}</span>}
+                    {profile.teamName && (
+                      <span className="inline-flex items-center gap-1 text-[#00F0FF]/60">
+                        <i className="hn hn-users-solid text-[11px]" aria-hidden="true" />
+                        <a
+                          href={`/dashboard/team`}
+                          className="hover:text-[#00F0FF] transition-colors"
+                        >
+                          {profile.teamName}
+                        </a>
+                      </span>
+                    )}
+                  </div>
+                  {profile.website && (
+                    <a
+                      href={profile.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 font-mono text-xs text-[#EF01BA]/60 hover:text-[#EF01BA] transition-colors mt-1"
+                    >
+                      <i className={`${websiteIconClass} text-[11px]`} aria-hidden="true" />
+                      <span>{profile.website}</span>
+                      <i className="hn hn-external-link text-[10px]" aria-hidden="true" />
+                    </a>
+                  )}
+                  <div className="pt-3">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setIsEditing(true)}
+                      className="font-mono text-xs text-[#EF01BA] hover:text-black hover:bg-[#EF01BA] rounded-none px-4 border border-[#EF01BA]/30"
+                    >
+                      [ EDITAR PERFIL ]
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
+
+        {/* ── Stats del operador ─────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard
+            label="Puntos"
+            value={profile.score.toLocaleString()}
+            color="#EF01BA"
+          />
+          <StatCard
+            label="Posición"
+            value={profile.place ? `#${profile.place}` : "—"}
+            color="#00F0FF"
+          />
+          <StatCard
+            label="Retos Resueltos"
+            value={String(totalSolves)}
+            color="#EF01BA"
+          />
+          <StatCard
+            label="Precisión"
+            value={accuracy !== null ? `${accuracy}%` : "—"}
+            color="#00F0FF"
+          />
+        </div>
+
+        {/* ── Log de Actividad (Solves) ──────────────────────────── */}
+        <section className="border border-white/10 bg-black/55 backdrop-blur-md">
+          <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+            <h2 className="font-mono text-xs tracking-[0.25em] uppercase text-[#00F0FF]">
+              // Activity Log — {totalSolves} solve{totalSolves !== 1 ? "s" : ""}
+            </h2>
+          </div>
+
+          {profile.solves.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <p className="font-mono text-white/20 text-sm">
+                Sin actividad registrada. Ve a{" "}
+                <button
+                  onClick={() => router.push("/challenges")}
+                  className="text-[#EF01BA]/60 hover:text-[#EF01BA] transition-colors underline"
+                >
+                  Challenges
+                </button>
+                .
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-white/0">
+              {/* Header de columnas */}
+              <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-3 py-2 font-mono text-[10px] text-white/20 tracking-widest uppercase border-b border-white/5">
+                <span>Reto</span>
+                <span>Puntos</span>
+                <span>Tiempo</span>
+              </div>
+              {profile.solves.map(solve => (
+                <SolveRow
+                  key={solve.id}
+                  name={solve.challenge_name}
+                  value={solve.value}
+                  date={solve.date}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
       </div>
     </main>
   );

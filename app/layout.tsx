@@ -5,6 +5,8 @@ import localFont from 'next/font/local';
 import FuzzyOverlay from "@/components/shared/FuzzyOverlay";
 import { Analytics } from "@vercel/analytics/next"; 
 import { CustomCursor } from "@/components/ui/CustomCursor";
+import { getSessionUser } from "@/lib/session";
+import { UserProvider } from "@/context/UserContext";
 
 // -----Fuentes Locales----- //
 const watchdogs = localFont({
@@ -38,18 +40,23 @@ export const metadata: Metadata = {
   description: "PawnGuard CTF competition",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  
+  const user = await getSessionUser()
+
   return (
     <html lang="es" className={`${chakraPetch.variable} ${watchdogs.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <body className={"font-body bg-black text-white"}>
-        <FuzzyOverlay />
-        {children}
-        <Analytics />
-        <CustomCursor />
+        <UserProvider initialUser={user}>
+          <FuzzyOverlay />
+          {children}
+          <Analytics />
+          <CustomCursor />
+        </UserProvider>
       </body>
     </html>
   );

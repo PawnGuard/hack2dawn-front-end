@@ -7,8 +7,25 @@ export function CustomCursor() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [isFinePointer, setIsFinePointer] = useState(false);
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia("(pointer: fine)");
+    const updatePointer = () => setIsFinePointer(mediaQuery.matches);
+
+    updatePointer();
+    mediaQuery.addEventListener("change", updatePointer);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updatePointer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isFinePointer) {
+      return;
+    }
+
     // Actualiza la posición del mouse
     const updatePosition = (e: MouseEvent) => {
       setPosition({ x: e.clientX, y: e.clientY });
@@ -38,7 +55,9 @@ export function CustomCursor() {
       document.removeEventListener("mouseleave", handleMouseLeave);
       document.removeEventListener("mouseenter", handleMouseEnter);
     };
-  }, [isVisible]);
+  }, [isVisible, isFinePointer]);
+
+  if (!isFinePointer) return null;
 
   // Si el mouse no está en la ventana, no mostramos nada
   if (!isVisible) return null;

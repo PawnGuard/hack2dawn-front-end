@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -15,13 +16,61 @@ import {
 } from "./auth-ui";
 
 export function LoginForm() {
+  const router = useRouter();
+  const submitLockRef = useRef(false);
+
+  // ─── States originales del UI ────────────────────────────────
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // ─── States de lógica de auth ─────────────────────────────────
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // TODO: conectar con /api/auth/login (iron-session)
+
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
+
+    setLoading(true);
+    setError("");
+
+    const form = new FormData(e.currentTarget);
+    const identifier = (form.get("identifier") as string)?.trim();
+    const password = form.get("password") as string;
+
+    if (!identifier || !password) {
+      setError("Todos los campos son requeridos");
+      submitLockRef.current = false;
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Error al iniciar sesión");
+        return;
+      }
+
+      // iron-session ya seteó la cookie httpOnly → redirigir
+      router.refresh(); // ← Actualiza el Server Component layout para que UserProvider tenga los datos frescos
+      router.push("/dashboard/team");
+    } catch {
+      setError("No se pudo conectar al servidor. Intenta de nuevo.");
+    } finally {
+      submitLockRef.current = false;
+      setLoading(false);
+    }
   };
 
   return (
@@ -86,7 +135,8 @@ export function LoginForm() {
 
             <SynthwaveField
               id="identifier"
-              label="Usuario"
+              name="identifier"
+              label="Username"
               placeholder="anonymous_agent"
               focusedField={focusedField}
               setFocusedField={setFocusedField}
@@ -97,13 +147,14 @@ export function LoginForm() {
               <Label
                 htmlFor="password"
                 className="font-mono text-xs tracking-widest transition-colors duration-300"
-                style={{ color: focusedField === "password" ? "#EF01BA" : "rgba(255,255,255,0.45)" }}
+                style={{ color: focusedField === "password" ? "#EF01BA" : "rgba(255,255,255,0.58)" }}
               >
                 Password
               </Label>
               <div className="relative">
                 <Input
                   id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   onFocus={() => setFocusedField("password")}
@@ -127,7 +178,7 @@ export function LoginForm() {
             </LabelInputContainer>
 
             {/* Recuérdame */}
-            <div className="flex items-center justify-between pt-1">
+            {/* <div className="flex items-center justify-between pt-1">
               <label className="flex items-center gap-2 cursor-pointer">
                 <div
                   onClick={() => setRememberMe(!rememberMe)}
@@ -154,10 +205,17 @@ export function LoginForm() {
                 style={{ color: "rgba(255,255,255,0.3)" }}>
                 ¿Olvidaste tu contraseña?
               </a>
-            </div>
+            </div> */}
 
             <SunsetDivider />
-            <SunsetButton label="INICIAR SESIÓN →" />
+            {error && (
+              <p className="font-mono text-xs text-red-400 text-center tracking-wider">
+                ⚠ {error}
+              </p>
+            )}
+            <SunsetButton type="submit" disabled={loading}>
+              {loading ? "AUTENTICANDO..." : "ACCEDER AL SISTEMA"}
+            </SunsetButton>
 
             <p className="font-mono text-xs text-center mt-4" style={{ color: "rgba(255,255,255,0.3)" }}>
               ¿Sin cuenta?{" "}

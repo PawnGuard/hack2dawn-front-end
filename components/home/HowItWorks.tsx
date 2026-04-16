@@ -7,8 +7,8 @@ import { CtfCard } from "@/components/shared/CtfCard";
 const PIXEL_ICONS: Record<string, { className: string; colorClass: string }> = {
   UserPlus: { className: "hn hn-user-solid", colorClass: "text-pink" },
   Users: { className: "hn hn-users-solid", colorClass: "text-cyan-300" },
-  Download: { className: "hn hn-calender-solid", colorClass: "text-orange" },
-  Terminal: { className: "hn hn-user-solid", colorClass: "text-purple" },
+  Download: { className: "hn hn-download-alt-solid", colorClass: "text-orange" },
+  Run: { className: "hn hn-play-solid", colorClass: "text-purple" },
   Flag: { className: "hn hn-flag-solid", colorClass: "text-yellow" },
   Send: { className: "hn hn-trophy-solid", colorClass: "text-pink" },
 };
@@ -19,8 +19,8 @@ export default function HowItWorks() {
   return (
     <div className="max-w-7xl mx-auto">
       <SectionHeader
-        label="// como funciona"
-        title="How It Works"
+        label="// Como funciona?"
+        title="How It Works?"
         accentColor={ACCENT}
       />
 
