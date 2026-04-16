@@ -147,7 +147,7 @@ export function LoginForm() {
               <Label
                 htmlFor="password"
                 className="font-mono text-xs tracking-widest transition-colors duration-300"
-                style={{ color: focusedField === "password" ? "#EF01BA" : "rgba(255,255,255,0.45)" }}
+                style={{ color: focusedField === "password" ? "#EF01BA" : "rgba(255,255,255,0.58)" }}
               >
                 Password
               </Label>
