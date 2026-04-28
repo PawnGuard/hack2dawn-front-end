@@ -97,26 +97,26 @@ export function SignupForm() {
   // ─── States de lógica de auth ─────────────────────────────────
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
-    firstName?: string;
-    lastName?: string;
+    // firstName?: string;
+    // lastName?: string;
     name?: string;
-    age?: string;
+    // age?: string;
     email?: string;
-    phone?: string;
-    matricula?: string;
-    country?: string;
-    career?: string;
-    studyLevel?: string;
-    ctfsAttended?: string;
-    shirtSize?: string;
-    heardFrom?: string;
-    emergencyName?: string;
-    emergencyRelation?: string;
-    emergencyPhone?: string;
-    emergencyEmail?: string;
+    // phone?: string;
+    // matricula?: string;
+    // country?: string;
+    // career?: string;
+    // studyLevel?: string;
+    // ctfsAttended?: string;
+    // shirtSize?: string;
+    // heardFrom?: string;
+    // emergencyName?: string;
+    // emergencyRelation?: string;
+    // emergencyPhone?: string;
+    // emergencyEmail?: string;
     password?: string;
-    confirm?: string;
-    isTecCampus?: string;
+    // confirm?: string;
+    // isTecCampus?: string;
     server?: string;
   }>({});
 
@@ -131,98 +131,49 @@ export function SignupForm() {
     const form = new FormData(e.currentTarget);
     const getString = (key: string) => ((form.get(key) as string) ?? "").trim();
 
-    const firstName = getString("firstName");
-    const lastName = getString("lastName");
+    // const firstName = getString("firstName");
+    // const lastName = getString("lastName");
     const name = (form.get("name") as string)?.trim();
-    const ageRaw = getString("age");
+    // const ageRaw = getString("age");
     const email = (form.get("email") as string)?.trim();
-    const phone = getString("phone");
-    const matriculaRaw = getString("matricula");
-    const country = getString("country");
-    const career = getString("career");
-    const studyLevel = getString("studyLevel");
-    const ctfsAttendedRaw = getString("ctfsAttended");
-    const shirtSize = getString("shirtSize");
-    const heardFrom = getString("heardFrom");
-    const emergencyName = getString("emergencyName");
-    const emergencyRelation = getString("emergencyRelation");
-    const emergencyPhone = getString("emergencyPhone");
-    const emergencyEmail = getString("emergencyEmail");
+    // const phone = getString("phone");
+    // const matriculaRaw = getString("matricula");
+    // const country = getString("country");
+    // const career = getString("career");
+    // const studyLevel = getString("studyLevel");
+    // const ctfsAttendedRaw = getString("ctfsAttended");
+    // const shirtSize = getString("shirtSize");
+    // const heardFrom = getString("heardFrom");
+    // const emergencyName = getString("emergencyName");
+    // const emergencyRelation = getString("emergencyRelation");
+    // const emergencyPhone = getString("emergencyPhone");
+    // const emergencyEmail = getString("emergencyEmail");
     const password = form.get("password") as string;
-    const confirm = form.get("confirm") as string;
-    const isTecCampus = form.get("isTecCampus") === "on";
-    const age = Number(ageRaw);
-    const matricula = matriculaRaw ? Number(matriculaRaw) : null;
-    const ctfsAttended = ctfsAttendedRaw ? Number(ctfsAttendedRaw) : null;
+    // const confirm = form.get("confirm") as string;
+    // const isTecCampus = form.get("isTecCampus") === "on";
+    // const age = Number(ageRaw);
+    // const matricula = matriculaRaw ? Number(matriculaRaw) : null;
+    // const ctfsAttended = ctfsAttendedRaw ? Number(ctfsAttendedRaw) : null;
 
-    // ── Validaciones en cliente ───────────────────────────────
-    const clientErrors: typeof errors = {};
-
-    if (!firstName || firstName.length < 2) {
-      clientErrors.firstName = "Ingresa al menos 2 caracteres";
-    }
-    if (!lastName || lastName.length < 2) {
-      clientErrors.lastName = "Ingresa al menos 2 caracteres";
-    }
-    if (!name || name.length < 3 || name.length > 20 || /\s/.test(name)) {
-      clientErrors.name = "3-20 caracteres, sin espacios";
-    }
-    if (!ageRaw || !DIGITS_REGEX.test(ageRaw) || !Number.isInteger(age) || age < 12 || age > 99) {
-      clientErrors.age = "Edad inválida (12-99)";
-    }
-    if (!email || !EMAIL_REGEX.test(email)) {
-      clientErrors.email = "Email inválido";
-    }
-    if (!phone || !DIGITS_REGEX.test(phone) || phone.length < 8 || phone.length > 15) {
-      clientErrors.phone = "Teléfono inválido (8-15 dígitos)";
-    }
-    if (!country) {
-      clientErrors.country = "Campo obligatorio";
-    }
-    if (studyLevel && !STUDY_LEVEL_OPTIONS.includes(studyLevel)) {
-      clientErrors.studyLevel = "Nivel de estudios inválido";
-    }
-    if (
-      ctfsAttendedRaw &&
-      (!DIGITS_REGEX.test(ctfsAttendedRaw) || ctfsAttended === null || !Number.isInteger(ctfsAttended) || ctfsAttended < 0)
-    ) {
-      clientErrors.ctfsAttended = "Solo números enteros positivos";
-    }
-    if (!shirtSize || !SHIRT_SIZE_OPTIONS.includes(shirtSize)) {
-      clientErrors.shirtSize = "Selecciona una talla válida";
-    }
-    if (!heardFrom || heardFrom.length < 3) {
-      clientErrors.heardFrom = "Cuéntanos cómo te enteraste";
-    }
-    if (!emergencyName || emergencyName.length < 2) {
-      clientErrors.emergencyName = "Campo obligatorio";
-    }
-    if (!emergencyRelation || emergencyRelation.length < 2) {
-      clientErrors.emergencyRelation = "Campo obligatorio";
-    }
-    if (
-      !emergencyPhone ||
-      !DIGITS_REGEX.test(emergencyPhone) ||
-      emergencyPhone.length < 8 ||
-      emergencyPhone.length > 15
-    ) {
-      clientErrors.emergencyPhone = "Teléfono inválido (8-15 dígitos)";
-    }
-    if (!emergencyEmail || !EMAIL_REGEX.test(emergencyEmail)) {
-      clientErrors.emergencyEmail = "Email inválido";
-    }
-    if (!password || password.length < 8) {
-      clientErrors.password = "Mínimo 8 caracteres";
-    }
-    if (password !== confirm) {
-      clientErrors.confirm = "Las contraseñas no coinciden";
-    }
-
-    if (Object.keys(clientErrors).length > 0) {
-      setErrors(clientErrors);
-      submitLockRef.current = false;
-      return;
-    }
+    // ── Validaciones en cliente (desactivadas) ────────────────
+    // const clientErrors: typeof errors = {};
+    // if (!name || name.length < 3 || name.length > 20 || /\s/.test(name)) {
+    //   clientErrors.name = "3-20 caracteres, sin espacios";
+    // }
+    // if (!email || !EMAIL_REGEX.test(email)) {
+    //   clientErrors.email = "Email inválido";
+    // }
+    // if (!password || password.length < 8) {
+    //   clientErrors.password = "Mínimo 8 caracteres";
+    // }
+    // if (password !== confirm) {
+    //   clientErrors.confirm = "Las contraseñas no coinciden";
+    // }
+    // if (Object.keys(clientErrors).length > 0) {
+    //   setErrors(clientErrors);
+    //   submitLockRef.current = false;
+    //   return;
+    // }
 
     setLoading(true);
 
@@ -234,24 +185,6 @@ export function SignupForm() {
           name,
           email,
           password,
-          isTecCampus,
-          profile: {
-            firstName,
-            lastName,
-            age,
-            phone,
-            matricula,
-            country,
-            career,
-            studyLevel,
-            ctfsAttended,
-            shirtSize,
-            heardFrom,
-            emergencyName,
-            emergencyRelation,
-            emergencyPhone,
-            emergencyEmail,
-          },
         }),
       });
 
@@ -287,7 +220,7 @@ export function SignupForm() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-5xl mx-4 py-10"
+        className="relative z-10 w-full max-w-md mx-4"
       >
         {/* Label Tab */}
         <div className="flex items-end mb-[-1px] ml-4">
@@ -331,13 +264,26 @@ export function SignupForm() {
             <p className="font-mono text-xs mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
               Regístrate como agente para competir en el CTF.
             </p>
+            <p className="font-mono text-[11px] mt-3" style={{ color: "#F77200" }}>
+              IMPORTANTE: debes registrarte antes en MLH{" "}
+              <a
+                href="https://events.mlh.io/events/14208-hack2dawn"
+                className="underline underline-offset-2 hover:text-white"
+                target="_blank"
+                rel="noreferrer"
+              >
+                https://events.mlh.io/events/14208-hack2dawn
+              </a>{" "}
+              para hacer CheckIn en el evento
+            </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            <p className="font-mono text-[10px] tracking-[0.08em] text-white/45">* Campos obligatorios</p>
+            {/* <p className="font-mono text-[10px] tracking-[0.08em] text-white/45">* Campos obligatorios</p> */}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+            <div className="grid grid-cols-1 gap-y-5">
+              {/*
               <div>
                 <SynthwaveField
                   id="firstName"
@@ -361,6 +307,7 @@ export function SignupForm() {
                 />
                 <FieldError message={errors.lastName} />
               </div>
+              */}
 
               <div>
                 <SynthwaveField
@@ -387,6 +334,7 @@ export function SignupForm() {
                 <FieldError message={errors.email} />
               </div>
 
+              {/*
               <div>
                 <SynthwaveField
                   id="age"
@@ -503,6 +451,7 @@ export function SignupForm() {
                 />
                 <FieldError message={errors.heardFrom} />
               </div>
+              */}
 
               <div>
                 <SynthwaveField
@@ -517,6 +466,7 @@ export function SignupForm() {
                 <FieldError message={errors.password} />
               </div>
 
+              {/*
               <div>
                 <SynthwaveField
                   id="confirm"
@@ -535,8 +485,9 @@ export function SignupForm() {
                   Mínimo 8 caracteres. Recomendado: mayúscula, minúscula y número.
                 </p>
               </div>
+              */}
             </div>
-
+            {/*
             <div className="rounded-md border border-white/20 bg-black/30 px-3 py-2">
               <label htmlFor="isTecCampus" className="flex items-start gap-3 cursor-pointer">
                 <input
@@ -608,6 +559,7 @@ export function SignupForm() {
                 </div>
               </div>
             </div>
+            */}
 
             <SunsetDivider />
             {errors.server && (
