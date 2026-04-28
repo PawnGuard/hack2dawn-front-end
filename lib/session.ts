@@ -7,7 +7,7 @@ export interface SessionData {
   email: string
   isAdmin: boolean
   teamId: number | null
-  ctfdUserToken: string | null
+  ctfdToken?: string
   usernameChangeCount?: number
 }
 
@@ -38,7 +38,7 @@ export async function getSessionUser(): Promise<SessionData | null> {
     email: session.email,
     isAdmin: session.isAdmin,
     teamId: session.teamId,
-    ctfdUserToken: session.ctfdUserToken,
+    ctfdToken: session.ctfdToken,
   }
 }
 

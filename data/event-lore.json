@@ -1,0 +1,7 @@
+{
+  "operationName": "Hack2Dawn 2026",
+  "transmissionText": "[TRANSMISION INTERCEPTADA] Operador, una red hostil activó nodos durmientes en la malla global...",
+  "alertLevel": "Nivel Amarillo",
+  "tacticalWindow": "Activa mientras haya nodos comprometidos",
+  "primaryObjective": "Capturar flags y neutralizar cadena de ataque"
+}

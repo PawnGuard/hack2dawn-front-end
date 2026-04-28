@@ -43,7 +43,9 @@ export async function proxy(request: NextRequest) {
   const isAdmin    = session.isAdmin === true
 
   // ── Grupos de rutas ──────────────────────────────────────────
-  const EVENT_LOCKED_ROUTES = ['/challenges']
+  const EVENT_LOCKED_ROUTES: string[] = [
+    // '/challenges', // habilitada: no se bloquea por ventana de tiempo
+  ]
 
   const isAuthRoute = ['/login', '/register'].some(r => pathname.startsWith(r))
 

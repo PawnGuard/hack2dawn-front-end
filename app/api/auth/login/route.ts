@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
-import { ctfdGetUserTeam, ctfdVerifyCredentials } from '@/lib/ctfd'
+import { ctfdGetUserTeam, ctfdVerifyCredentials, ctfdGetUser, ctfdGetOrCreateUserToken } from '@/lib/ctfd'
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,26 +34,48 @@ export async function POST(req: NextRequest) {
         { status: 403 },
       )
     }
-
+    
+    // 2. Obtener datos extra (admin status, teamId)
+    const fullUser = await ctfdGetUser(user.id);
+    const isAdmin = fullUser ? fullUser.type === 'admin' : false;
     const teamId = await ctfdGetUserTeam(user.id)
+    
+    // 3. Obtener (o regenerar) el Personal Token del usuario  ← NUEVO
+    //    Los admins no necesitan token para jugar, pero lo generamos igual
+    //    por consistencia. Si quieres omitirlo para admins: if (!isAdmin)
+    const ctfdToken = await ctfdGetOrCreateUserToken(user.id)
+
 
     // ── Crear sesión ────────────────────────────────────────────
     const session = await getSession()
-    session.userId = user.id
-    session.username = user.name
-    session.email = user.email
-    session.isAdmin = user.type === 'admin'
-    session.teamId   = teamId
+    session.userId    = user.id
+    session.username  = user.name
+    session.email     = user.email
+    session.isAdmin   = isAdmin
+    session.teamId    = teamId
+    session.ctfdToken = ctfdToken ?? undefined
+
+    if (process.env.DEBUG_SESSION_COOKIE === 'true') {
+      console.log('[login][session-before-save]', {
+        userId:    session.userId,
+        username:  session.username,
+        email:     session.email,
+        isAdmin:   session.isAdmin,
+        teamId:    session.teamId,
+        hasToken:  session.ctfdToken,
+      })
+    }
+
     await session.save()
 
     return NextResponse.json({
       success: true,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        isAdmin: user.type === 'admin',
-        teamId: teamId,
+        id:      user.id,
+        name:    user.name,
+        email:   user.email,
+        isAdmin: session.isAdmin,
+        teamId:  teamId,
       },
     })
   } catch (err) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import createGlobe from "cobe";
 
 const normalizeAngle = (angle: number) => {
@@ -20,6 +20,8 @@ interface GlobeMarker {
 interface GlobeHotspot {
   id: string;
   location: [number, number];
+  size?: number;
+  color?: [number, number, number];
 }
 
 const CONTINENT_CONTOURS: Record<GlobeContinent, Array<[number, number]>> = {
@@ -91,6 +93,7 @@ interface ChallengesGlobeProps {
   onContinentSelect?: (continent: GlobeContinent) => void;
   onHotspotHover?: (hotspotId: string | null) => void;
   onHotspotSelect?: (hotspotId: string) => void;
+  onGlobeDragChange?: (isDragging: boolean) => void;
 }
 
 export default function ChallengesGlobe({
@@ -102,11 +105,14 @@ export default function ChallengesGlobe({
   onContinentSelect,
   onHotspotHover,
   onHotspotSelect,
+  onGlobeDragChange,
 }: ChallengesGlobeProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [hoveredContinent, setHoveredContinent] = useState<GlobeContinent | null>(null);
   const stateRef = useRef({
     phi: 0,
     theta: 0.26,
+    scale: 1,
     dragging: false,
     moved: false,
     startX: 0,
@@ -121,6 +127,9 @@ export default function ChallengesGlobe({
     [hotspots]
   );
 
+  const effectiveHighlightedContinent = hoveredContinent ?? highlightedContinent;
+  const isHoverHighlight = Boolean(hoveredContinent && hoveredContinent !== highlightedContinent);
+
   const baseContourMarkers = useMemo(() => {
     return (Object.keys(CONTINENT_CONTOURS) as GlobeContinent[])
       .map((continent) => buildPolylineMarkers(CONTINENT_CONTOURS[continent], [0.22, 0.22, 0.24], 0.0038, 3.4))
@@ -128,9 +137,14 @@ export default function ChallengesGlobe({
   }, []);
 
   const continentOutlineMarkers = useMemo(() => {
-    if (!highlightedContinent) return [] as GlobeMarker[];
+    if (!effectiveHighlightedContinent) return [] as GlobeMarker[];
 
-    if (highlightedContinent === "Antartida Sur") {
+    const highlightColor: [number, number, number] = isHoverHighlight
+      ? [0, 0.94, 1]
+      : [1, 0.965, 0.35];
+    const highlightSize = isHoverHighlight ? 0.0058 : 0.0074;
+
+    if (effectiveHighlightedContinent === "Antartida Sur") {
       const polarMarkers: GlobeMarker[] = [];
       const latStep = 3;
       const lonStep = 4;
@@ -140,8 +154,8 @@ export default function ChallengesGlobe({
           const edgeBoost = lat > -68 ? 0.0012 : 0;
           polarMarkers.push({
             location: [lat, lon],
-            size: 0.0062 + edgeBoost,
-            color: [1, 0.965, 0.35],
+            size: highlightSize + edgeBoost,
+            color: highlightColor,
           });
         }
       }
@@ -159,22 +173,22 @@ export default function ChallengesGlobe({
       Oceania: { minLat: -52, maxLat: -8, minLon: 110, maxLon: 180 },
     };
 
-    const bounds = boundsByContinent[highlightedContinent];
+    const bounds = boundsByContinent[effectiveHighlightedContinent];
     const highlightMarkers: GlobeMarker[] = [];
     const step = 2.5;
 
     for (let lon = bounds.minLon; lon <= bounds.maxLon; lon += step) {
-      highlightMarkers.push({ location: [bounds.maxLat, lon], size: 0.0074, color: [1, 0.965, 0.35] });
-      highlightMarkers.push({ location: [bounds.minLat, lon], size: 0.0074, color: [1, 0.965, 0.35] });
+      highlightMarkers.push({ location: [bounds.maxLat, lon], size: highlightSize, color: highlightColor });
+      highlightMarkers.push({ location: [bounds.minLat, lon], size: highlightSize, color: highlightColor });
     }
 
     for (let lat = bounds.minLat; lat <= bounds.maxLat; lat += step) {
-      highlightMarkers.push({ location: [lat, bounds.minLon], size: 0.0074, color: [1, 0.965, 0.35] });
-      highlightMarkers.push({ location: [lat, bounds.maxLon], size: 0.0074, color: [1, 0.965, 0.35] });
+      highlightMarkers.push({ location: [lat, bounds.minLon], size: highlightSize, color: highlightColor });
+      highlightMarkers.push({ location: [lat, bounds.maxLon], size: highlightSize, color: highlightColor });
     }
 
     return highlightMarkers;
-  }, [highlightedContinent]);
+  }, [effectiveHighlightedContinent, isHoverHighlight]);
 
   const classifyContinent = (lat: number, lon: number): GlobeContinent | null => {
     if (lat >= -86 && lat <= -60 && lon >= -180 && lon <= 180) return "Antartida Sur";
@@ -283,6 +297,7 @@ export default function ChallengesGlobe({
 
     let phi = stateRef.current.phi;
     let theta = stateRef.current.theta;
+    let scale = stateRef.current.scale;
     let animationFrame: number | null = null;
 
     const globe = createGlobe(canvas, {
@@ -291,6 +306,7 @@ export default function ChallengesGlobe({
       height: pixelSize * dpr,
       phi,
       theta,
+      scale,
       dark: 1,
       diffuse: 1.25,
       mapSamples: 12000,
@@ -303,6 +319,7 @@ export default function ChallengesGlobe({
 
     const onPointerDown = (event: PointerEvent) => {
       stateRef.current.dragging = true;
+      onGlobeDragChange?.(true);
       stateRef.current.moved = false;
       stateRef.current.pointerId = event.pointerId;
       stateRef.current.startX = event.clientX;
@@ -323,22 +340,24 @@ export default function ChallengesGlobe({
       phi += dx * 0.008;
       theta = Math.max(-0.75, Math.min(0.75, theta + dy * 0.004));
 
-      if (Math.abs(event.clientX - stateRef.current.startX) > 4 || Math.abs(event.clientY - stateRef.current.startY) > 4) {
+      if (Math.abs(event.clientX - stateRef.current.startX) > 7 || Math.abs(event.clientY - stateRef.current.startY) > 7) {
         stateRef.current.moved = true;
       }
     };
 
     const onPointerHover = (event: PointerEvent) => {
-      if (!onHotspotHover || stateRef.current.dragging) return;
+      if (stateRef.current.dragging) return;
 
       const picked = pickLatLon(canvas, event.clientX, event.clientY, phi, theta);
       if (!picked) {
-        onHotspotHover(null);
+        onHotspotHover?.(null);
+        setHoveredContinent(null);
         return;
       }
 
+      setHoveredContinent(classifyContinent(picked[0], picked[1]));
       const hotspot = findClosestHotspot(picked);
-      onHotspotHover(hotspot?.id ?? null);
+      onHotspotHover?.(hotspot?.id ?? null);
     };
 
     const onPointerUp = (event: PointerEvent) => {
@@ -346,38 +365,48 @@ export default function ChallengesGlobe({
 
       const wasMoved = stateRef.current.moved;
       stateRef.current.dragging = false;
+      onGlobeDragChange?.(false);
       stateRef.current.pointerId = -1;
       canvas.releasePointerCapture(event.pointerId);
 
-      if (wasMoved || !onContinentSelect) return;
+      if (wasMoved) return;
 
       const picked = pickLatLon(canvas, event.clientX, event.clientY, phi, theta);
       if (!picked) return;
+
+      const continent = classifyContinent(picked[0], picked[1]);
+      if (continent) {
+        onContinentSelect?.(continent);
+      }
 
       const hotspot = findClosestHotspot(picked);
       if (hotspot) {
         onHotspotSelect?.(hotspot.id);
       }
-
-      const continent = classifyContinent(picked[0], picked[1]);
-      if (continent) {
-        onContinentSelect(continent);
-      }
     };
 
     const onPointerLeave = () => {
       onHotspotHover?.(null);
+      setHoveredContinent(null);
+    };
+
+    const onPointerCancel = () => {
+      stateRef.current.dragging = false;
+      stateRef.current.pointerId = -1;
+      onGlobeDragChange?.(false);
     };
 
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("pointermove", onPointerMove);
     canvas.addEventListener("pointermove", onPointerHover);
     canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerCancel);
     canvas.addEventListener("pointerleave", onPointerLeave);
 
     const frameLoop = () => {
       let nextPhi = phi;
       let nextTheta = theta;
+      let nextScale = scale;
 
       if (activeLocation) {
         // Cobe's phi=0 aligns close to lon=-90, apply correction for true centering.
@@ -386,20 +415,59 @@ export default function ChallengesGlobe({
         const phiDiff = normalizeAngle(targetPhi - nextPhi);
         const thetaDiff = targetTheta - nextTheta;
 
-        nextPhi += phiDiff * 0.08;
-        nextTheta += thetaDiff * 0.08;
+        const travel = Math.abs(phiDiff) + Math.abs(thetaDiff);
+        const easing = travel > 0.3 ? 0.12 : travel > 0.12 ? 0.09 : 0.06;
+        nextPhi += phiDiff * easing;
+        nextTheta += thetaDiff * easing;
+
+        // Snap near target to avoid endless micro-jitter.
+        if (Math.abs(phiDiff) < 0.0025 && Math.abs(thetaDiff) < 0.0025) {
+          nextPhi = targetPhi;
+          nextTheta = targetTheta;
+        }
+
+        nextScale += (1.09 - nextScale) * 0.08;
       } else if (!stateRef.current.dragging) {
         nextPhi += 0.0015;
+        nextScale += (1 - nextScale) * 0.1;
       }
 
       phi = normalizeAngle(nextPhi);
       theta = Math.max(-0.75, Math.min(0.75, nextTheta));
+      scale = Math.max(1, Math.min(1.1, nextScale));
       stateRef.current.phi = phi;
       stateRef.current.theta = theta;
+      stateRef.current.scale = scale;
+
+      const pulse = (Math.sin(performance.now() * 0.004) + 1) / 2;
+      const hotspotMarkers = normalizedHotspots.flatMap((hotspot, index) => {
+        const coreColor = hotspot.color ?? [0, 0.94, 1];
+        const haloColor: [number, number, number] = index % 2 === 0
+          ? [0.32, 0.02, 0.28]
+          : [0.08, 0.26, 0.3];
+        const baseSize = hotspot.size ?? 0.021;
+        const corePulseSize = baseSize * (1 + pulse * 0.24);
+        const haloPulseSize = baseSize * (1.85 + pulse * 0.5);
+
+        return [
+          {
+            location: hotspot.location,
+            size: haloPulseSize,
+            color: haloColor,
+          },
+          {
+            location: hotspot.location,
+            size: corePulseSize,
+            color: coreColor,
+          },
+        ];
+      });
 
       globe.update({
         phi,
         theta,
+        scale,
+        markers: [...baseContourMarkers, ...continentOutlineMarkers, ...hotspotMarkers],
       });
 
       animationFrame = window.requestAnimationFrame(frameLoop);
@@ -412,7 +480,9 @@ export default function ChallengesGlobe({
       canvas.removeEventListener("pointermove", onPointerMove);
       canvas.removeEventListener("pointermove", onPointerHover);
       canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointercancel", onPointerCancel);
       canvas.removeEventListener("pointerleave", onPointerLeave);
+      onGlobeDragChange?.(false);
       if (animationFrame) {
         window.cancelAnimationFrame(animationFrame);
       }
@@ -424,6 +494,7 @@ export default function ChallengesGlobe({
     continentOutlineMarkers,
     normalizedHotspots,
     onContinentSelect,
+    onGlobeDragChange,
     onHotspotHover,
     onHotspotSelect,
     pixelSize,

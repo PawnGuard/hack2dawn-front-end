@@ -1,3 +1,5 @@
+import { ChallengeContinent } from "@/types/challenges"
+
 // ─── Wrapper genérico (sirve para todos los endpoints) ───────────
 export interface CTFdResponse<T> {
   success: boolean
@@ -113,4 +115,44 @@ export interface ProfileDashboardData {
     date: string
     value: number // Puntos
   }[]
+}
+
+export interface CTFdChallengeRaw {
+  id: number
+  name: string
+  description?: string
+  category?: string
+  type?: string
+  value?: number
+  state?: string
+  solves?: number
+  solved_by_me?: boolean
+  connection_info?: string | null
+  next_id?: number | null
+  max_attempts?: number | null
+  requirements?: { prerequisites?: number[]; anonymize?: boolean } | null
+  initial?: number   // scoring dinámico
+  minimum?: number
+  decay?: number
+  tags?: string[]   
+}
+
+export interface CTFdChallengeSummary {
+  id: number
+  slug: string
+  name: string
+  category: string
+  type: string
+  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Insane'
+  points: number
+  continent: ChallengeContinent | null
+  description: string
+  lore: string
+  totalFlags: number
+  capturedFlags: number
+  status: 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED'
+  completedAt: string | null
+  firstBlood: null
+  solves: number
+  connectionInfo: string | null
 }

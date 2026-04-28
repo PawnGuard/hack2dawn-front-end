@@ -1,4 +1,13 @@
-import { CTFdResponse, CTFdTeam, CTFdUser, CTFdStanding, CTFdSolve } from "./types/ctfd"
+import { ChallengeContinent, ChallengeSummary } from "@/types/challenges"
+import { 
+  CTFdResponse, 
+  CTFdTeam, 
+  CTFdUser, 
+  CTFdStanding, 
+  CTFdSolve, 
+  CTFdChallengeRaw, 
+  CTFdChallengeSummary
+ } from "./types/ctfd"
 
 const BASE = process.env.CTFD_BASE_URL!
 const ADMIN_TOKEN = process.env.CTFD_ADMIN_TOKEN!
@@ -434,6 +443,68 @@ export async function ctfdGetTeamRank(teamId: number): Promise<number | null> {
   }
 }
 
+/**
+ * Obtiene los IDs de challenges resueltos por el equipo.
+ * GET /api/v1/teams/:teamId/solves  →  array de solves del equipo.
+ * Usa Admin Token para poder leer cualquier equipo.
+ *
+ * Devuelve un Set<number> con los challenge_id resueltos, listo para
+ * un O(1) lookup en ctfdGetChallengeList.
+ */
+export async function ctfdGetTeamSolvedIds(teamId: number): Promise<Set<number>> {
+  try {
+    const res = await fetch(`${BASE}/api/v1/teams/${teamId}/solves`, {
+      headers: ctfdHeaders(),  // Admin Token — puede leer cualquier equipo
+      cache: 'no-store',
+    })
+
+    if (!res.ok) {
+      console.error('[ctfdGetTeamSolvedIds] CTFd respondió', res.status)
+      return new Set()
+    }
+
+    const body = await res.json() as CTFdResponse<Array<{ challenge_id: number }>>
+    if (!body.success || !body.data) return new Set()
+
+    return new Set(body.data.map(s => s.challenge_id))
+  } catch (err) {
+    console.error('[ctfdGetTeamSolvedIds] Error:', err)
+    return new Set()
+  }
+}
+
+/**
+ * Obtiene el score y rank actuales del equipo desde el scoreboard.
+ * GET /api/v1/teams/:teamId  →  score campo en el objeto del equipo.
+ *
+ * Nota: CTFd expone el score oficial directamente en el objeto del equipo.
+ */
+export async function ctfdGetTeamStats(
+  teamId: number
+): Promise<{ score: number; rank: number | null }> {
+  try {
+    // Rank: buscamos en el scoreboard
+    const scoreboardRes = await fetch(`${BASE}/api/v1/scoreboard`, {
+      headers: ctfdHeaders(),
+      cache: 'no-store',
+    })
+
+    if (!scoreboardRes.ok) return { score: 0, rank: null }
+
+    const body = await scoreboardRes.json() as CTFdResponse<CTFdStanding[]>
+    if (!body.success || !body.data) return { score: 0, rank: null }
+
+    const standing = body.data.find(s => s.account_id === teamId)
+    return {
+      score: standing?.score  ?? 0,
+      rank:  standing?.pos    ?? null,
+    }
+  } catch (err) {
+    console.error('[ctfdGetTeamStats] Error:', err)
+    return { score: 0, rank: null }
+  }
+}
+
 {/* ENDPOINTS DE USUARIO */}
 
 // ─── Obtener Solves de un usuario ─────────────────────────────────
@@ -459,6 +530,59 @@ export async function ctfdGetChallenge(challengeId: number): Promise<{ name: str
   return body.data ? { name: body.data.name, value: body.data.value } : null
 }
 
+export async function ctfdGetChallengeDetail(
+  challengeId: number,
+  userAuth?: string | null,
+): Promise<ChallengeSummary | null> {
+  // Headers: si hay token de usuario, usarlo para que solved_by_me sea correcto
+  let headers: HeadersInit
+  if (userAuth?.startsWith('Token ')) {
+    headers = {
+      Authorization: userAuth,
+      'Content-Type': 'application/json',
+      'x-internal-key': NGINX_SECRET,
+    }
+  } else {
+    headers = ctfdHeaders()  // Admin token como fallback
+  }
+
+  const res = await fetch(`${BASE}/api/v1/challenges/${challengeId}`, {
+    headers,
+    cache: 'no-store',
+  })
+
+  if (!res.ok) return null
+
+  const body = await res.json() as { success: boolean; data?: CTFdChallengeRaw }
+  if (!body.success || !body.data) return null
+
+  const chall = body.data
+  const points  = chall.value ?? chall.initial ?? 0
+  const solved  = chall.solved_by_me ?? false
+  const continent = parseContinentTag(chall.tags)
+
+  return {
+    id:            chall.id,
+    slug:          toSlug(chall.name),
+    name:          chall.name,
+    category:      chall.category ?? 'General',
+    continent,
+    type:          chall.type ?? chall.category ?? 'General',
+    difficulty:    mapDifficulty(points),
+    points,
+    description:   chall.description ?? 'Sin descripción disponible.',
+    lore:          'Briefing no disponible. Revisa la descripción técnica del reto.',
+    totalFlags:    1,
+    capturedFlags: solved ? 1 : 0,
+    status:        solved ? 'COMPLETED' : 'AVAILABLE',
+    completedAt:   null,
+    firstBlood:    null,
+    solves:        chall.solves ?? 0,
+    connectionInfo: chall.connection_info ?? null,
+    solvedByTeam:  false,  // El detalle individual no tiene info del equipo; se enriquece si se necesita
+  }
+}
+
 // ─── Actualizar perfil de usuario ─────────────────────────────────
 // PATCH /api/v1/users/{id}
 export async function ctfdUpdateUser(
@@ -474,4 +598,186 @@ export async function ctfdUpdateUser(
   const text = await res.text()
   try { return JSON.parse(text) }
   catch { throw new Error(`CTFd error (${res.status}): ${text.substring(0, 200)}`) }
+}
+
+// Fecha de expiración del token: fin del evento + 7 días de margen
+function tokenExpiration(): string {
+  const end = process.env.EVENT_END
+    ? new Date(process.env.EVENT_END)
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // fallback: 30 días
+
+  end.setDate(end.getDate() + 7) // margen de seguridad
+  return end.toISOString().split('T')[0] // "YYYY-MM-DD"
+}
+
+/**
+ * Crea un nuevo token personal para el usuario.
+ * Devuelve el valor del token (solo visible en el momento de creación).
+ */
+async function ctfdCreateUserToken(userId: number): Promise<string | null> {
+  const res = await fetch(`${BASE}/api/v1/tokens`, {
+    method: 'POST',
+    headers: ctfdHeaders(),
+    body: JSON.stringify({
+      user_id: userId,
+      expiration: tokenExpiration(),
+      description: 'H4ck2D4wn Platform Token',
+    }),
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    console.error('[ctfdCreateUserToken] Error:', res.status)
+    return null
+  }
+
+  const body = await res.json() as CTFdResponse<{ id: number; value: string }>
+  // "value" solo está disponible aquí, en el momento de creación
+  return body.success ? body.data?.value ?? null : null
+}
+
+/**
+ * ctfdGetOrCreateUserToken
+ *
+ * Punto de entrada principal. Llama a esta función desde login y register.
+ *
+ * Estrategia:
+ * - Si el usuario ya tiene un token de plataforma → lo borra y crea uno fresco
+ *   (porque la API de listado no devuelve el valor real del token, solo el ID)
+ * - Si no tiene → crea uno nuevo
+ *
+ * Esto garantiza que SIEMPRE tengamos el valor del token en mano para
+ * guardarlo en la sesión de iron-session.
+ */
+export async function ctfdGetOrCreateUserToken(userId: number): Promise<string | null> {
+  try {
+    const token = await ctfdCreateUserToken(userId)
+    if (!token) {
+      console.error('[ctfdGetOrCreateUserToken] No se pudo crear token para userId:', userId)
+    }
+    return token
+  } catch (err) {
+    console.error('[ctfdGetOrCreateUserToken] Error inesperado:', err)
+    return null
+  }
+}
+
+function toSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, ' ')
+    .trim()
+    .replace(/\s+/g, '-')
+}
+
+function mapDifficulty(points: number): 'Easy' | 'Medium' | 'Hard' | 'Insane' {
+  if (points <= 125) return 'Easy'
+  if (points <= 275) return 'Medium'
+  if (points <= 400) return 'Hard'
+  return 'Insane'
+}
+
+const VALID_CONTINENTS = new Set<ChallengeContinent>([
+  'North America',
+  'South America',
+  'Europe',
+  'Africa',
+  'Asia',
+  'Oceania',
+  'Antartida Sur',
+])
+
+/**
+ * Busca en el array de tags de CTFd un tag con el prefijo "continent:"
+ * y devuelve el continente si es válido, o null si no se encontró o es inválido.
+ *
+ * Ejemplo de tag en CTFd: "continent:Asia"  →  devuelve "Asia"
+ * Ejemplo de tag en CTFd: "continent:North America"  →  devuelve "North America"
+ */
+function parseContinentTag(
+  tags: string[] | undefined | null,
+): ChallengeContinent | null {
+  if (!tags || tags.length === 0) return null
+
+  const tag = tags.find(t => typeof t === 'string' && t.toLowerCase().startsWith('continent:'))
+  if (!tag) return null
+
+  const raw = tag.slice('continent:'.length).trim()
+
+  return VALID_CONTINENTS.has(raw as ChallengeContinent)
+    ? (raw as ChallengeContinent)
+    : null
+}
+
+/**
+ * ctfdGetChallengeList
+ * GET /api/v1/challenges
+ *
+ * Si pasas `userSessionCookie` (la cookie de sesión de CTFd del usuario),
+ * CTFd devolverá `solved_by_me: true` para los retos que ese usuario ya resolvió.
+ * Sin ella se usa el admin token y todos los retos llegan como AVAILABLE.
+ */
+export async function ctfdGetChallengeList(
+  userAuth?: string,
+): Promise<CTFdChallengeSummary[]> {
+
+  let headers: HeadersInit
+
+  if (!userAuth) {
+    // Sin autenticación de usuario → usa Admin Token (todos AVAILABLE)
+    headers = ctfdHeaders()
+  } else if (userAuth.startsWith('Token ')) {
+    // Personal Access Token del usuario (el caso correcto en producción)
+    headers = {
+      'Authorization':  userAuth,
+      'Content-Type':   'application/json',
+      'x-internal-key': NGINX_SECRET,
+    }
+  } else {
+    // Cookie de sesión (legacy / fallback)
+    headers = {
+      'Cookie':         userAuth,
+      'Content-Type':   'application/json',
+      'x-internal-key': NGINX_SECRET,
+    }
+  }
+
+  const res = await fetch(`${BASE}/api/v1/challenges`, {
+    headers,
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    console.error('[ctfdGetChallengeList] CTFd respondió', res.status)
+    return []
+  }
+
+  const body = await res.json() as CTFdResponse<CTFdChallengeRaw[]>
+  if (!body.success || !body.data) return []
+
+  return body.data.map((chall) => {
+    const points = chall.value ?? chall.initial ?? 0
+    const solved = chall.solved_by_me ?? false
+    const continent = parseContinentTag(chall.tags)
+
+    return {
+      id:             chall.id,
+      slug:           toSlug(chall.name),
+      name:           chall.name,
+      category:       chall.category      ?? 'General',
+      continent,
+      type:           chall.type          ?? chall.category ?? 'General',
+      difficulty:     mapDifficulty(points),
+      points,
+      description:    chall.description   ?? 'Sin descripción disponible.',
+      lore:           'Briefing no disponible. Revisa la descripción técnica del reto.',
+      totalFlags:     1,
+      capturedFlags:  solved ? 1 : 0,
+      status:         solved ? 'COMPLETED' : 'AVAILABLE',
+      completedAt:    null,
+      firstBlood:     null,
+      solves:         chall.solves        ?? 0,
+      connectionInfo: chall.connection_info ?? null,
+    }
+  })
 }

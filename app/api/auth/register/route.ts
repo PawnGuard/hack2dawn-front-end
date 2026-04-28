@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
-import { ctfdCreateUser } from '@/lib/ctfd'
+import { ctfdCreateUser, ctfdGetOrCreateUserToken } from '@/lib/ctfd'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const DIGITS_REGEX = /^\d+$/
@@ -174,6 +174,9 @@ export async function POST(req: NextRequest) {
 
     const newUser = result.data
 
+    // Generar Personal Token para el nuevo usuario
+    const ctfdToken = await ctfdGetOrCreateUserToken(newUser.id)
+
     // ── Crear sesión con iron-session ───────────────────────────
     const session = await getSession()
     session.userId = newUser.id
@@ -181,7 +184,9 @@ export async function POST(req: NextRequest) {
     session.email = newUser.email
     session.isAdmin = newUser.type === 'admin'
     session.teamId   = null // Nuevo usuario no tiene equipo aún
-    await session.save() // ← Firma, encripta y setea la cookie httpOnly
+    session.ctfdToken = ctfdToken ?? undefined
+
+    await session.save()
 
     return NextResponse.json({
       success: true,
