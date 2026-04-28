@@ -73,5 +73,18 @@ export const contributors: Contributor[] = [
       { platform: "linkedin", url: "https://www.linkedin.com/in/angelgabrielcamacho/" },
       { platform: "github",   url: "https://github.com/AngelGabrielCP5TEC" }
     ],
+  },
+  {
+    id: 7,
+    name: "uno21858",
+    role: "Software Engineer, VPS assistant",
+    contribution: "Help to assist with configuration in VPS in Vultr and documentation of the API CTFd for the app. Create the OSINT lab for Hack2Dawn 2026",
+    avatar: "https://github.com/uno21858.png",
+    profileUrl: "https://github.com/uno21858",
+    socials: [
+      { platform: "linkedin", url: " https://www.linkedin.com/in/erick-alberto-sanchez/" },
+      { platform: "github",   url: "https://github.com/uno21858" },
+      { platform: "web-page", url: "uno21things.dev" }
+    ],
   }
 ];
