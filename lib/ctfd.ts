@@ -64,39 +64,42 @@ export async function ctfdCreateUser(payload: {
   name: string
   email: string
   password: string
-  isTecCampus: boolean
-  profile: RegisterProfileData
+  isTecCampus?: boolean
+  profile?: RegisterProfileData
 }): Promise<CTFdResponse<CTFdUser>> {
 
   const url = `${BASE}/api/v1/users`
-  if (!Number.isFinite(TEC_CAMPUS_FIELD_ID)) {
-    throw new Error('CTFD_TEC_CAMPUS_FIELD_ID no está definido o no es numérico')
-  }
+  const customFields: Array<{ field_id: number; value: string }> = []
 
-  const customFields: Array<{ field_id: number; value: string }> = [
-    {
+  if (typeof payload.isTecCampus === 'boolean') {
+    if (!Number.isFinite(TEC_CAMPUS_FIELD_ID)) {
+      throw new Error('CTFD_TEC_CAMPUS_FIELD_ID no está definido o no es numérico')
+    }
+    customFields.push({
       field_id: TEC_CAMPUS_FIELD_ID,
       value: payload.isTecCampus ? 'true' : 'false',
-    },
-  ]
+    })
+  }
 
-  addCustomField(customFields, FIRST_NAME_FIELD_ID, payload.profile.firstName)
-  addCustomField(customFields, LAST_NAME_FIELD_ID, payload.profile.lastName)
-  addCustomField(customFields, AGE_FIELD_ID, payload.profile.age)
-  addCustomField(customFields, PHONE_FIELD_ID, payload.profile.phone)
-  addCustomField(customFields, MATRICULA_FIELD_ID, payload.profile.matricula)
-  addCustomField(customFields, COUNTRY_FIELD_ID, payload.profile.country)
-  addCustomField(customFields, CAREER_FIELD_ID, payload.profile.career)
-  addCustomField(customFields, STUDY_LEVEL_FIELD_ID, payload.profile.studyLevel)
-  addCustomField(customFields, CTFS_ATTENDED_FIELD_ID, payload.profile.ctfsAttended)
-  addCustomField(customFields, SHIRT_SIZE_FIELD_ID, payload.profile.shirtSize)
-  addCustomField(customFields, HEARD_FROM_FIELD_ID, payload.profile.heardFrom)
-  addCustomField(customFields, EMERGENCY_NAME_FIELD_ID, payload.profile.emergencyName)
-  addCustomField(customFields, EMERGENCY_RELATION_FIELD_ID, payload.profile.emergencyRelation)
-  addCustomField(customFields, EMERGENCY_PHONE_FIELD_ID, payload.profile.emergencyPhone)
-  addCustomField(customFields, EMERGENCY_EMAIL_FIELD_ID, payload.profile.emergencyEmail)
+  if (payload.profile) {
+    addCustomField(customFields, FIRST_NAME_FIELD_ID, payload.profile.firstName)
+    addCustomField(customFields, LAST_NAME_FIELD_ID, payload.profile.lastName)
+    addCustomField(customFields, AGE_FIELD_ID, payload.profile.age)
+    addCustomField(customFields, PHONE_FIELD_ID, payload.profile.phone)
+    addCustomField(customFields, MATRICULA_FIELD_ID, payload.profile.matricula)
+    addCustomField(customFields, COUNTRY_FIELD_ID, payload.profile.country)
+    addCustomField(customFields, CAREER_FIELD_ID, payload.profile.career)
+    addCustomField(customFields, STUDY_LEVEL_FIELD_ID, payload.profile.studyLevel)
+    addCustomField(customFields, CTFS_ATTENDED_FIELD_ID, payload.profile.ctfsAttended)
+    addCustomField(customFields, SHIRT_SIZE_FIELD_ID, payload.profile.shirtSize)
+    addCustomField(customFields, HEARD_FROM_FIELD_ID, payload.profile.heardFrom)
+    addCustomField(customFields, EMERGENCY_NAME_FIELD_ID, payload.profile.emergencyName)
+    addCustomField(customFields, EMERGENCY_RELATION_FIELD_ID, payload.profile.emergencyRelation)
+    addCustomField(customFields, EMERGENCY_PHONE_FIELD_ID, payload.profile.emergencyPhone)
+    addCustomField(customFields, EMERGENCY_EMAIL_FIELD_ID, payload.profile.emergencyEmail)
+  }
 
-  const affiliation = payload.profile.career || (payload.isTecCampus ? 'ITESM' : undefined)
+  const affiliation = payload.profile?.career || (payload.isTecCampus ? 'ITESM' : undefined)
 
   const res = await fetch(url, {
     method: 'POST',
@@ -110,7 +113,7 @@ export async function ctfdCreateUser(payload: {
       verified: true,
       hidden: false,
       banned: false,
-      fields: customFields,
+      ...(customFields.length ? { fields: customFields } : {}),
     }),
     cache: 'no-store', // Mutación → nunca cachear
   })
