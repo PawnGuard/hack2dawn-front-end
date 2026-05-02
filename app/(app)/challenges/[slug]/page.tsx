@@ -1,585 +1,579 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Lock, ShieldAlert, TerminalSquare, Unlock } from "lucide-react";
-import { Boxes } from "@/components/ui/background-boxes";
-import type { ChallengeSummary, ChallengesResponse } from "@/types/challenges";
+import Link from 'next/link'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useParams } from 'next/navigation'
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Lock,
+  ShieldAlert,
+  TerminalSquare,
+  Unlock,
+  Wifi,
+} from 'lucide-react'
+import { Boxes } from '@/components/ui/background-boxes'
+import type { ChallengeSummary, ChallengesResponse } from '@/types/challenges'
 
-interface LabFlag {
-    id: number;
-    title: string;
-    initialHint: string;
-    penaltyHint?: string;
-    notes?: string;
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
+type SubmitStatus = 'idle' | 'loading' | 'correct' | 'incorrect' | 'already_solved' | 'error'
+
+interface FlagState {
+  input: string
+  status: SubmitStatus
+  message: string
 }
 
-interface LabDossier {
-    owners: string;
-    focus: string;
-    story: string;
-    finalMessage?: string;
-    flags: LabFlag[];
-}
-
-const LAB_DOSSIERS: Record<string, LabDossier> = {
-    "linux-basics-terminal-trace": {
-        owners: "Sergio, Sammy",
-        focus: "Aprovechamiento del conocimiento basico de navegacion en Linux.",
-        story:
-            "Un informante de la NSA en de4thPawn fue descubierto. Antes de ser capturado dejo una terminal activa con rastros de evidencia. Tu mision es recuperar esos fragmentos para apoyar una accion legal contra la organizacion.",
-        finalMessage:
-            "Bien hecho. Con esta informacion podremos planificar como atacar una parte de esta organizacion. Gracias a ti el mundo podra ser mejor, pequeno hacker de sombrero blanco.",
-        flags: [
-            {
-                id: 1,
-                title: "Archivo oculto en HOME",
-                initialHint: "El informante dejo una nota: Busca donde nadie mira.",
-                penaltyHint: "En Linux, los archivos que empiezan con punto no aparecen con ls normal. Usa ls -a.",
-                notes: "La flag debe vivir en un archivo oculto del directorio inicial del contenedor.",
-            },
-            {
-                id: 2,
-                title: "Rastro en historial de comandos",
-                initialHint: "Se movieron archivos y quedaron rastros de los comandos ejecutados.",
-                penaltyHint: "Bash guarda historial en un archivo oculto del HOME.",
-                notes: "Usar .bash_history como fuente de evidencia.",
-            },
-            {
-                id: 3,
-                title: "Filtrado de system.log",
-                initialHint:
-                    "Existe un archivo de logs masivo llamado system.log y la pista aparece junto a PRIORITY_ALPHA.",
-                penaltyHint: "No leas todo el archivo. Filtra por palabra clave con grep.",
-            },
-            {
-                id: 4,
-                title: "Mensaje en banner del sistema",
-                initialHint: "Un mensaje obvio se muestra al iniciar sesion en el sistema.",
-                penaltyHint: "Busca el Message of the Day en /etc/motd.",
-            },
-            {
-                id: 5,
-                title: "Archivo disfrazado plano_escape.jpg",
-                initialHint:
-                    "Hay una imagen que no se puede visualizar. Encuentrala y valida si realmente es una imagen.",
-                penaltyHint: "Las extensiones no definen el tipo real. Revisa la firma del archivo con file.",
-                notes: "Si el contenido es texto, puede leerse directamente.",
-            },
-        ],
-    },
-    "linux-advanced-agent-shadow": {
-        owners: "C4rnage, Shadow",
-        focus: "Linux avanzado y administracion.",
-        story:
-            "Se obtuvo acceso de bajo nivel al servidor de archivos de de4thPawn como agente_shadow. Debes escalar capacidad usando pistas internas para llegar a informacion critica protegida.",
-        flags: [
-            {
-                id: 1,
-                title: "Variable de entorno con secreto inicial",
-                initialHint: "La clave de sesion actual esta en memoria volatil del sistema.",
-                penaltyHint: "Lista variables de entorno con env o printenv.",
-            },
-            {
-                id: 2,
-                title: "Backup secreto >20MB",
-                initialHint: "Nuestro agente guardo un backup grande en algun punto del disco.",
-                penaltyHint: "Busca archivos por tamano y ruta con find.",
-            },
-            {
-                id: 3,
-                title: "Proceso sospechoso cada 10 segundos",
-                initialHint: "Hay un script de mantenimiento corriendo con nombre sospechoso.",
-                penaltyHint: "Inspecciona procesos activos con ps aux o top.",
-                notes: "La flag es el nombre del proceso con formato PWG{YOUR_FLAG}.",
-            },
-            {
-                id: 4,
-                title: "Lectura de secreto_admin.txt con SUID",
-                initialHint: "Solo el grupo classified puede leer ese archivo. Hay un binario SUID util en el sistema.",
-                penaltyHint: "Busca binarios con permiso SUID para ejecutar acciones como otro usuario.",
-            },
-            {
-                id: 5,
-                title: "Tarea cron que imprime flag en ruta oculta",
-                initialHint: "Existe una tarea automatizada que deja la flag en una ruta no obvia.",
-                penaltyHint: "Revisa /etc/cron.d y las tareas programadas.",
-            },
-        ],
-    },
-    "osint-la-huella-digital": {
-        owners: "Najera, Erick (uno21)",
-        focus: "Investigacion en fuentes abiertas.",
-        story:
-            "de4thPawn desconecto sus servidores. El rastro actual esta en la web publica: metadatos, historiales, repositorios y archivos indexados. Deben reconstruir identidad y movimientos.",
-        flags: [
-            {
-                id: 1,
-                title: "Metadatos de imagen repetida",
-                initialHint: "El lider de la organizacion adoraba a una persona y dejo el mismo archivo publicado varias veces.",
-                penaltyHint: "Usa exiftool para extraer metadatos de imagen.",
-                notes: "La palabra de4thPawn debe dirigir a publicaciones con la misma imagen.",
-            },
-            {
-                id: 2,
-                title: "Codigo historico en blog caido",
-                initialHint: "de4thpawn-log.com esta caido, pero publico un codigo de acceso hace un mes.",
-                penaltyHint: "Consulta snapshots con Wayback Machine o cache de buscadores.",
-            },
-            {
-                id: 3,
-                title: "API key en historial de GitHub",
-                initialHint: "Hay un repositorio simulado con una herramienta de hacking donde se filtro informacion.",
-                penaltyHint: "Revisa historial de cambios y commits en GitHub.",
-            },
-            {
-                id: 4,
-                title: "PDF confidencial indexado por Google",
-                initialHint: "Existe un PDF publico no enlazado en navegacion pero indexado por buscador.",
-                penaltyHint: "Usa Google Dorks como site:dominio filetype:pdf.",
-                notes:
-                    "Asegurar ruta publica accesible, referencia indexable (enlace o sitemap), robots.txt sin bloqueo y metadatos coherentes.",
-            },
-        ],
-    },
-    "vulnerable-system-final-attack": {
-        owners: "Sammy (+ colaboradores)",
-        focus: "Vulnerar un sistema hasta obtener ejecucion root.",
-        story:
-            "La IP objetivo pertenece a una infraestructura C2 protegida. Un error puede cerrar la ventana de ataque. Debes encadenar reconocimiento, explotacion y escalada.",
-        flags: [
-            {
-                id: 1,
-                title: "Reconocimiento sigiloso",
-                initialHint:
-                    "Un puerto solo se revela con escaneo sigiloso o completo. Al encontrarlo, usa netcat o curl para obtener el banner con la flag.",
-            },
-            {
-                id: 2,
-                title: "Manipulacion de sesion y parametros",
-                initialHint:
-                    "Con RCE en cmd se obtiene users.txt. Luego hay que ajustar sesion para acceder con id=10 y recuperar una flag en comentarios del codigo.",
-                notes: "Puede resolverse con Burp Suite o curl modificando nombre de sesion y parametros.",
-            },
-            {
-                id: 3,
-                title: "Explotacion SQLi",
-                initialHint: "Flag pendiente de definicion final para este bloque de laboratorio.",
-                penaltyHint: "Pendiente.",
-            },
-            {
-                id: 4,
-                title: "SSH + esteganografia con strings",
-                initialHint:
-                    "Existe una imagen con texto embebido. Extrae texto legible y filtra por el prefijo de la flag.",
-                penaltyHint: "El comando strings permite visualizar texto en binarios.",
-            },
-            {
-                id: 5,
-                title: "Escalada de privilegios via cronjob",
-                initialHint:
-                    "Un cronjob de root ejecuta un script con permisos mal configurados que puede editarse para lograr elevacion.",
-                penaltyHint: "Revisa tareas programadas y debilidades en scripts ejecutados automaticamente.",
-                notes: "Flag final en /root/FINAL_FLAG.txt.",
-            },
-        ],
-    },
-};
-
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
 function prettyDate(value: string | null): string {
-    if (!value) return "--";
-    return new Date(value).toLocaleString("es-MX", {
-        dateStyle: "short",
-        timeStyle: "short",
-    });
+  if (!value) return '--'
+  return new Date(value).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
 }
 
+function getMachineName(steps: ChallengeSummary[]): string {
+  const step1 = steps.find(s => s.step === 1) ?? steps[0]
+  if (!step1) return 'Lab'
+  const name = step1.name
+  return name.includes('-') ? name.split('-')[0].trim() : (step1.machineId?.toUpperCase() ?? name)
+}
+
+// ─────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────
 export default function ChallengeDetailPage() {
-    const params = useParams<{ slug: string }>();
-    const slug = params.slug;
-    const storageKey = `challenge-progress:${slug}`;
+  const params = useParams() as { slug: string }
+  const { slug } = params
 
-    const [challenge, setChallenge] = useState<ChallengeSummary | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [solvedFlags, setSolvedFlags] = useState<number[]>([]);
-    const [flagInputs, setFlagInputs] = useState<Record<number, string>>({});
-    const [flagErrors, setFlagErrors] = useState<Record<number, string>>({});
-    const [activeHintFlag, setActiveHintFlag] = useState<LabFlag | null>(null);
+  // ── Raw challenge data ──
+  const [allChallenges, setAllChallenges] = useState<ChallengeSummary[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-    useEffect(() => {
-        let isMounted = true;
+  // ── Per-flag submit state  key = ctfd challenge id ──
+  const [flagStates, setFlagStates] = useState<Record<number, FlagState>>({})
+  const [activeHintStep, setActiveHintStep] = useState<ChallengeSummary | null>(null)
 
-        const load = async () => {
-            setIsLoading(true);
-            try {
-                const response = await fetch("/api/ctfd/challenges", { cache: "no-store" });
-                if (!response.ok) throw new Error("No se pudo cargar el challenge");
+  // Avoid duplicate in-flight submits
+  const submittingRef = useRef<Set<number>>(new Set())
 
-                const payload = (await response.json()) as ChallengesResponse;
-                const match = payload.challenges.find((item) => item.slug === slug);
+  // Descipcion del flag
+  const [enrichedSteps, setEnrichedSteps] = useState<Record<number, { description: string; lore: string }>>({})
 
-                if (!isMounted) return;
+  // ── Load master challenge list ──
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      setIsLoading(true)
+      try {
+        const res = await fetch('/api/challenges', { cache: 'no-store' })
+        if (!res.ok) throw new Error('No se pudo cargar la lista de retos')
+        const payload = (await res.json()) as ChallengesResponse
+        if (!mounted) return
+        setAllChallenges(payload.challenges)
+        setError(null)
+      } catch (err) {
+        if (!mounted) return
+        setError(err instanceof Error ? err.message : 'Error desconocido')
+      } finally {
+        if (mounted) setIsLoading(false)
+      }
+    }
+    void load()
+    return () => { mounted = false }
+  }, [slug])
 
-                if (!match) {
-                    setError("Challenge no encontrado");
-                    setChallenge(null);
-                    return;
-                }
+  // ── Derive current challenge + machine steps ──
+  const currentChallenge = useMemo(
+    () => allChallenges.find(ch => ch.slug === slug) ?? null,
+    [allChallenges, slug]
+  )
 
-                setChallenge(match);
-                setError(null);
-            } catch {
-                if (!isMounted) return;
-                setError("Error cargando datos del challenge");
-            } finally {
-                if (isMounted) setIsLoading(false);
-            }
-        };
+  const machineSteps = useMemo(() => {
+    if (!currentChallenge) return []
+    if (!currentChallenge.machineId) return [currentChallenge]
 
-        void load();
+    return allChallenges
+      .filter(
+        ch =>
+          ch.machineId === currentChallenge.machineId &&
+          ch.continent === currentChallenge.continent,
+      )
+      .sort((a, b) => (a.step ?? 0) - (b.step ?? 0))
+  }, [allChallenges, currentChallenge])
 
-        return () => {
-            isMounted = false;
-        };
-    }, [slug]);
+  const step1 = machineSteps[0] ?? null
+  const isMachine = (currentChallenge?.machineId ?? null) !== null
 
-    const dossier = useMemo(() => LAB_DOSSIERS[slug] ?? null, [slug]);
+  useEffect(() => {
+    if (!machineSteps.length) return
+    let mounted = true
 
-    useEffect(() => {
-        if (!dossier) {
-            setSolvedFlags([]);
-            return;
+    const enrich = async () => {
+      const results = await Promise.all(
+        machineSteps.map(step =>
+          fetch(`/api/challenges/${step.id}`)
+            .then(r => r.ok ? r.json() : null)
+            .catch(() => null)
+        )
+      )
+
+      if (!mounted) return
+
+      const map: Record<number, { description: string; lore: string }> = {}
+    results.forEach((data, i) => {
+    const step = machineSteps[i]
+    if (data?.challenge) {
+        let rawDescription = data.challenge.description ?? ''
+        let lore = ''
+        let description = rawDescription
+
+        // Si es el Step 1 y encontramos el separador "---"
+        if (step.step === 1 && rawDescription.includes('---')) {
+        const parts = rawDescription.split('---')
+        lore = parts[0].trim() // Lo de arriba es el Lore
+        description = parts.slice(1).join('---').trim() // Lo de abajo es la misión de la Flag 1
         }
 
-        const raw = window.localStorage.getItem(storageKey);
-        if (!raw) {
-            setSolvedFlags([]);
-            return;
+        map[step.id] = {
+        description: description,
+        lore: lore || (step.step === 1 ? 'Briefing no disponible.' : ''), // Solo la flag 1 debe tener lore por defecto
+        }
+    }
+    })
+    setEnrichedSteps(map)
+    }
+
+    void enrich()
+    return () => { mounted = false }
+  }, [machineSteps])
+
+  // ── Derived stats ──
+  const totalFlags = machineSteps.length
+  const capturedFlags = useMemo(
+    () =>
+      machineSteps.filter(
+        s => s.status === 'COMPLETED' || s.solvedByTeam,
+      ).length,
+    [machineSteps]
+  )
+  const totalPoints = useMemo(
+    () => machineSteps.reduce((acc, s) => acc + s.points, 0),
+    [machineSteps]
+  )
+  const completionPercent =
+    totalFlags > 0 ? Math.round((capturedFlags / totalFlags) * 100) : 0
+
+  // ── Init flagStates once steps are resolved ──
+  useEffect(() => {
+    if (!machineSteps.length) return
+    setFlagStates(prev => {
+      const next = { ...prev }
+      for (const step of machineSteps) {
+        if (!next[step.id]) {
+          next[step.id] = { input: '', status: 'idle', message: '' }
+        }
+      }
+      return next
+    })
+  }, [machineSteps])
+
+  // ── Submit a flag to CTFd ──
+  const submitFlag = useCallback(
+    async (stepId: number) => {
+      if (submittingRef.current.has(stepId)) return
+      const input = flagStates[stepId]?.input.trim() ?? ''
+      if (!input) {
+        setFlagStates(prev => ({
+          ...prev,
+          [stepId]: { ...prev[stepId], status: 'error', message: 'Debes ingresar una flag.' },
+        }))
+        return
+      }
+
+      submittingRef.current.add(stepId)
+      setFlagStates(prev => ({
+        ...prev,
+        [stepId]: { ...prev[stepId], status: 'loading', message: '' },
+      }))
+
+      try {
+        const res = await fetch(`/api/challenges/${stepId}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ submission: input }),
+        })
+
+        const data = (await res.json()) as {
+          success?: boolean
+          data?: { status: string; message: string }
+          error?: string
         }
 
-        try {
-            const parsed = JSON.parse(raw) as unknown;
-            if (!Array.isArray(parsed)) {
-                setSolvedFlags([]);
-                return;
-            }
-
-            const normalized = parsed
-                .filter((value): value is number => typeof value === "number")
-                .filter((value) => value >= 1 && value <= dossier.flags.length)
-                .sort((a, b) => a - b)
-                .filter((value, index, list) => list.indexOf(value) === index);
-
-            setSolvedFlags(normalized);
-        } catch {
-            setSolvedFlags([]);
-        }
-    }, [dossier, storageKey]);
-
-    const solveFlag = (flagId: number) => {
-        const previousFlag = flagId - 1;
-        const canUnlock = flagId === 1 || solvedFlags.includes(previousFlag);
-        if (!canUnlock) return;
-
-        if (solvedFlags.includes(flagId)) return;
-
-        const updated = [...solvedFlags, flagId].sort((a, b) => a - b);
-        setSolvedFlags(updated);
-        window.localStorage.setItem(storageKey, JSON.stringify(updated));
-    };
-
-    const updateFlagInput = (flagId: number, value: string) => {
-        setFlagInputs((previous) => ({
-            ...previous,
-            [flagId]: value,
-        }));
-
-        setFlagErrors((previous) => {
-            if (!previous[flagId]) return previous;
-            const copy = { ...previous };
-            delete copy[flagId];
-            return copy;
-        });
-    };
-
-    const submitFlag = (flagId: number) => {
-        const previousFlag = flagId - 1;
-        const canUnlock = flagId === 1 || solvedFlags.includes(previousFlag);
-        if (!canUnlock || solvedFlags.includes(flagId)) return;
-
-        const candidate = (flagInputs[flagId] ?? "").trim();
-        if (!candidate) {
-            setFlagErrors((previous) => ({
-                ...previous,
-                [flagId]: "Debes ingresar una flag antes de enviarla.",
-            }));
-            return;
+        if (!res.ok || !data.success) {
+          setFlagStates(prev => ({
+            ...prev,
+            [stepId]: {
+              ...prev[stepId],
+              status: 'error',
+              message: data.error ?? 'Error al contactar CTFd.',
+            },
+          }))
+          return
         }
 
-        solveFlag(flagId);
-        setFlagInputs((previous) => ({
-            ...previous,
-            [flagId]: "",
-        }));
-    };
+        const ctfdStatus = data.data?.status ?? 'incorrect'
+        const ctfdMessage = data.data?.message ?? ''
 
-    const resetProgress = () => {
-        setSolvedFlags([]);
-        window.localStorage.removeItem(storageKey);
-    };
+        setFlagStates(prev => ({
+          ...prev,
+          [stepId]: {
+            input: ctfdStatus === 'correct' ? '' : prev[stepId].input,
+            status: ctfdStatus as SubmitStatus,
+            message: ctfdMessage,
+          },
+        }))
 
-    const completedCount = solvedFlags.length;
-    const totalFlagCount = dossier?.flags.length ?? challenge?.totalFlags ?? 0;
-    const completionPercent = totalFlagCount > 0 ? Math.round((completedCount / totalFlagCount) * 100) : 0;
+        // Refresh challenge list so status COMPLETED propagates
+        if (ctfdStatus === 'correct') {
+          const refreshed = await fetch('/api/challenges', { cache: 'no-store' })
+          if (refreshed.ok) {
+            const payload = (await refreshed.json()) as ChallengesResponse
+            setAllChallenges(payload.challenges)
+          }
+        }
+      } catch {
+        setFlagStates(prev => ({
+          ...prev,
+          [stepId]: { ...prev[stepId], status: 'error', message: 'Error de red.' },
+        }))
+      } finally {
+        submittingRef.current.delete(stepId)
+      }
+    },
+    [flagStates]
+  )
 
+  const handleInputChange = useCallback((stepId: number, value: string) => {
+    setFlagStates(prev => ({
+      ...prev,
+      [stepId]: { ...prev[stepId], input: value, status: 'idle', message: '' },
+    }))
+  }, [])
+
+  // ── Step unlock logic:
+  //    Flag N is unlocked if flag N-1 is COMPLETED (or it is the first flag) ──
+  const isStepUnlocked = useCallback(
+    (index: number) => {
+      if (index === 0) return true
+      const prev = machineSteps[index - 1]
+      return prev?.status === 'COMPLETED' || prev?.solvedByTeam === true
+    },
+    [machineSteps]
+  )
+
+  // ─────────────────────────────────────────────
+  // Render helpers
+  // ─────────────────────────────────────────────
+  function statusBadge(step: ChallengeSummary) {
+    if (step.status === 'COMPLETED' || step.solvedByTeam)
+      return (
+        <span className="inline-flex items-center gap-1 border border-emerald-400/40 bg-emerald-500/10 text-emerald-300 px-2 py-1 text-[11px] font-mono">
+          <CheckCircle2 className="w-3.5 h-3.5" /> COMPLETADA
+        </span>
+      )
+    return null
+  }
+
+  function submitFeedback(stepId: number) {
+    const s = flagStates[stepId]
+    if (!s || s.status === 'idle' || s.status === 'loading') return null
+    const colors: Record<string, string> = {
+      correct:       'text-emerald-300',
+      incorrect:     'text-red-400',
+      already_solved:'text-yellow-300',
+      error:         'text-red-400',
+    }
     return (
-        <main className="relative min-h-screen bg-[#090013] text-white overflow-hidden">
-            <div className="fixed inset-0 z-0 overflow-hidden">
-                <Boxes />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_10%,rgba(239,1,186,0.18),transparent_45%),linear-gradient(180deg,rgba(9,0,19,0.85),rgba(9,0,19,1))]" />
-            </div>
+      <p className={`mt-1 font-mono text-xs ${colors[s.status] ?? 'text-white/60'}`}>
+        {s.message || (s.status === 'incorrect' ? 'Flag incorrecta. Intenta de nuevo.' : s.status)}
+      </p>
+    )
+  }
 
-            <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-                <Link
-                    href="/challenges"
-                    className="inline-flex items-center gap-2 font-mono text-xs text-[#00F0FF] hover:text-white transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Volver al mapa de challenges
-                </Link>
+  // ─────────────────────────────────────────────
+  // JSX
+  // ─────────────────────────────────────────────
+  const machineName = isMachine ? getMachineName(machineSteps) : (currentChallenge?.name ?? '')
 
-                {isLoading ? (
-                    <section className="mt-6 border border-white/15 bg-black/55 p-8 flex items-center justify-center">
-                        <div className="w-7 h-7 border-2 border-[#EF01BA] border-t-transparent rounded-full animate-spin" />
-                    </section>
-                ) : error || !challenge ? (
-                    <section className="mt-6 border border-[#ff5f5f]/30 bg-[#ff5f5f]/10 p-6">
-                        <p className="font-mono text-sm text-[#ff9a9a]">{error ?? "Challenge no disponible"}</p>
-                    </section>
-                ) : (
-                    <section className="mt-6 border border-white/15 bg-black/60 p-6 sm:p-8">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#00F0FF] inline-flex items-center gap-1.5">
-                                    <TerminalSquare className="w-3.5 h-3.5" />
-                                    expediente de mission
-                                </p>
-                                <h1 className="font-heading text-3xl sm:text-4xl text-[#EF01BA] font-bold mt-1">{challenge.name}</h1>
-                                <p className="font-mono text-sm text-white/55 mt-1">{challenge.type}</p>
-                            </div>
-                            <span className="font-mono text-xs text-[#FEF759] border border-[#FEF759]/40 bg-[#FEF759]/10 px-3 py-1">
-                                {challenge.points} PTS
-                            </span>
-                        </div>
+  return (
+    <main className="relative min-h-screen bg-[#090013] text-white overflow-hidden">
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        <Boxes />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_10%,rgba(239,1,186,0.18),transparent_45%),linear-gradient(180deg,rgba(9,0,19,0.85),rgba(9,0,19,1))]" />
+      </div>
 
-                        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                            <div className="border border-white/10 bg-black/40 p-3">
-                                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">Categoria</p>
-                                <p className="text-white/85 text-sm">{challenge.category}</p>
-                            </div>
-                            <div className="border border-white/10 bg-black/40 p-3">
-                                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">Dificultad</p>
-                                <p className="text-white/85 text-sm">{challenge.difficulty}</p>
-                            </div>
-                            <div className="border border-white/10 bg-black/40 p-3">
-                                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">Flags</p>
-                                <p className="text-white/85 text-sm">
-                                    {completedCount} / {totalFlagCount} desbloqueadas
-                                </p>
-                            </div>
-                        </div>
+      <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        {/* Back */}
+        <Link
+          href="/challenges"
+          className="inline-flex items-center gap-2 font-mono text-xs text-[#00F0FF] hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Volver al mapa de challenges
+        </Link>
 
-                        <div className="mt-6 border border-white/10 bg-black/35 p-4">
-                            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#00F0FF]">Lore del laboratorio</p>
-                            <p className="text-white/80 text-sm leading-relaxed mt-2">{challenge.lore}</p>
-                            <p className="text-white/65 text-sm leading-relaxed mt-3">{challenge.description}</p>
-                        </div>
+        {/* ── Loading ── */}
+        {isLoading && (
+          <section className="mt-6 border border-white/15 bg-black/55 p-8 flex items-center justify-center">
+            <div className="w-7 h-7 border-2 border-[#EF01BA] border-t-transparent rounded-full animate-spin" />
+          </section>
+        )}
 
-                        <div className="mt-6 font-mono text-xs text-white/70 space-y-1">
-                            <p>Estado: {challenge.status}</p>
-                            <p>Completado por equipo: {prettyDate(challenge.completedAt)}</p>
-                            <p>
-                                First Blood: {challenge.firstBlood ? `${challenge.firstBlood.teamName} · ${prettyDate(challenge.firstBlood.timestamp)}` : "pendiente"}
-                            </p>
-                        </div>
+        {/* ── Error ── */}
+        {!isLoading && error && (
+          <section className="mt-6 border border-[#ff5f5f]/30 bg-[#ff5f5f]/10 p-6">
+            <p className="font-mono text-sm text-[#ff9a9a]">{error}</p>
+          </section>
+        )}
 
-                        <div className="mt-7 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-                            <section className="border border-white/10 bg-black/40 p-4">
-                                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/55">Progreso del laboratorio</p>
-                                <p className="font-heading text-2xl text-[#EF01BA] mt-1">{completionPercent}%</p>
-                                <p className="text-sm text-white/75 mt-1">{completedCount} de {totalFlagCount} flags completadas</p>
-
-                                <div className="mt-3 grid grid-cols-5 gap-1">
-                                    {Array.from({ length: Math.max(5, totalFlagCount || 0) }, (_, index) => (
-                                        <span
-                                            key={`progress-segment-${index + 1}`}
-                                            className={`h-2 ${index < completedCount ? "bg-[#EF01BA]" : "bg-white/15"}`}
-                                        />
-                                    ))}
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={resetProgress}
-                                    className="mt-4 w-full border border-white/30 hover:bg-white/10 px-3 py-2 font-mono text-xs text-white/80 transition-colors"
-                                >
-                                    Reiniciar progreso local
-                                </button>
-                            </section>
-                        </div>
-
-                        {dossier ? (
-                            <section className="mt-6 border border-[#EF01BA]/30 bg-[#13051e]/80 p-4 sm:p-5">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#FEF759]">Dossier del laboratorio</p>
-                                </div>
-
-                                <p className="text-sm text-white/80 mt-3"><span className="text-[#00F0FF]">Enfoque:</span> {dossier.focus}</p>
-                                <p className="text-sm text-white/75 mt-2 leading-relaxed">{dossier.story}</p>
-
-                                <div className="mt-5 space-y-3">
-                                    {dossier.flags.map((flag, index) => {
-                                        const isCompleted = solvedFlags.includes(flag.id);
-                                        const isUnlocked = flag.id === 1 || solvedFlags.includes(flag.id - 1);
-
-                                        return (
-                                            <article key={flag.id} className="border border-white/10 bg-black/35 p-4">
-                                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <p className="font-mono text-sm text-white/90">
-                                                        FLAG {flag.id}: {flag.title}
-                                                    </p>
-
-                                                    {isCompleted ? (
-                                                        <span className="inline-flex items-center gap-1 border border-emerald-400/40 bg-emerald-500/10 text-emerald-300 px-2 py-1 text-[11px] font-mono">
-                                                            <CheckCircle2 className="w-3.5 h-3.5" />
-                                                            COMPLETADA
-                                                        </span>
-                                                    ) : isUnlocked ? (
-                                                        <span className="inline-flex items-center gap-1 border border-[#00F0FF]/35 bg-[#00F0FF]/10 text-[#00F0FF] px-2 py-1 text-[11px] font-mono">
-                                                            <Unlock className="w-3.5 h-3.5" />
-                                                            DESBLOQUEADA
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 border border-white/20 bg-white/5 text-white/55 px-2 py-1 text-[11px] font-mono">
-                                                            <Lock className="w-3.5 h-3.5" />
-                                                            BLOQUEADA
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                {isUnlocked ? (
-                                                    <div className="mt-3 space-y-2 text-sm text-white/80">
-                                                        {!isCompleted ? (
-                                                            <>
-                                                                <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-                                                                    <input
-                                                                        type="text"
-                                                                        value={flagInputs[flag.id] ?? ""}
-                                                                        onChange={(event) => updateFlagInput(flag.id, event.target.value)}
-                                                                        placeholder="Ingresa la flag"
-                                                                        className="w-full border border-white/25 bg-black/35 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:border-[#00F0FF] focus:outline-none"
-                                                                    />
-
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => submitFlag(flag.id)}
-                                                                        className="inline-flex items-center justify-center border border-[#EF01BA]/40 bg-[#EF01BA]/15 hover:bg-[#EF01BA]/25 text-white px-3 py-2 font-mono text-xs transition-colors"
-                                                                    >
-                                                                        Enviar flag
-                                                                    </button>
-
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setActiveHintFlag(flag)}
-                                                                        className="inline-flex items-center justify-center border border-[#00F0FF]/40 bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 text-[#00F0FF] px-3 py-2 font-mono text-xs transition-colors"
-                                                                    >
-                                                                        Hint
-                                                                    </button>
-                                                                </div>
-
-                                                                {flagErrors[flag.id] ? (
-                                                                    <p className="text-xs text-[#ff9a9a]">{flagErrors[flag.id]}</p>
-                                                                ) : null}
-                                                            </>
-                                                        ) : null}
-                                                    </div>
-                                                ) : (
-                                                    <p className="mt-3 text-sm text-white/55">
-                                                        Completa la FLAG {index} para desbloquear esta seccion.
-                                                    </p>
-                                                )}
-                                            </article>
-                                        );
-                                    })}
-                                </div>
-
-                                {dossier.finalMessage ? (
-                                    <div className="mt-5 border border-[#00F0FF]/25 bg-[#00161b]/60 p-3 text-sm text-white/85">
-                                        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#00F0FF]">Mensaje final del caso</p>
-                                        <p className="mt-2">{dossier.finalMessage}</p>
-                                    </div>
-                                ) : null}
-                            </section>
-                        ) : (
-                            <section className="mt-6 border border-[#ffae5f]/30 bg-[#ffae5f]/10 p-4">
-                                <p className="font-mono text-sm text-[#ffd5a8] inline-flex items-center gap-2">
-                                    <ShieldAlert className="w-4 h-4" />
-                                    Este challenge no tiene dossier extendido de flags en esta version.
-                                </p>
-                            </section>
-                        )}
-
-                        <div className="mt-7">
-                            <Link
-                                href="/challenges"
-                                className="inline-flex items-center justify-center border border-white/30 hover:bg-white/10 px-4 py-3 font-mono text-sm text-white/80 transition-colors"
-                            >
-                                Volver al Path
-                            </Link>
-                        </div>
-                    </section>
-                )}
-            </div>
-
-            {activeHintFlag ? (
-                <div className="fixed inset-0 z-30 flex items-center justify-center px-4" role="dialog" aria-modal="true">
-                    <button
-                        type="button"
-                        aria-label="Cerrar modal de hint"
-                        className="absolute inset-0 bg-black/70"
-                        onClick={() => setActiveHintFlag(null)}
-                    />
-
-                    <div className="relative z-10 w-full max-w-lg border border-[#00F0FF]/35 bg-[#0b0514] p-5">
-                        <div className="flex items-start justify-between gap-3">
-                            <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#00F0FF]">Hint de FLAG {activeHintFlag.id}</p>
-                            <button
-                                type="button"
-                                onClick={() => setActiveHintFlag(null)}
-                                className="border border-white/25 px-2 py-1 font-mono text-[11px] text-white/80 hover:bg-white/10 transition-colors"
-                            >
-                                Cerrar
-                            </button>
-                        </div>
-
-                        <p className="mt-3 text-sm text-white/90">
-                            <span className="text-[#00F0FF]">Pista inicial:</span> {activeHintFlag.initialHint}
-                        </p>
-
-                        {activeHintFlag.penaltyHint ? (
-                            <p className="mt-2 text-sm text-white/85">
-                                <span className="text-[#FEF759]">Pista con penalizacion:</span> {activeHintFlag.penaltyHint}
-                            </p>
-                        ) : null}
-
-                        {activeHintFlag.notes ? (
-                            <p className="mt-2 text-sm text-white/70">Nota: {activeHintFlag.notes}</p>
-                        ) : null}
-                    </div>
+        {/* ── Main content ── */}
+        {!isLoading && !error && currentChallenge && (
+          <>
+            {/* Header */}
+            <section className="mt-6 border border-white/15 bg-black/60 p-6 sm:p-8">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#00F0FF] inline-flex items-center gap-1.5">
+                    <TerminalSquare className="w-3.5 h-3.5" /> expediente de misión
+                  </p>
+                  <h1 className="font-heading text-3xl sm:text-4xl text-[#EF01BA] font-bold mt-1">
+                    {machineName}
+                  </h1>
+                  <p className="font-mono text-sm text-white/55 mt-1">{currentChallenge.category}</p>
                 </div>
-            ) : null}
-        </main>
-    );
+                <div className="flex flex-col items-end gap-2">
+                  <span className="font-mono text-xs text-[#FEF759] border border-[#FEF759]/40 bg-[#FEF759]/10 px-3 py-1">
+                    {totalPoints} PTS
+                  </span>
+                  <span className="font-mono text-xs text-white/60 border border-white/15 bg-white/5 px-3 py-1">
+                    {currentChallenge.difficulty}
+                  </span>
+                </div>
+              </div>
+
+              {/* Stats row */}
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="border border-white/10 bg-black/40 p-3">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">Categoría</p>
+                  <p className="text-white/85 text-sm">{currentChallenge.category}</p>
+                </div>
+                <div className="border border-white/10 bg-black/40 p-3">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">Dificultad</p>
+                  <p className="text-white/85 text-sm">{currentChallenge.difficulty}</p>
+                </div>
+                <div className="border border-white/10 bg-black/40 p-3">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">Flags</p>
+                  <p className="text-white/85 text-sm">{capturedFlags} / {totalFlags} capturadas</p>
+                </div>
+              </div>
+
+              {/* Connection info */}
+              {step1?.connectionInfo && (
+                <div className="mt-4 border border-[#00F0FF]/20 bg-[#00F0FF]/5 p-3 flex items-start gap-2">
+                  <Wifi className="w-4 h-4 text-[#00F0FF] mt-0.5 shrink-0" />
+                  <p className="font-mono text-xs text-white/80 break-all">{step1.connectionInfo}</p>
+                </div>
+              )}
+
+              {/* Lore / description from step 1 */}
+              <div className="mt-6 border border-white/10 bg-black/35 p-4">
+                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#00F0FF]">Lore del laboratorio</p>
+                <p className="text-white/80 text-sm leading-relaxed mt-2">
+                    {enrichedSteps[step1?.id ?? 0]?.lore || step1?.lore || currentChallenge.lore}
+                </p>
+              </div>
+
+              {/* Progress bar */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between font-mono text-xs text-white/60 mb-1">
+                  <span>Progreso del laboratorio</span>
+                  <span className="text-[#EF01BA]">{completionPercent}%</span>
+                </div>
+                <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(totalFlags, 1)}, 1fr)` }}>
+                  {machineSteps.map((s, i) => (
+                    <div
+                      key={s.id}
+                      className={`h-2 transition-colors ${
+                        s.status === 'COMPLETED' || s.solvedByTeam
+                          ? 'bg-[#EF01BA]'
+                          : 'bg-white/15'
+                      }`}
+                      title={`Flag ${i + 1}`}
+                    />
+                  ))}
+                </div>
+                <p className="font-mono text-xs text-white/50 mt-1">
+                  {capturedFlags} de {totalFlags} flags completadas
+                </p>
+              </div>
+            </section>
+
+            {/* ── Flags list ── */}
+            <section className="mt-6 space-y-3">
+              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/55">
+                Misiones del laboratorio
+              </p>
+
+              {machineSteps.map((step, index) => {
+                const unlocked = isStepUnlocked(index)
+                const completed = step.status === 'COMPLETED' || step.solvedByTeam
+                const fs = flagStates[step.id]
+                const isSubmitting = fs?.status === 'loading'
+                const desc = enrichedSteps[step.id]?.description ?? step.description
+                const lore = enrichedSteps[step.id]?.lore ?? step.lore
+
+                // Extract flag title: "Intro - Flag 2 - Foothold" → "Flag 2 - Foothold"
+                const parts = step.name.split(' - ')
+                const flagTitle = parts.length > 1 ? parts.slice(1).join(' - ') : step.name
+
+                return (
+                  <article
+                    key={step.id}
+                    className={`border p-4 transition-colors ${
+                      completed
+                        ? 'border-emerald-400/25 bg-emerald-500/5'
+                        : unlocked
+                        ? 'border-[#00F0FF]/25 bg-black/35'
+                        : 'border-white/10 bg-black/20 opacity-60'
+                    }`}
+                  >
+                    {/* Flag header */}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {completed ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        ) : unlocked ? (
+                          <Unlock className="w-4 h-4 text-[#00F0FF] shrink-0" />
+                        ) : (
+                          <Lock className="w-4 h-4 text-white/30 shrink-0" />
+                        )}
+                        <p className="font-mono text-sm text-white/90">
+                          FLAG {step.step ?? index + 1}: {flagTitle}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs text-[#FEF759]/80">{step.points} pts</span>
+                        {statusBadge(step)}
+                      </div>
+                    </div>
+
+                    {/* Description of this specific flag */}
+                    {unlocked && !completed && desc && (
+                      <p className="mt-3 text-sm text-white/65 leading-relaxed">{desc}</p>
+                    )}
+
+                    {/* Submit form */}
+                    {unlocked && !completed && (
+                      <div className="mt-3 space-y-2">
+                        <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+                          <input
+                            type="text"
+                            value={fs?.input ?? ''}
+                            onChange={e => handleInputChange(step.id, e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') void submitFlag(step.id) }}
+                            placeholder="PWG{...}"
+                            disabled={isSubmitting}
+                            className="w-full border border-white/25 bg-black/35 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:border-[#00F0FF] focus:outline-none disabled:opacity-50"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void submitFlag(step.id)}
+                            disabled={isSubmitting}
+                            className="inline-flex items-center justify-center border border-[#EF01BA]/40 bg-[#EF01BA]/15 hover:bg-[#EF01BA]/25 text-white px-4 py-2 font-mono text-xs transition-colors disabled:opacity-50"
+                          >
+                            {isSubmitting ? (
+                              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              'Enviar'
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveHintStep(step)}
+                            className="inline-flex items-center justify-center border border-[#00F0FF]/40 bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 text-[#00F0FF] px-3 py-2 font-mono text-xs transition-colors"
+                          >
+                            Hint
+                          </button>
+                        </div>
+                        {submitFeedback(step.id)}
+                      </div>
+                    )}
+
+                    {/* Locked message */}
+                    {!unlocked && (
+                      <p className="mt-3 text-sm text-white/45">
+                        Completa la Flag {index} para desbloquear esta sección.
+                      </p>
+                    )}
+                  </article>
+                )
+              })}
+            </section>
+
+            <div className="mt-7">
+              <Link
+                href="/challenges"
+                className="inline-flex items-center justify-center border border-white/30 hover:bg-white/10 px-4 py-3 font-mono text-sm text-white/80 transition-colors"
+              >
+                Volver al Path
+              </Link>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Hint modal ── */}
+      {activeHintStep && (
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center px-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            aria-label="Cerrar modal de hint"
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setActiveHintStep(null)}
+          />
+          <div className="relative z-10 w-full max-w-lg border border-[#00F0FF]/35 bg-[#0b0514] p-5">
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#00F0FF]">
+                Hint · Flag {activeHintStep.step}
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveHintStep(null)}
+                className="border border-white/25 px-2 py-1 font-mono text-[11px] text-white/80 hover:bg-white/10 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+            <p className="mt-3 font-heading text-base text-white">{activeHintStep.name}</p>
+            <p className="mt-3 text-sm text-white/90 leading-relaxed">
+              {enrichedSteps[activeHintStep.id]?.description ?? activeHintStep.description}
+            </p>
+            {(enrichedSteps[activeHintStep.id]?.lore ?? activeHintStep.lore) &&
+              (enrichedSteps[activeHintStep.id]?.lore ?? activeHintStep.lore) !== 'Briefing no disponible. Revisa la descripción técnica del reto.' && (
+              <p className="mt-2 text-sm text-white/70 leading-relaxed">
+                {enrichedSteps[activeHintStep.id]?.lore ?? activeHintStep.lore}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </main>
+  )
 }

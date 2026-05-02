@@ -18,15 +18,17 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Verificar credenciales contra CTFd via Basic Auth ───────
-    // CTFd usa el campo `name` (username) para Basic Auth
-    const user = await ctfdVerifyCredentials(identifier, password)
+    const verifyResult = await ctfdVerifyCredentials(identifier, password)
 
-    if (!user) {
+    if (!verifyResult) {
       return NextResponse.json(
         { error: 'Usuario o contraseña incorrectos' },
         { status: 401 },
       )
     }
+
+    // Extraemos el user real y su cookie de sesión exclusiva
+    const { user, sessionCookie, csrfToken } = verifyResult
 
     if (user.banned) {
       return NextResponse.json(
@@ -40,11 +42,8 @@ export async function POST(req: NextRequest) {
     const isAdmin = fullUser ? fullUser.type === 'admin' : false;
     const teamId = await ctfdGetUserTeam(user.id)
     
-    // 3. Obtener (o regenerar) el Personal Token del usuario  ← NUEVO
-    //    Los admins no necesitan token para jugar, pero lo generamos igual
-    //    por consistencia. Si quieres omitirlo para admins: if (!isAdmin)
-    const ctfdToken = await ctfdGetOrCreateUserToken(user.id)
-
+    // 3. Crear el Personal Token del usuario usando SU cookie, no la del Admin
+    const ctfdToken = await ctfdGetOrCreateUserToken(sessionCookie, csrfToken)
 
     // ── Crear sesión ────────────────────────────────────────────
     const session = await getSession()
@@ -59,10 +58,8 @@ export async function POST(req: NextRequest) {
       console.log('[login][session-before-save]', {
         userId:    session.userId,
         username:  session.username,
-        email:     session.email,
         isAdmin:   session.isAdmin,
-        teamId:    session.teamId,
-        hasToken:  session.ctfdToken,
+        hasToken:  !!session.ctfdToken, // No imprimas el token en consola por seguridad
       })
     }
 

@@ -159,55 +159,91 @@ export default function ChallengesPage() {
 		return result;
 	}, [challengeContinent, payload?.challenges]);
 
-	const countryPoints = useMemo(() => {
-		const markerPatternByContinent: Record<GlobeContinent, Array<[number, number]>> = {
-			"Antartida Sur": [
-				[-68, -22], [-69, -6], [-68, 8], [-67, 24],
-			],
-			"North America": [
-				[57, -141], [54, -130], [52, -120], [50, -109], [48, -98], [45, -86], [42, -75], [39, -123], [36, -111], [33, -99], [30, -88],
-			],
-			"South America": [
-				[9, -79], [4, -73], [-2, -68], [-9, -64], [-16, -62], [-23, -60], [-30, -62], [-37, -66], [-46, -71],
-			],
-			Europe: [
-				[62, -8], [59, 0], [56, 8], [54, 16], [52, 24], [49, 30], [47, 5], [45, 13], [43, 22],
-			],
-			Africa: [
-				[33, -13], [28, -5], [23, 3], [18, 12], [12, 20], [5, 28], [-3, 31], [-12, 27], [-20, 22], [-28, 17], [-33, 11],
-			],
-			Asia: [
-				[62, 68], [58, 82], [54, 96], [50, 110], [46, 124], [42, 138], [36, 78], [32, 92], [28, 106], [24, 120], [20, 134], [16, 148],
-			],
-			Oceania: [
-				[-11, 114], [-16, 123], [-21, 132], [-26, 141], [-31, 151], [-36, 159], [-40, 147],
-			],
-		};
+	const machineGroups = useMemo(() => {
+		const map = new Map<string, ChallengeSummary[]>()
+		for (const chs of Object.values(challengesByContinent)) {
+			for (const ch of chs) {
+			if (!ch.machineId) continue
+			const key = `${ch.continent}::${ch.machineId}`
+			const group = map.get(key) ?? []
+			group.push(ch)
+			map.set(key, group)
+			}
+		}
+		// Ordena cada grupo por step ascendente
+		for (const [k, g] of map.entries()) {
+			map.set(k, [...g].sort((a, b) => (a.step ?? 0) - (b.step ?? 0)))
+		}
+		return map
+	}, [challengesByContinent])
 
-		return (Object.entries(challengesByContinent) as Array<[GlobeContinent, ChallengeSummary[]]>)
-			.filter(([, items]) => items.length > 0)
-			.map(([continent, items]) => {
-				const pattern = markerPatternByContinent[continent] ?? [];
-				const isSelected = selectedContinent === continent;
-				return pattern.map((location, index) => {
-					const challenge = items[index % items.length];
-					const isAlternate = index % 2 === 0;
-					return {
-						id: `${continent}:${challenge.id}:${index}`,
-						challengeId: challenge.id,
-						continent,
-						location,
-						size: isSelected ? 0.0238 : 0.0215,
-						color: (isSelected
-							? [0.94, 0.01, 0.73]
-							: isAlternate
-								? [0, 0.94, 1]
-								: [0.94, 0.01, 0.73]) as [number, number, number],
-					};
-				});
-			})
-			.flat();
-	}, [challengesByContinent, selectedContinent]);
+	const displayChallenge = useMemo(() => {
+		if (!selectedChallenge) return null
+
+		// Si tiene machineId, fusionamos los datos visuales
+		if (selectedChallenge.machineId) {
+		const key = `${selectedChallenge.continent}::${selectedChallenge.machineId}`
+		const steps = machineGroups.get(key) || [selectedChallenge]
+		
+		const step1 = steps.find(s => s.step === 1) || steps[0]
+		const totalPts = steps.reduce((sum, s) => sum + s.points, 0)
+		const captured = steps.filter(s => s.status === 'COMPLETED' || s.solvedByTeam).length
+		const allSolved = captured === steps.length
+		const firstAvail = steps.find(s => s.status !== 'COMPLETED' && !s.solvedByTeam) ?? steps[0]
+
+		const baseName = step1.name.includes('-') 
+			? step1.name.split('-')[0].trim() 
+			: (step1.machineId?.toUpperCase() || step1.name)
+
+		return {
+			...selectedChallenge,
+			name: baseName,
+			points: totalPts,
+			totalFlags: steps.length,
+			capturedFlags: captured,
+			status: (allSolved ? 'COMPLETED' : (captured > 0 ? 'IN_PROGRESS' : 'AVAILABLE')) as ChallengeSummary['status'],
+			slug: firstAvail.slug, // <-- El botón "Ir al lab" llevará a la flag no resuelta
+			solvedByTeam: allSolved
+		}
+		}
+
+		// Si es un reto normal, se muestra tal cual
+		return selectedChallenge
+	}, [selectedChallenge, machineGroups])
+
+	// Centro geográfico de cada continente — un único punto de objetivo
+	const CONTINENT_CENTER: Record<GlobeContinent, [number, number]> = {
+	'North America':  [40.0, -100.0],
+	'South America':  [-15.0, -60.0],
+	'Europe':         [54.0,   15.0],
+	'Africa':         [  5.0,   20.0],
+	'Asia':           [40.0,   90.0],
+	'Oceania':        [-25.0,  135.0],
+	'Antartida Sur':  [-80.0,    0.0],
+	}
+
+	const countryPoints = useMemo(() => {
+	// Solo emitir un punto por continente que tenga al menos 1 challenge
+	return (Object.entries(challengesByContinent) as Array<[GlobeContinent, ChallengeSummary[]]>)
+		.filter(([continent, items]) => 
+			items.length > 0 && continent !== 'Antartida Sur'
+		)
+		.map(([continent, items]) => {
+		const isSelected = selectedContinent === continent
+		// Primer challenge del continente como representante del hotspot
+		const representative = [...items].sort((a, b) => (a.step ?? 0) - (b.step ?? 0))[0]
+		return {
+			id:          `${continent}-center`,
+			challengeId: representative.id,
+			continent,
+			location:    CONTINENT_CENTER[continent] as [number, number],
+			size:        isSelected ? 0.032 : 0.026,
+			color:       isSelected
+			? [1, 0.85, 0] as [number, number, number]   // dorado cuando está seleccionado
+  			: [1, 0.08, 0.08] as [number, number, number] // rojo por default
+		}
+		})
+	}, [challengesByContinent, selectedContinent])
 
 	const hotspotPoints = useMemo(() => {
 		return countryPoints.map((point) => ({
@@ -248,29 +284,61 @@ export default function ChallengesPage() {
 	const shouldShowGlobeHudHint = !selectedContinent && (isGlobeHovered || isGlobeDragging);
 
 	const quickAccessChallenges = useMemo(() => {
-	return [...(payload?.challenges ?? [])]
-		.filter(challenge => {
-		const continent = challengeContinent(challenge)
-		return continent !== 'Oceania' && continent !== 'Antartida Sur'
-		})
+		if (!payload?.challenges) return []
+
+		const items: typeof payload.challenges = []
+		const seenMachines = new Set<string>()
+
+		for (const ch of payload.challenges) {
+		if (ch.continent === 'Antartida Sur') continue
+
+		if (ch.machineId) {
+			const key = `${ch.continent}::${ch.machineId}`
+			if (!seenMachines.has(key)) {
+			seenMachines.add(key)
+			// Obtener todos los steps de esta máquina
+			const steps = payload.challenges.filter(
+				c => c.machineId === ch.machineId && c.continent === ch.continent
+			)
+			const totalPts = steps.reduce((sum, s) => sum + s.points, 0)
+			const captured = steps.filter(s => s.status === 'COMPLETED' || s.solvedByTeam).length
+			const allSolved = captured === steps.length
+			const step1 = steps.find(s => s.step === 1) ?? steps[0]
+
+			// Extraer nombre base (ej. "Intro - Flag 1" -> "Intro")
+			const baseName = step1.name.includes('-') 
+				? step1.name.split('-')[0].trim() 
+				: (step1.machineId?.toUpperCase() || step1.name)
+
+			// Insertar máquina virtual
+				items.push({
+					...step1,
+					name: baseName,
+					points: totalPts,
+					status: (allSolved ? 'COMPLETED' : (captured > 0 ? 'IN_PROGRESS' : 'AVAILABLE')) as ChallengeSummary['status'],
+					solvedByTeam: allSolved,
+				})
+			}
+		} else {
+			// Reto normal
+			items.push(ch)
+		}
+		}
+
+		return items
 		.sort((a, b) => {
-		// 1. Primero los de categoría Test (retos de prueba)
-		if (a.category === 'Test' && b.category !== 'Test') return -1
-		if (a.category !== 'Test' && b.category === 'Test') return 1
-		// 2. Resueltos por el EQUIPO al frente (nuevo)
-		if (a.solvedByTeam && !b.solvedByTeam) return -1
-		if (!a.solvedByTeam && b.solvedByTeam) return 1
-		// 3. Resueltos por mí al frente (solved_by_me via status)
-		if (a.status === 'COMPLETED' && b.status !== 'COMPLETED') return -1
-		if (a.status !== 'COMPLETED' && b.status === 'COMPLETED') return 1
-		// 4. Disponibles antes que los que aún no se pueden resolver
-		if (a.status === 'AVAILABLE' && b.status === 'COMPLETED') return -1
-		if (a.status === 'COMPLETED' && b.status === 'AVAILABLE') return 1
-		// 5. Mayor puntuación primero
-		return b.points - a.points
+			if (a.category === 'Test' && b.category !== 'Test') return -1
+			if (a.category !== 'Test' && b.category === 'Test') return 1
+			if (a.solvedByTeam && !b.solvedByTeam) return -1
+			if (!a.solvedByTeam && b.solvedByTeam) return 1
+			if (a.status === 'COMPLETED' && b.status !== 'COMPLETED') return -1
+			if (a.status !== 'COMPLETED' && b.status === 'COMPLETED') return 1
+			if (a.status === 'AVAILABLE' && b.status === 'COMPLETED') return -1
+			if (a.status === 'COMPLETED' && b.status === 'AVAILABLE') return 1
+			return b.points - a.points
 		})
 		.slice(0, 8)
-	}, [challengeContinent, payload?.challenges])
+	}, [payload?.challenges])
 
 	const handleHotspotHover = useCallback((hotspotId: string | null) => {
 		if (!hotspotId) {
@@ -369,21 +437,25 @@ export default function ChallengesPage() {
 		return data;
 	}, []);
 
+	const isRefreshingRef = useRef(false)
+
 	const refreshAll = useCallback(async () => {
+		if (isRefreshingRef.current) return  // ← evitar concurrencia
+		isRefreshingRef.current = true
 		try {
-			const [challengeData] = await Promise.all([
-				loadChallenges(),
-			]);
-
-			setPayload(challengeData);
-
-			setError(null);
+			const challengeData = await loadChallenges()
+			setPayload(challengeData)
+			setError(null)
 		} catch {
-			setError("No fue posible cargar challenges en este momento.");
+			setPayload(prev => {
+			if (prev === null) setError('No fue posible cargar challenges en este momento.')
+			return prev
+			})
 		} finally {
-			setLoading(false);
+			setLoading(false)
+			isRefreshingRef.current = false
 		}
-	}, [loadChallenges]);
+		}, [loadChallenges])
 
 	useEffect(() => {
 		void refreshAll();
@@ -694,7 +766,7 @@ export default function ChallengesPage() {
 												<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#00F0FF]">Sector bloqueado</p>
 												<h3 className="mt-1 font-heading text-2xl text-[#EF01BA]">{selectedContinent}</h3>
 												<p className="mt-1 font-mono text-[11px] text-white/70">
-													{continentChallenges.length} retos · {selectedContinentSolved}/{continentChallenges.length || 1} resueltos por el equipo
+													{continentChallenges.length} flags · {selectedContinentSolved}/{continentChallenges.length || 1} resueltos por el equipo
 												</p>
 											</div>
 											<button
@@ -719,101 +791,177 @@ export default function ChallengesPage() {
 											</div>
 										) : null}
 
-										<div className="mt-4 max-h-56 space-y-2 overflow-y-auto pr-1">
-											{continentChallenges.map((challenge) => {
-												const difficulty = difficultyTone(challenge.difficulty)
-												const operation = operationalStatus(challenge)
-												const isActive = selectedChallengeId === challenge.id
+										{/* {continentChallenges.length > 1 && (
+											<>
+												<p className="mt-4 font-mono text-[11px] uppercase tracking-[0.18em] text-[#00F0FF]">
+													Challenges disponibles:
+												</p>
+												<div className="mt-2 max-h-56 space-y-2 overflow-y-auto pr-1">
+													{continentChallenges
+														.filter((challenge) => !challenge.machineId)
+														.map((challenge) => {
+															const difficulty = difficultyTone(challenge.difficulty)
+															const operation = operationalStatus(challenge)
+															const isActive = selectedChallengeId === challenge.id
 
-												return (
-													<button
-														key={challenge.id}
-														type="button"
-														onClick={() => setSelectedChallengeId(challenge.id)}
-														className={`w-full border p-2.5 text-left transition-colors ${
-															isActive
-																? "border-[#00F0FF]/55 bg-[#00F0FF]/10"
-																: "border-white/15 bg-black/55 hover:border-white/35"
-														}`}
-													>
-														<div className="flex items-start justify-between gap-2">
-															<p className="font-heading text-base text-white">{challenge.name}</p>
-															<p className="font-mono text-xs text-[#FEF759]">{challenge.points} pts</p>
-														</div>
-														<div className="mt-2 flex flex-wrap gap-1.5">
-															<span className={`border px-1.5 py-0.5 font-mono text-[10px] uppercase ${categoryTone(challenge.category)}`}>
-																{challenge.category}
-															</span>
-															<span className={`border px-1.5 py-0.5 font-mono text-[10px] uppercase ${difficulty.className}`}>
-																{difficulty.label}
-															</span>
-															<span className={`border px-1.5 py-0.5 font-mono text-[10px] uppercase ${operation.className}`}>
-																{operation.label}
-															</span>
-														</div>
-													</button>
-												)
-											})}
-										</div>
+															return (
+																<button
+																	key={challenge.id}
+																	type="button"
+																	onClick={() => setSelectedChallengeId(challenge.id)}
+																	className={`w-full border p-2.5 text-left transition-colors ${
+																		isActive
+																			? "border-[#00F0FF]/55 bg-[#00F0FF]/10"
+																			: "border-white/15 bg-black/55 hover:border-white/35"
+																	}`}
+																>
+																	<div className="flex items-start justify-between gap-2">
+																		<p className="font-heading text-base text-white">{challenge.name}</p>
+																		<p className="font-mono text-xs text-[#FEF759]">{challenge.points} pts</p>
+																	</div>
+																	<div className="mt-2 flex flex-wrap gap-1.5">
+																		<span className={`border px-1.5 py-0.5 font-mono text-[10px] uppercase ${categoryTone(challenge.category)}`}>
+																			{challenge.category}
+																		</span>
+																		<span className={`border px-1.5 py-0.5 font-mono text-[10px] uppercase ${difficulty.className}`}>
+																			{difficulty.label}
+																		</span>
+																		<span className={`border px-1.5 py-0.5 font-mono text-[10px] uppercase ${operation.className}`}>
+																			{operation.label}
+																		</span>
+																	</div>
+																</button>
+															)
+														})}
 
-										{detailLoading && !selectedChallenge ? (
+													{Array.from(
+														new Set(
+															continentChallenges
+																.filter((challenge) => challenge.machineId)
+																.map((challenge) => `${challenge.continent}::${challenge.machineId}`)
+														)
+													).map((key) => {
+														const steps = machineGroups.get(key) ?? []
+														if (!steps.length) return null
+
+														const step1 = steps.find((step) => step.step === 1) ?? steps[0]
+														const totalPts = steps.reduce((acc, step) => acc + step.points, 0)
+														const captured = steps.filter((step) => step.status === 'COMPLETED' || step.solvedByTeam).length
+														const machineName = step1.name.includes('-')
+															? step1.name.split('-')[0].trim()
+															: (step1.machineId?.toUpperCase() || key)
+														const isActive = steps.some((step) => step.id === selectedChallengeId)
+
+														return (
+															<button
+																key={key}
+																type="button"
+																onClick={() => setSelectedChallengeId(step1.id)}
+																className={`w-full border p-2.5 text-left transition-colors ${
+																	isActive
+																		? "border-[#00F0FF55] bg-[#00F0FF10]"
+																		: "border-white/15 bg-black/55 hover:border-white/35"
+																}`}
+															>
+																<div className="flex items-start justify-between gap-2">
+																	<p className="font-heading text-base text-white">{machineName}</p>
+																	<p className="font-mono text-xs text-[#FEF759]">{totalPts} pts</p>
+																</div>
+																<div className="mt-2 flex items-center gap-1.5">
+																	{steps.map((step, index) => (
+																		<span
+																			key={step.id}
+																			className={`h-2 w-2 rounded-full border transition-colors ${
+																				step.solvedByTeam || step.status === 'COMPLETED'
+																					? 'border-emerald-400 bg-emerald-400'
+																					: selectedChallengeId === step.id
+																					? 'border-[#00F0FF] bg-[#00F0FF40]'
+																					: 'border-white/30 bg-transparent'
+																			}`}
+																			title={`Flag ${index + 1}${step.status === 'COMPLETED' ? ' ✓' : ''}`}
+																		/>
+																	))}
+																	<span className="ml-1 font-mono text-[10px] text-white/60">
+																		{captured}/{steps.length} flags
+																	</span>
+																</div>
+															</button>
+														)
+													})}
+												</div>
+											</>
+										)} */}
+
+										{/* Detail Panel */}
+										{detailLoading || !displayChallenge ? (
 											<div className="mt-6 flex h-20 items-center justify-center">
-												<div className="h-6 w-6 animate-spin rounded-full border-2 border-[#EF01BA] border-t-transparent" />
+											<div className="h-6 w-6 animate-spin rounded-full border-2 border-[#EF01BA] border-t-transparent"></div>
 											</div>
-										) : selectedChallenge ? (
+										) : displayChallenge ? (
 											<div className="mt-5 border border-white/15 bg-black/55 p-3 sm:p-4">
-												<div className="flex flex-wrap items-start justify-between gap-2">
-													<p className="font-heading text-xl text-white">{selectedChallenge.name}</p>
-													<p className="font-mono text-xs text-[#FEF759]">{selectedChallenge.points} pts</p>
+											<div className="flex flex-wrap items-start justify-between gap-2">
+												<p className="font-heading text-xl text-white">{displayChallenge.name}</p>
+												<p className="font-mono text-xs text-[#FEF759]">{displayChallenge.points} pts</p>
+											</div>
+
+											<div className="mt-2 flex flex-wrap gap-1.5">
+												<span className="border px-2 py-1 font-mono text-[10px] uppercase ...">
+												{displayChallenge.category}
+												</span>
+												<span className={`border px-2 py-1 font-mono text-[10px] uppercase ${difficultyTone(displayChallenge.difficulty).className}`}>
+												{difficultyTone(displayChallenge.difficulty).label}
+												</span>
+												<span className={`border px-2 py-1 font-mono text-[10px] uppercase ${operationalStatus(displayChallenge).className}`}>
+												{operationalStatus(displayChallenge).label}
+												</span>
+											</div>
+
+											<p className="mt-2 border border-white/10 bg-black/35 p-2 font-mono text-[11px] text-white/70">
+												{displayChallenge.description}
+											</p>
+
+											<div className="mt-3 grid gap-2 sm:grid-cols-2">
+												{/* Ocultamos "Tipo" si es una máquina agrupada */}
+												{!displayChallenge.machineId && (
+												<div className="border border-white/10 bg-black/35 p-2.5 font-mono text-xs text-white/75">
+													Tipo: {displayChallenge.type}
+												</div>
+												)}
+												
+												{/* "Flags" siempre se muestra, pero en máquinas dirá "0/4" */}
+												<div className="border border-white/10 bg-black/35 p-2.5 font-mono text-xs text-white/75">
+												Flags: {displayChallenge.capturedFlags}/{displayChallenge.totalFlags}
 												</div>
 
-												<div className="mt-2 flex flex-wrap gap-1.5">
-													<span className={`border px-2 py-1 font-mono text-[10px] uppercase ${categoryTone(selectedChallenge.category)}`}>
-														{selectedChallenge.category}
-													</span>
-													<span className={`border px-2 py-1 font-mono text-[10px] uppercase ${difficultyTone(selectedChallenge.difficulty).className}`}>
-														{selectedChallenge.difficulty}
-													</span>
-													<span className={`border px-2 py-1 font-mono text-[10px] uppercase ${operationalStatus(selectedChallenge).className}`}>
-														{operationalStatus(selectedChallenge).label}
-													</span>
-												</div>
-
-												<p className="mt-3 text-sm text-white/80">{selectedChallenge.description}</p>
-												<p className="mt-2 border border-white/10 bg-black/35 p-2 font-mono text-[11px] text-white/70">{selectedChallenge.lore}</p>
-
-												<div className="mt-3 grid gap-2 sm:grid-cols-2">
+												{/* Ocultamos el resto si es máquina agrupada */}
+												{!displayChallenge.machineId && (
+												<>
 													<div className="border border-white/10 bg-black/35 p-2.5 font-mono text-xs text-white/75">
-														Tipo: {selectedChallenge.type}
+													{displayChallenge.firstBlood 
+														? `First Blood: ${displayChallenge.firstBlood.teamName}`
+														: 'First Blood pendiente'}
 													</div>
 													<div className="border border-white/10 bg-black/35 p-2.5 font-mono text-xs text-white/75">
-														Flags: {selectedChallenge.capturedFlags}/{selectedChallenge.totalFlags}
+													{displayChallenge.solvedByTeam
+														? 'Resuelto por el equipo'
+														: displayChallenge.status === 'COMPLETED'
+														? 'Completado por mi'
+														: 'Reto activo para tu equipo'}
 													</div>
-													<div className="border border-white/10 bg-black/35 p-2.5 font-mono text-xs text-white/75">
-														{selectedChallenge.firstBlood
-															? `First Blood: ${selectedChallenge.firstBlood.teamName} - ${prettyDate(selectedChallenge.firstBlood.timestamp)}`
-															: "First Blood pendiente"}
-													</div>
-													<div className="border border-white/10 bg-black/35 p-2.5 font-mono text-xs text-white/75">
-														{selectedChallenge.solvedByTeam
-															? `Resuelto por el equipo: ${prettyDate(selectedChallenge.completedAt)}`
-															: selectedChallenge.status === "COMPLETED"
-																? `Completado por mi equipo: ${prettyDate(selectedChallenge.completedAt)}`
-																: "Reto activo para tu equipo"}
-													</div>
-												</div>
+												</>
+												)}
+											</div>
 
-												<ChallengeDossierTerminal challenge={selectedChallenge} />
-
-												<div className="mt-4">
-													<Link
-														href={`/challenges/${selectedChallenge.slug}`}
-														className="inline-flex w-full items-center justify-center gap-2 border border-[#EF01BA]/45 bg-[#EF01BA]/15 px-4 py-3 font-mono text-sm text-white transition-colors hover:bg-[#EF01BA]/30"
-													>
-														Ir al lab
-														<ExternalLink className="h-4 w-4" />
-													</Link>
-												</div>
+											<div className="mt-4">
+												{/* El slug ha sido inyectado inteligentemente para llevarte directo al Flag que te toca resolver */}
+												<Link
+												href={`/challenges/${displayChallenge.slug}`}
+												className="inline-flex w-full items-center justify-center gap-2 border border-[#EF01BA]/45 bg-[#EF01BA]/15 px-4 py-3 font-mono text-sm text-white transition-colors hover:bg-[#EF01BA]/30"
+												>
+												Ir al lab
+												<ExternalLink className="h-4 w-4" />
+												</Link>
+											</div>
 											</div>
 										) : (
 											<div className="mt-5 border border-white/15 bg-black/35 p-4">

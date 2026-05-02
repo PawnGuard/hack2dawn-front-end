@@ -66,6 +66,21 @@ function ctfdHeaders(): HeadersInit {
   }
 }
 
+function toSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, ' ')
+    .trim()
+    .replace(/\s+/g, '-')
+}
+
+function mapDifficulty(points: number): 'Easy' | 'Medium' | 'Hard' | 'Insane' {
+  if (points <= 125) return 'Easy'
+  if (points <= 275) return 'Medium'
+  if (points <= 400) return 'Hard'
+  return 'Insane'
+}
+
 {/* Crear usuarios */}
 
 // ─── Crear usuario en CTFd ──────────────────────────────────────
@@ -143,7 +158,7 @@ export async function ctfdCreateUser(payload: {
 export async function ctfdVerifyCredentials(
   username: string,
   password: string,
-): Promise<CTFdUser | null> {
+): Promise<{ user: CTFdUser; sessionCookie: string; csrfToken: string } | null> {
 
   // ── Paso 1: GET /login ───────────────────────────────────────
   const loginPageRes = await fetch(`${BASE}/login`, {
@@ -245,8 +260,79 @@ export async function ctfdVerifyCredentials(
 
   const body: CTFdResponse<CTFdUser> = await meRes.json()
   console.log('[verify] P4 - success:', body.success, '| userId:', body.data?.id)
-  return body.success ? (body.data ?? null) : null
+
+  if (body.success && body.data) {
+    return { user: body.data, sessionCookie, csrfToken: nonce }
+  }
+
+  return null
 }
+
+// Fecha de expiración del token: fin del evento + 7 días de margen
+function tokenExpiration(): string {
+  const end = process.env.EVENT_END
+    ? new Date(process.env.EVENT_END)
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // fallback: 30 días
+  end.setDate(end.getDate() + 7) // margen de seguridad
+  return end.toISOString().split('T')[0] // "YYYY-MM-DD"
+}
+
+/**
+ * Crea un nuevo token personal para el usuario.
+ * Devuelve el valor del token (solo visible en el momento de creación).
+ */
+async function ctfdCreateUserToken(sessionCookie: string, csrfToken: string): Promise<string | null> {
+  const res = await fetch(`${BASE}/api/v1/tokens`, {
+    method: 'POST',
+    headers: {
+      'Cookie': sessionCookie,
+      'CSRF-Token': csrfToken,
+      'Content-Type': 'application/json',
+      'x-internal-key': NGINX_SECRET,
+    },
+    body: JSON.stringify({
+      expiration: tokenExpiration(),
+      description: 'H4ck2D4wn Platform Token',
+    }),
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    console.error('[ctfdCreateUserToken] Error:', res.status)
+    return null
+  }
+
+  const body = await res.json() as CTFdResponse<{ id: number; value: string }>
+  return body.success ? body.data?.value ?? null : null
+}
+
+/**
+ * ctfdGetOrCreateUserToken
+ *
+ * Punto de entrada principal. Llama a esta función desde login y register.
+ *
+ * Estrategia:
+ * - Si el usuario ya tiene un token de plataforma → lo borra y crea uno fresco
+ *   (porque la API de listado no devuelve el valor real del token, solo el ID)
+ * - Si no tiene → crea uno nuevo
+ *
+ * Esto garantiza que SIEMPRE tengamos el valor del token en mano para
+ * guardarlo en la sesión de iron-session.
+ */
+export async function ctfdGetOrCreateUserToken(sessionCookie: string, csrfToken: string): Promise<string | null> {
+  try {
+    const token = await ctfdCreateUserToken(sessionCookie, csrfToken)
+    if (!token) {
+      console.error('[ctfdGetOrCreateUserToken] No se pudo crear token para sessionCookie:', sessionCookie)
+    }
+    return token
+  } catch (err) {
+    console.error('[ctfdGetOrCreateUserToken] Error inesperado:', err)
+    return null
+  }
+}
+
+{/* ENDPOINTS DE USUARIO */}
 
 // ─── Obtener usuario por ID (con admin token) ───────────────────
 export async function ctfdGetUser(userId: number): Promise<CTFdUser | null> {
@@ -257,6 +343,34 @@ export async function ctfdGetUser(userId: number): Promise<CTFdUser | null> {
   if (!res.ok) return null
   const body: CTFdResponse<CTFdUser> = await res.json()
   return body.success ? (body.data ?? null) : null
+}
+
+// ─── Actualizar perfil de usuario ─────────────────────────────────
+// PATCH /api/v1/users/{id}
+export async function ctfdUpdateUser(
+  userId: number,
+  payload: { name?: string; affiliation?: string; website?: string }
+): Promise<CTFdResponse<CTFdUser>> {
+  const res = await fetch(`${BASE}/api/v1/users/${userId}`, {
+    method: 'PATCH',
+    headers: ctfdHeaders(),
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  })
+  const text = await res.text()
+  try { return JSON.parse(text) }
+  catch { throw new Error(`CTFd error (${res.status}): ${text.substring(0, 200)}`) }
+}
+
+// ─── Obtener Solves de un usuario ─────────────────────────────────
+export async function ctfdGetUserSolves(userId: number): Promise<CTFdSolve[]> {
+  const res = await fetch(`${BASE}/api/v1/users/${userId}/solves`, {
+    headers: ctfdHeaders(),
+    cache: 'no-store',
+  })
+  if (!res.ok) return []
+  const body: CTFdResponse<CTFdSolve[]> = await res.json()
+  return body.data ?? []
 }
 
 {/* ENDPOINTS DE EQUIPOS */}
@@ -505,19 +619,6 @@ export async function ctfdGetTeamStats(
   }
 }
 
-{/* ENDPOINTS DE USUARIO */}
-
-// ─── Obtener Solves de un usuario ─────────────────────────────────
-export async function ctfdGetUserSolves(userId: number): Promise<CTFdSolve[]> {
-  const res = await fetch(`${BASE}/api/v1/users/${userId}/solves`, {
-    headers: ctfdHeaders(),
-    cache: 'no-store',
-  })
-  if (!res.ok) return []
-  const body: CTFdResponse<CTFdSolve[]> = await res.json()
-  return body.data ?? []
-}
-
 // ─── Obtener detalles de un reto ──────────────────────────────────
 // Para obtener los puntos (value) y el nombre real del reto
 export async function ctfdGetChallenge(challengeId: number): Promise<{ name: string, value: number } | null> {
@@ -560,12 +661,16 @@ export async function ctfdGetChallengeDetail(
   const points  = chall.value ?? chall.initial ?? 0
   const solved  = chall.solved_by_me ?? false
   const continent = parseContinentTag(chall.tags)
+  const machineId = parseMachineTag(chall.tags) // Ejemplo de tag: "machine:docker, o como esta en el docs de sammy"
+  const step      = parseStepTag(chall.tags) // ← 1, 2, 3, 4 ,etc... n flags
 
   return {
     id:            chall.id,
     slug:          toSlug(chall.name),
     name:          chall.name,
     category:      chall.category ?? 'General',
+    machineId,
+    step,
     continent,
     type:          chall.type ?? chall.category ?? 'General',
     difficulty:    mapDifficulty(points),
@@ -581,132 +686,6 @@ export async function ctfdGetChallengeDetail(
     connectionInfo: chall.connection_info ?? null,
     solvedByTeam:  false,  // El detalle individual no tiene info del equipo; se enriquece si se necesita
   }
-}
-
-// ─── Actualizar perfil de usuario ─────────────────────────────────
-// PATCH /api/v1/users/{id}
-export async function ctfdUpdateUser(
-  userId: number,
-  payload: { name?: string; affiliation?: string; website?: string }
-): Promise<CTFdResponse<CTFdUser>> {
-  const res = await fetch(`${BASE}/api/v1/users/${userId}`, {
-    method: 'PATCH',
-    headers: ctfdHeaders(),
-    body: JSON.stringify(payload),
-    cache: 'no-store',
-  })
-  const text = await res.text()
-  try { return JSON.parse(text) }
-  catch { throw new Error(`CTFd error (${res.status}): ${text.substring(0, 200)}`) }
-}
-
-// Fecha de expiración del token: fin del evento + 7 días de margen
-function tokenExpiration(): string {
-  const end = process.env.EVENT_END
-    ? new Date(process.env.EVENT_END)
-    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // fallback: 30 días
-
-  end.setDate(end.getDate() + 7) // margen de seguridad
-  return end.toISOString().split('T')[0] // "YYYY-MM-DD"
-}
-
-/**
- * Crea un nuevo token personal para el usuario.
- * Devuelve el valor del token (solo visible en el momento de creación).
- */
-async function ctfdCreateUserToken(userId: number): Promise<string | null> {
-  const res = await fetch(`${BASE}/api/v1/tokens`, {
-    method: 'POST',
-    headers: ctfdHeaders(),
-    body: JSON.stringify({
-      user_id: userId,
-      expiration: tokenExpiration(),
-      description: 'H4ck2D4wn Platform Token',
-    }),
-    cache: 'no-store',
-  })
-
-  if (!res.ok) {
-    console.error('[ctfdCreateUserToken] Error:', res.status)
-    return null
-  }
-
-  const body = await res.json() as CTFdResponse<{ id: number; value: string }>
-  // "value" solo está disponible aquí, en el momento de creación
-  return body.success ? body.data?.value ?? null : null
-}
-
-/**
- * ctfdGetOrCreateUserToken
- *
- * Punto de entrada principal. Llama a esta función desde login y register.
- *
- * Estrategia:
- * - Si el usuario ya tiene un token de plataforma → lo borra y crea uno fresco
- *   (porque la API de listado no devuelve el valor real del token, solo el ID)
- * - Si no tiene → crea uno nuevo
- *
- * Esto garantiza que SIEMPRE tengamos el valor del token en mano para
- * guardarlo en la sesión de iron-session.
- */
-export async function ctfdGetOrCreateUserToken(userId: number): Promise<string | null> {
-  try {
-    const token = await ctfdCreateUserToken(userId)
-    if (!token) {
-      console.error('[ctfdGetOrCreateUserToken] No se pudo crear token para userId:', userId)
-    }
-    return token
-  } catch (err) {
-    console.error('[ctfdGetOrCreateUserToken] Error inesperado:', err)
-    return null
-  }
-}
-
-function toSlug(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, ' ')
-    .trim()
-    .replace(/\s+/g, '-')
-}
-
-function mapDifficulty(points: number): 'Easy' | 'Medium' | 'Hard' | 'Insane' {
-  if (points <= 125) return 'Easy'
-  if (points <= 275) return 'Medium'
-  if (points <= 400) return 'Hard'
-  return 'Insane'
-}
-
-const VALID_CONTINENTS = new Set<ChallengeContinent>([
-  'North America',
-  'South America',
-  'Europe',
-  'Africa',
-  'Asia',
-  'Oceania',
-  'Antartida Sur',
-])
-
-/**
- * Busca en el array de tags de CTFd un tag con el prefijo "continent:"
- * y devuelve el continente si es válido, o null si no se encontró o es inválido.
- *
- * Ejemplo de tag en CTFd: "continent:Asia"  →  devuelve "Asia"
- * Ejemplo de tag en CTFd: "continent:North America"  →  devuelve "North America"
- */
-function parseContinentTag(
-  tags: string[] | undefined | null,
-): ChallengeContinent | null {
-  if (!tags || tags.length === 0) return null
-
-  const tag = tags.find(t => typeof t === 'string' && t.toLowerCase().startsWith('continent:'))
-  if (!tag) return null
-
-  const raw = tag.slice('continent:'.length).trim()
-
-  return VALID_CONTINENTS.has(raw as ChallengeContinent)
-    ? (raw as ChallengeContinent)
-    : null
 }
 
 /**
@@ -759,10 +738,14 @@ export async function ctfdGetChallengeList(
     const points = chall.value ?? chall.initial ?? 0
     const solved = chall.solved_by_me ?? false
     const continent = parseContinentTag(chall.tags)
+    const machineId = parseMachineTag(chall.tags) // Ejemplo de tag: "machine:docker, o como esta en el docs de sammy"
+    const step      = parseStepTag(chall.tags) // ← 1, 2, 3, 4 ,etc... n flags
 
     return {
       id:             chall.id,
       slug:           toSlug(chall.name),
+      machineId,
+      step,
       name:           chall.name,
       category:       chall.category      ?? 'General',
       continent,
@@ -780,4 +763,161 @@ export async function ctfdGetChallengeList(
       connectionInfo: chall.connection_info ?? null,
     }
   })
+}
+
+/**
+ * Obtiene la lista maestra con Admin Token (ve TODO incluyendo retos Hidden/Anonymized),
+ * luego cruza con los solves del usuario para enriquecer el status de cada reto.
+ * Esto garantiza que machineId y step siempre lleguen al frontend.
+ */
+export async function ctfdGetChallengeListDual(
+  userAuth?: string | null,
+  teamId?: number | null,
+  userId?: number | null,
+): Promise<CTFdChallengeSummary[]> {
+  if (!BASE || !ADMIN_TOKEN || !NGINX_SECRET) {
+    console.error('[ctfdGetChallengeListDual] missing env', {
+      hasBase: Boolean(BASE),
+      hasAdminToken: Boolean(ADMIN_TOKEN),
+      hasNginxSecret: Boolean(NGINX_SECRET),
+    })
+  }
+
+  // ── 1. Lista maestra con Admin Token (tags siempre visibles) ──
+  const adminRes = await fetch(`${BASE}/api/v1/challenges`, {
+    headers: ctfdHeaders(),
+    cache: 'no-store',
+  })
+  if (!adminRes.ok) {
+    const bodyText = await adminRes.text().catch(() => '')
+    console.error('ctfdGetChallengeListDual: Admin fetch falló', adminRes.status, bodyText.slice(0, 200))
+    return []
+  }
+  const adminBody = await adminRes.json() as CTFdResponse<CTFdChallengeRaw[]>
+  if (!adminBody.success || !adminBody.data) {
+    console.error('ctfdGetChallengeListDual: Admin body invalid', {
+      success: adminBody.success,
+      hasData: Boolean(adminBody.data),
+    })
+    return []
+  }
+  console.log('ctfdGetChallengeListDual: Admin challenges', adminBody.data.length)
+
+  // ── 2. Solves del usuario (solvedbyme) ──
+  const userSolvedIds = new Set<number>()
+  if (userAuth?.startsWith('Token ')) {
+    try {
+      const solveRes = await fetch(`${BASE}/api/v1/users/me/solves`, {
+        headers: {
+          'Authorization': userAuth,
+          'Content-Type': 'application/json',
+          'x-internal-key': NGINX_SECRET,
+        },
+        cache: 'no-store',
+      })
+      if (solveRes.ok) {
+        const solveBody = await solveRes.json() as CTFdResponse<{ challenge_id: number }[]>
+        solveBody.data?.forEach(s => userSolvedIds.add(s.challenge_id))
+      }
+    } catch { /* no bloquear si falla */ }
+  }
+
+  // ── 3. Solves del equipo ──
+  const teamSolvedIds = teamId ? await ctfdGetTeamSolvedIds(teamId) : new Set<number>()
+
+  // ── 4. Merge: estructura del Admin + status del usuario ──
+  return adminBody.data.map(chall => {
+    const points   = chall.value ?? chall.initial ?? 0
+    const solved   = userSolvedIds.has(chall.id)
+    const continent = parseContinentTag(chall.tags)
+    const machineId = parseMachineTag(chall.tags)
+    const step      = parseStepTag(chall.tags)
+
+    return {
+      id:             chall.id,
+      slug:           toSlug(chall.name),
+      machineId,
+      step,
+      name:           chall.name,
+      category:       chall.category ?? 'General',
+      continent,
+      type:           chall.type ?? chall.category ?? 'General',
+      difficulty:     mapDifficulty(points),
+      points,
+      description:    chall.description ?? 'Sin descripción disponible.',
+      lore:           'Briefing no disponible. Revisa la descripción técnica del reto.',
+      totalFlags:     1,
+      capturedFlags:  solved ? 1 : 0,
+      status:         solved ? 'COMPLETED' : 'AVAILABLE',
+      completedAt:    null,
+      firstBlood:     null,
+      solves:         chall.solves ?? 0,
+      connectionInfo: chall.connection_info ?? null,
+      solvedByTeam:   teamSolvedIds.has(chall.id),
+    }
+  })
+}
+
+const VALID_CONTINENTS = new Set<ChallengeContinent>([
+  'North America',
+  'South America',
+  'Europe',
+  'Africa',
+  'Asia',
+  'Oceania',
+  'Antartida Sur',
+])
+
+/**
+ * Busca en el array de tags de CTFd un tag con el prefijo "continent:"
+ * y devuelve el continente si es válido, o null si no se encontró o es inválido.
+ *
+ * Ejemplo de tag en CTFd: "continent:Asia"  →  devuelve "Asia"
+ * Ejemplo de tag en CTFd: "continent:North America"  →  devuelve "North America"
+ */
+type CTFdTag = string | { value?: string | null } | null | undefined
+
+function parseContinentTag(
+  tags: CTFdTag[] | undefined | null,
+): ChallengeContinent | null {
+  if (!tags || tags.length === 0) return null
+
+  // Normalizar a string sin importar el formato del endpoint
+  const values = tags
+    .map(t => (typeof t === 'string' ? t : t?.value))
+    .filter((v): v is string => typeof v === 'string' && v.length > 0)
+
+  const raw = values
+    .find(v => v.toLowerCase().startsWith('continent:'))
+    ?.slice('continent:'.length)
+    .trim()
+
+  if (!raw) return null
+
+  return VALID_CONTINENTS.has(raw as ChallengeContinent)
+    ? (raw as ChallengeContinent)
+    : null
+}
+
+function parseMachineTag(tags: CTFdTag[] | undefined | null): string | null {
+  if (!tags || tags.length === 0) return null
+  const values = tags
+    .map(t => (typeof t === 'string' ? t : t?.value))
+    .filter((v): v is string => typeof v === 'string' && v.length > 0)
+    
+  return values.find(v => v.toLowerCase().startsWith('machine:'))
+    ?.slice('machine:'.length).trim() ?? null
+}
+
+function parseStepTag(tags: CTFdTag[] | undefined | null): number | null {
+  if (!tags || tags.length === 0) return null
+  const values = tags
+    .map(t => (typeof t === 'string' ? t : t?.value))
+    .filter((v): v is string => typeof v === 'string' && v.length > 0)
+    
+  const raw = values.find(v => v.toLowerCase().startsWith('step:'))
+    ?.slice('step:'.length).trim()
+    
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : null
 }

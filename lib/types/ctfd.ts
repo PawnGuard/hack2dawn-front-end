@@ -150,9 +150,11 @@ export interface CTFdChallengeSummary {
   lore: string
   totalFlags: number
   capturedFlags: number
-  status: 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED'
-  completedAt: string | null
-  firstBlood: null
-  solves: number
-  connectionInfo: string | null
+  status:           'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED'
+  completedAt:      string | null
+  firstBlood:       null
+  solves:           number
+  connectionInfo:   string | null
+  machineId:        string | null
+  step:             number | null
 }

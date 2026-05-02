@@ -27,6 +27,8 @@ export interface ChallengeSummary {
   id: number;
   slug: string;
   name: string;
+  machineId: string | null; // Ejemplo de tag: "machine:docker, o como esta en el docs de sammy"
+  step: number | null;      // ← 1, 2, 3, 4 ,etc... n flags
   category: string;
   continent: ChallengeContinent | null
   type: string;

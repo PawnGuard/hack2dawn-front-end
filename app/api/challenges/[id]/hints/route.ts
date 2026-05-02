@@ -1,0 +1,1 @@
+//app/api/challenges/[id]/hints/route.ts (GET para listar hints de un reto).
