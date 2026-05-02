@@ -14,6 +14,7 @@ import { ChallengeDossierTerminal } from "@/components/shared/ChallengeDossierTe
 import ChallengesGlobe, { type GlobeContinent } from "./ChallengesGlobe";
 import type { ChallengeSummary, ChallengeDetailResponse, ChallengesResponse } from "@/types/challenges";
 import type { ScoreboardResponse } from "@/types/scoreboard";
+import { ctfdGetMyTeamStats, ctfdGetMyTeamSolves } from "@/services/ctfd/teams";
 
 const LORE_ONCE_KEY = "challenges:lore-played:v2";
 const LORE_TEXT =
@@ -104,6 +105,12 @@ function prettyDate(value: string | null): string {
 		dateStyle: "short",
 		timeStyle: "short",
 	});
+}
+
+function parseLoreFromDescription(rawDesc: string): string {
+	if (!rawDesc || !rawDesc.includes('---')) return rawDesc
+	const parts = rawDesc.split('---')
+	return parts[0].trim()
 }
 
 export default function ChallengesPage() {
@@ -377,10 +384,40 @@ export default function ChallengesPage() {
 		setHoveredChallengeId(null)
 	}, []);
 
-	const teamPosition = payload?.progress.teamRank ?? null
+	// Panel de progreso de equipo (Lógica)
+	// TODO: Esta logica debe renderizarsa cada cierto tiempo o calcular cuando el usuario haya hecho submit
+	const [progressStats, setProgressStats] = useState<{
+		completedLabs: number;
+		totalLabs: number;
+		score: number;
+		rank: number | null;
+	} | null>(null);
 
-	const progressValue = payload?.progress.completedChallenges ?? 0;
-	const progressMax = payload?.progress.totalChallenges || 1;
+	const [isProgressLoading, setIsProgressLoading] = useState(true);
+
+	const fetchTeamProgress = useCallback(async () => {
+	setIsProgressLoading(true); // Opcional: mostrar UI de carga al actualizar
+		try {
+			const res = await fetch('/api/teams/progress');
+			if (res.ok) {
+				const json = await res.json();
+				if (json.success) {
+					setProgressStats(json.data);
+				}
+			}
+		} catch (error) {
+			console.error('Error fetching team progress:', error);
+		} finally {
+			setIsProgressLoading(false);
+		}
+	}, []);
+
+	// El useEffect inicial para cuando carga la página
+	useEffect(() => {
+		fetchTeamProgress();
+	}, [fetchTeamProgress]);
+
+
 
 	useEffect(() => {
 		if (!selectedContinent) {
@@ -561,7 +598,13 @@ export default function ChallengesPage() {
 				if (!response.ok) throw new Error("Detail not found");
 				const payload = (await response.json()) as ChallengeDetailResponse;
 				if (!active) return;
-				setDetail(payload.challenge);
+				
+				// Parsear descripción para mostrar solo la primera parte (antes de ---)
+				const parsedChallenge = {
+					...payload.challenge,
+					description: parseLoreFromDescription(payload.challenge.description ?? '')
+				}
+				setDetail(parsedChallenge);
 			} catch {
 				if (!active) return;
 				setDetail(null);
@@ -593,15 +636,15 @@ export default function ChallengesPage() {
 							<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00F0FF]">Panel de Progreso de Equipo</p>
 							<div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
 								<span className="font-mono text-white/80">
-									{payload?.progress.completedChallenges ?? 0} de {payload?.progress.totalChallenges ?? 0} retos completados
+									{progressStats?.completedLabs ?? 0} de {progressStats?.totalLabs ?? 0} laboratorios completados
 								</span>
-								<span className="font-mono text-[#FEF759]">{payload?.progress.teamScore ?? 0} pts</span>
+								<span className="font-mono text-[#FEF759]">{progressStats?.score ?? 0} pts</span>
 								<Link
 									href="/home"
 									className="inline-flex items-center gap-1.5 border border-white/25 px-2 py-1 font-mono text-[11px] text-white/70 transition-colors hover:bg-white/10 hover:text-white"
 								>
 									<Trophy className="h-3.5 w-3.5" />
-									Rank: {teamPosition ? `#${teamPosition}` : "--"}
+									Rank: {progressStats?.rank ? `#${progressStats?.rank}` : "--"}
 								</Link>
 								{deltaScore ? (
 									<span className="animate-pulse font-mono text-[11px] text-emerald-300">+{deltaScore} pts</span>
@@ -609,8 +652,8 @@ export default function ChallengesPage() {
 							</div>
 
 							<progress
-								value={progressValue}
-								max={progressMax}
+								value={progressStats?.completedLabs ?? 0}
+								max={progressStats?.totalLabs ?? 1}
 								className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10 [&::-webkit-progress-bar]:bg-white/10 [&::-webkit-progress-value]:bg-gradient-to-r [&::-webkit-progress-value]:from-[#00F0FF] [&::-webkit-progress-value]:via-[#EF01BA] [&::-webkit-progress-value]:to-[#F77200] [&::-moz-progress-bar]:bg-[#EF01BA]"
 							/>
 						</div>

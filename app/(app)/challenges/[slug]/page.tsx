@@ -239,6 +239,7 @@ export default function ChallengeDetailPage() {
 
         // Refresh challenge list so status COMPLETED propagates
         if (ctfdStatus === 'correct') {
+          await fetchTeamProgress()
           const refreshed = await fetch('/api/challenges', { cache: 'no-store' })
           if (refreshed.ok) {
             const payload = (await refreshed.json()) as ChallengesResponse

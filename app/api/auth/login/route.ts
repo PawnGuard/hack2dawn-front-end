@@ -52,7 +52,9 @@ export async function POST(req: NextRequest) {
     session.email     = user.email
     session.isAdmin   = isAdmin
     session.teamId    = teamId
-    session.ctfdToken = ctfdToken ?? undefined
+    session.ctfdToken = ctfdToken ?? undefined // YA NO SE USA
+    session.ctfdSessionCookie = sessionCookie
+    session.ctfdCsrfToken = csrfToken
 
     if (process.env.DEBUG_SESSION_COOKIE === 'true') {
       console.log('[login][session-before-save]', {
@@ -80,3 +82,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
 }
+
+/* La integración con CTFd no utiliza Personal Access Tokens para los usuarios finales. En su lugar, el backend de Next.js actúa como un proxy inverso inteligente:
+
+Al hacer login, el servidor realiza un web-scraping ligero al portal de CTFd para realizar un inicio de sesión nativo.
+
+Se extrae la cookie de sesión (session=...) y el Token CSRF rotado tras la autenticación.
+
+Estos credenciales se encriptan y guardan en la sesión del usuario (Iron Session).
+
+Cualquier interacción protegida (como enviar una flag o comprar un hint) se envía firmada con la Cookie y el CSRF del usuario, garantizando que el scoreboard y los logs de CTFd reflejen la identidad real del jugador y su equipo.
+
+ */

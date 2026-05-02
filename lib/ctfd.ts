@@ -88,39 +88,42 @@ export async function ctfdCreateUser(payload: {
   name: string
   email: string
   password: string
-  isTecCampus: boolean
-  profile: RegisterProfileData
+  isTecCampus?: boolean
+  profile?: RegisterProfileData
 }): Promise<CTFdResponse<CTFdUser>> {
 
   const url = `${BASE}/api/v1/users`
-  if (!Number.isFinite(TEC_CAMPUS_FIELD_ID)) {
-    throw new Error('CTFD_TEC_CAMPUS_FIELD_ID no está definido o no es numérico')
-  }
+  const customFields: Array<{ field_id: number; value: string }> = []
 
-  const customFields: Array<{ field_id: number; value: string }> = [
-    {
+  if (typeof payload.isTecCampus === 'boolean') {
+    if (!Number.isFinite(TEC_CAMPUS_FIELD_ID)) {
+      throw new Error('CTFD_TEC_CAMPUS_FIELD_ID no está definido o no es numérico')
+    }
+    customFields.push({
       field_id: TEC_CAMPUS_FIELD_ID,
       value: payload.isTecCampus ? 'true' : 'false',
-    },
-  ]
+    })
+  }
 
-  addCustomField(customFields, FIRST_NAME_FIELD_ID, payload.profile.firstName)
-  addCustomField(customFields, LAST_NAME_FIELD_ID, payload.profile.lastName)
-  addCustomField(customFields, AGE_FIELD_ID, payload.profile.age)
-  addCustomField(customFields, PHONE_FIELD_ID, payload.profile.phone)
-  addCustomField(customFields, MATRICULA_FIELD_ID, payload.profile.matricula)
-  addCustomField(customFields, COUNTRY_FIELD_ID, payload.profile.country)
-  addCustomField(customFields, CAREER_FIELD_ID, payload.profile.career)
-  addCustomField(customFields, STUDY_LEVEL_FIELD_ID, payload.profile.studyLevel)
-  addCustomField(customFields, CTFS_ATTENDED_FIELD_ID, payload.profile.ctfsAttended)
-  addCustomField(customFields, SHIRT_SIZE_FIELD_ID, payload.profile.shirtSize)
-  addCustomField(customFields, HEARD_FROM_FIELD_ID, payload.profile.heardFrom)
-  addCustomField(customFields, EMERGENCY_NAME_FIELD_ID, payload.profile.emergencyName)
-  addCustomField(customFields, EMERGENCY_RELATION_FIELD_ID, payload.profile.emergencyRelation)
-  addCustomField(customFields, EMERGENCY_PHONE_FIELD_ID, payload.profile.emergencyPhone)
-  addCustomField(customFields, EMERGENCY_EMAIL_FIELD_ID, payload.profile.emergencyEmail)
+  if (payload.profile) {
+    addCustomField(customFields, FIRST_NAME_FIELD_ID, payload.profile.firstName)
+    addCustomField(customFields, LAST_NAME_FIELD_ID, payload.profile.lastName)
+    addCustomField(customFields, AGE_FIELD_ID, payload.profile.age)
+    addCustomField(customFields, PHONE_FIELD_ID, payload.profile.phone)
+    addCustomField(customFields, MATRICULA_FIELD_ID, payload.profile.matricula)
+    addCustomField(customFields, COUNTRY_FIELD_ID, payload.profile.country)
+    addCustomField(customFields, CAREER_FIELD_ID, payload.profile.career)
+    addCustomField(customFields, STUDY_LEVEL_FIELD_ID, payload.profile.studyLevel)
+    addCustomField(customFields, CTFS_ATTENDED_FIELD_ID, payload.profile.ctfsAttended)
+    addCustomField(customFields, SHIRT_SIZE_FIELD_ID, payload.profile.shirtSize)
+    addCustomField(customFields, HEARD_FROM_FIELD_ID, payload.profile.heardFrom)
+    addCustomField(customFields, EMERGENCY_NAME_FIELD_ID, payload.profile.emergencyName)
+    addCustomField(customFields, EMERGENCY_RELATION_FIELD_ID, payload.profile.emergencyRelation)
+    addCustomField(customFields, EMERGENCY_PHONE_FIELD_ID, payload.profile.emergencyPhone)
+    addCustomField(customFields, EMERGENCY_EMAIL_FIELD_ID, payload.profile.emergencyEmail)
+  }
 
-  const affiliation = payload.profile.career || (payload.isTecCampus ? 'ITESM' : undefined)
+  const affiliation = payload.profile?.career || (payload.isTecCampus ? 'ITESM' : undefined)
 
   const res = await fetch(url, {
     method: 'POST',
@@ -155,46 +158,36 @@ export async function ctfdCreateUser(payload: {
 // ─── Verificar credenciales de un usuario via el /login de CTFd 
 // (la página... si, es raro pero la unica solución que encontre jaja) 
 // fuente: https://github.com/CTFd/CTFd/issues/2020 ─────────
+// ── lib/ctfd.ts ──
 export async function ctfdVerifyCredentials(
   username: string,
   password: string,
 ): Promise<{ user: CTFdUser; sessionCookie: string; csrfToken: string } | null> {
 
-  // ── Paso 1: GET /login ───────────────────────────────────────
+  // ── Paso 1: GET /login (Obtener nonce pre-login) ──
   const loginPageRes = await fetch(`${BASE}/login`, {
     headers: { 'x-internal-key': NGINX_SECRET },
     cache: 'no-store',
   })
-
-  console.log('[verify] P1 - GET /login status:', loginPageRes.status)
-  if (!loginPageRes.ok) {
-    console.error('[verify] P1 FALLO - /login no respondió OK')
-    return null
-  }
+  if (!loginPageRes.ok) return null
 
   const html = await loginPageRes.text()
-  console.log('[verify] P1 - HTML length:', html.length)
-
-  // Prueba ambos patrones de nonce — CTFd puede variar el orden de atributos
+  
+  // ¡AQUÍ ESTABA EL ERROR! Restauramos tu regex original que sí funcionaba
   const nonceMatch =
     html.match(/name="nonce"\s+value="([^"]+)"/) ||
     html.match(/id="nonce"[^>]+value="([^"]+)"/) ||
-    html.match(/value="([^"]+)"\s+name="nonce"/)   // ← orden invertido
+    html.match(/value="([^"]+)"\s+name="nonce"/)
 
-  console.log('[verify] P1 - nonce encontrado:', nonceMatch?.[1]?.substring(0, 20))
   if (!nonceMatch?.[1]) {
     console.error('[verify] P1 FALLO - nonce no encontrado en HTML')
-    // Log del HTML para ver la forma real del input
-    const nonceIndex = html.indexOf('nonce')
-    console.error('[verify] P1 - contexto del nonce en HTML:', html.substring(nonceIndex - 20, nonceIndex + 100))
     return null
   }
 
-  const nonce = nonceMatch[1]
+  const preLoginNonce = nonceMatch[1]
   const initialCookie = loginPageRes.headers.get('set-cookie')?.split(';')[0] ?? ''
-  console.log('[verify] P1 - initialCookie:', initialCookie.substring(0, 30))
 
-  // ── Paso 2: POST /login ──────────────────────────────────────
+  // ── Paso 2: POST /login ──
   const loginRes = await fetch(`${BASE}/login`, {
     method: 'POST',
     headers: {
@@ -205,43 +198,39 @@ export async function ctfdVerifyCredentials(
     body: new URLSearchParams({
       name: username,
       password: password,
-      nonce: nonce,
+      nonce: preLoginNonce,
       _submit: 'Submit',
     }).toString(),
     redirect: 'manual',
     cache: 'no-store',
   })
 
-  const location = loginRes.headers.get('location') ?? ''
-  console.log('[verify] P2 - POST /login status:', loginRes.status)
-  console.log('[verify] P2 - Location header:', location)
-  console.log('[verify] P2 - Set-Cookie header:', loginRes.headers.get('set-cookie')?.substring(0, 60))
-
   if (loginRes.status !== 302) {
-    console.error('[verify] P2 FALLO - no fue redirect 302, fue:', loginRes.status)
-    const body = await loginRes.text()
-    console.error('[verify] P2 - body:', body.substring(0, 200))
+    console.error('[verify] P2 FALLO - status:', loginRes.status)
     return null
   }
 
-  if (location.includes('/login')) {
-    console.error('[verify] P2 FALLO - redirigió de vuelta a /login → credenciales incorrectas o nonce inválido')
-    return null
-  }
-
-  // ── Paso 3: Extraer session cookie ──────────────────────────
+  // ── Paso 3: Extraer session cookie AUTENTICADA ──
   const setCookieHeader = loginRes.headers.get('set-cookie') ?? ''
-  console.log('[verify] P3 - set-cookie raw:', setCookieHeader.substring(0, 80))
-
   const sessionCookie = setCookieHeader.split(';')[0]
-  console.log('[verify] P3 - sessionCookie extraída:', sessionCookie.substring(0, 30))
-
   if (!sessionCookie.startsWith('session=')) {
-    console.error('[verify] P3 FALLO - cookie no empieza con "session=", valor:', sessionCookie)
+    console.error('[verify] P3 FALLO - cookie no extraída')
     return null
   }
 
-  // ── Paso 4: GET /api/v1/users/me con session cookie ─────────
+  // ── Paso 4: Obtener el CSRF Token válido para la sesión autenticada ──
+  // Al iniciar sesión, CTFd rota la cookie y el CSRF token cambia por seguridad
+  const authPageRes = await fetch(`${BASE}/challenges`, {
+    headers: { 'Cookie': sessionCookie, 'x-internal-key': NGINX_SECRET },
+    cache: 'no-store'
+  })
+  const authHtml = await authPageRes.text()
+  
+  // CTFd inyecta el nuevo CSRF token en el objeto JS window.init
+  const authNonceMatch = authHtml.match(/'csrfNonce':\s*"([^"]+)"/) || authHtml.match(/"csrfNonce":\s*"([^"]+)"/)
+  const finalCsrfToken = authNonceMatch ? authNonceMatch[1] : preLoginNonce
+
+  // ── Paso 5: Confirmar Identidad con la API ──
   const meRes = await fetch(`${BASE}/api/v1/users/me`, {
     headers: {
       'Cookie': sessionCookie,
@@ -251,18 +240,11 @@ export async function ctfdVerifyCredentials(
     cache: 'no-store',
   })
 
-  console.log('[verify] P4 - GET /users/me status:', meRes.status)
-  if (!meRes.ok) {
-    const errText = await meRes.text()
-    console.error('[verify] P4 FALLO - /users/me respondió:', errText.substring(0, 200))
-    return null
-  }
-
+  if (!meRes.ok) return null
   const body: CTFdResponse<CTFdUser> = await meRes.json()
-  console.log('[verify] P4 - success:', body.success, '| userId:', body.data?.id)
 
   if (body.success && body.data) {
-    return { user: body.data, sessionCookie, csrfToken: nonce }
+    return { user: body.data, sessionCookie, csrfToken: finalCsrfToken }
   }
 
   return null
