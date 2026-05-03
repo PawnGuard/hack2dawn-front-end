@@ -137,7 +137,7 @@ export async function ctfdCreateUser(payload: {
       verified: true,
       hidden: false,
       banned: false,
-      fields: customFields,
+      ...(customFields.length ? { fields: customFields } : {}),
     }),
     cache: 'no-store', // Mutación → nunca cachear
   })

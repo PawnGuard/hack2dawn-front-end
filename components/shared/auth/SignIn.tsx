@@ -128,6 +128,18 @@ export function LoginForm() {
             <p className="font-mono text-xs mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
               Ingresa tus credenciales para continuar.
             </p>
+            <p className="font-mono text-[11px] mt-3" style={{ color: "#F77200" }}>
+              IMPORTANTE: debes registrarte antes en MLH{" "}
+              <a
+                href="https://events.mlh.io/events/14208-hack2dawn"
+                className="underline underline-offset-2 hover:text-white"
+                target="_blank"
+                rel="noreferrer"
+              >
+                https://events.mlh.io/events/14208-hack2dawn
+              </a>{" "}
+              para hacer CheckIn en el evento
+            </p>
           </div>
 
           {/* Form */}

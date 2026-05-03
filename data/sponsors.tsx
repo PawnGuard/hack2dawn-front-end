@@ -20,13 +20,8 @@ export const SPONSORS: Sponsor[] = [
     logo: <Image src="/images/pwg-logo.webp" alt="PawnGuard" className="h-20 w-auto object-contain" width={240} height={80} />
   },
   {
-    name: "Sponsor 3",
-    website: "https://example.com",
-    logo: <Image src="/images/sponsor-placeholder-3.webp" alt="Sponsor 3" className="h-20 w-auto object-contain" width={240} height={80} />
-  },
-  {
-    name: "Sponsor 4",
-    website: "https://example.com",
-    logo: <Image src="/images/sponsor-placeholder-4.webp" alt="Sponsor 4" className="h-20 w-auto object-contain" width={240} height={80} />
+    name: "MLH",
+    website: "https://mlh.io",
+    logo: <Image src="/images/mlh-logo-color.png" alt="MLH" className="h-20 w-auto object-contain" width={240} height={80} />
   }
 ];
