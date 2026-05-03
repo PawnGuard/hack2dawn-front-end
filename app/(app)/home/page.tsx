@@ -53,13 +53,11 @@ export default function HomePage() {
 
       {/* ── Fixed 2D grid background ── */}
       {/* No pointer-events-none here — cells receive hover events */}
-      <div className="fixed inset-0 z-0 overflow-hidden">
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">  {/* ← agregar esto */}
         <Boxes />
-        {/* Vignette: fades the four edges toward the background colour */}
-        <div className="absolute inset-0 z-10 pointer-events-none bg-[radial-gradient(ellipse_85%_70%_at_50%_40%,transparent_30%,#0a0006_100%)]" />
-        {/* Solid top/bottom fades */}
-        <div className="absolute inset-x-0 top-0 h-24 z-10 pointer-events-none bg-gradient-to-b from-[#0a0006] to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-32 z-10 pointer-events-none bg-gradient-to-t from-[#0a0006] to-transparent" />
+        <div className="absolute inset-0 z-10 pointer-events-none bg-[radial-gradient(...)]" />
+        <div className="absolute inset-x-0 top-0 h-24 z-10 pointer-events-none bg-gradient-to-b ..." />
+        <div className="absolute inset-x-0 bottom-0 h-32 z-10 pointer-events-none bg-gradient-to-t ..." />
       </div>
 
       {/* ── Scrollable content ──
