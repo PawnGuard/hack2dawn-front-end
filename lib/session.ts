@@ -7,8 +7,10 @@ export interface SessionData {
   email: string
   isAdmin: boolean
   teamId: number | null
-  ctfdUserToken: string | null
+  ctfdToken?: string
   usernameChangeCount?: number
+  ctfdSessionCookie: string
+  ctfdCsrfToken: string
 }
 
 export const sessionOptions = {
@@ -38,7 +40,9 @@ export async function getSessionUser(): Promise<SessionData | null> {
     email: session.email,
     isAdmin: session.isAdmin,
     teamId: session.teamId,
-    ctfdUserToken: session.ctfdUserToken,
+    ctfdToken: session.ctfdToken,
+    ctfdSessionCookie: session.ctfdSessionCookie,
+    ctfdCsrfToken: session.ctfdCsrfToken,
   }
 }
 
