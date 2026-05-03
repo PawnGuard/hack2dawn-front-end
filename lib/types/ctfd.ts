@@ -135,6 +135,15 @@ export interface CTFdChallengeRaw {
   minimum?: number
   decay?: number
   tags?: string[]   
+  files?: string[]
+  hints?: Array<{
+    id: number
+    cost: number
+    content?: string | null       // presente solo si ya está desbloqueado
+    requirements?: { prerequisites: number[] } | null
+  }>
+  maxAttempts?: number
+  attempts?: number
 }
 
 export interface CTFdChallengeSummary {
@@ -147,6 +156,7 @@ export interface CTFdChallengeSummary {
   points: number
   continent: ChallengeContinent | null
   description: string
+  files?: string[] // URLs de archivos adjuntos
   lore: string
   totalFlags: number
   capturedFlags: number
@@ -157,4 +167,11 @@ export interface CTFdChallengeSummary {
   connectionInfo:   string | null
   machineId:        string | null
   step:             number | null
+  hints?: Array<{
+    id: number
+    cost: number
+    content?: string | null
+  }>
+  maxAttempts?: number
+  attempts?: number
 }

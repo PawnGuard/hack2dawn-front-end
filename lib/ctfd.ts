@@ -658,6 +658,7 @@ export async function ctfdGetChallengeDetail(
     difficulty:    mapDifficulty(points),
     points,
     description:   chall.description ?? 'Sin descripción disponible.',
+    files:         chall.files ?? [],
     lore:          'Briefing no disponible. Revisa la descripción técnica del reto.',
     totalFlags:    1,
     capturedFlags: solved ? 1 : 0,
@@ -667,6 +668,9 @@ export async function ctfdGetChallengeDetail(
     solves:        chall.solves ?? 0,
     connectionInfo: chall.connection_info ?? null,
     solvedByTeam:  false,  // El detalle individual no tiene info del equipo; se enriquece si se necesita
+    hints: chall.hints ?? [],
+    maxAttempts: chall.max_attempts ?? 0,
+    attempts: chall.attempts ?? 0,
   }
 }
 
@@ -743,6 +747,7 @@ export async function ctfdGetChallengeList(
       firstBlood:     null,
       solves:         chall.solves        ?? 0,
       connectionInfo: chall.connection_info ?? null,
+      hints: chall.hints ?? [],
     }
   })
 }

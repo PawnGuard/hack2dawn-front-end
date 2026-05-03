@@ -1,4 +1,4 @@
-import { getUserHeaders } from './core'
+import { getUserHeaders, getAdminHeaders } from './core'
 import { CTFdResponse } from './types'
 
 const BASE = process.env.CTFD_BASE_URL!
@@ -62,4 +62,27 @@ export async function ctfdGetMyTeamStats(sessionCookie: string): Promise<{ score
   }
 
   return { score, rank }
+}
+
+export async function ctfdGetTeamFailsAdmin(teamId: number): Promise<Record<number, number>> {
+  // Al usar el Token de Admin, CTFd SÍ nos dice el historial completo del equipo
+  const res = await fetch(`${BASE}/api/v1/teams/${teamId}/fails`, {
+    headers: getAdminHeaders(),
+    cache: 'no-store',
+  })
+  
+  if (!res.ok) return {}
+
+  const body = await res.json()
+  if (!body.success || !body.data) return {}
+
+  const failsCount: Record<number, number> = {}
+  body.data.forEach((fail: any) => {
+    const cId = fail.challenge_id ?? fail.challenge?.id
+    if (cId) {
+      failsCount[cId] = (failsCount[cId] || 0) + 1
+    }
+  })
+  
+  return failsCount
 }
