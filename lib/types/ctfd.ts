@@ -115,6 +115,7 @@ export interface ProfileDashboardData {
     date: string
     value: number // Puntos
   }[]
+  accuracy: number // Precisión (%)
 }
 
 export interface CTFdChallengeRaw {

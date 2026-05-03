@@ -86,3 +86,36 @@ export async function ctfdGetTeamFailsAdmin(teamId: number): Promise<Record<numb
   
   return failsCount
 }
+
+export async function ctfdGetMyTeamDetailed(sessionCookie: string) {
+  // /api/v1/teams/me devuelve el equipo actual incluyendo a sus miembros 
+  // con el formato: { members: [{ id, name, score }, ...], captain_id, name, score, ... }
+  const res = await fetch(`${BASE}/api/v1/teams/me`, {
+    headers: getUserHeaders(sessionCookie),
+    cache: 'no-store',
+  })
+  
+  if (!res.ok) return null
+  
+  const body = await res.json()
+  if (!body.success || !body.data) return null
+  
+  return body.data // Devuelve el equipo completo con la lista de members pre-cargada
+}
+
+export async function ctfdGetMyTeamRank(sessionCookie: string, teamId: number): Promise<number | null> {
+  // Consulta directa al scoreboard. CTFd devuelve el array ordenado.
+  const res = await fetch(`${BASE}/api/v1/scoreboard`, {
+    headers: getUserHeaders(sessionCookie),
+    cache: 'no-store',
+  })
+  
+  if (!res.ok) return null
+  
+  const body = await res.json()
+  if (!body.success || !body.data) return null
+  
+  // En el scoreboard, account_id corresponde al teamId si CTFd está en Team Mode
+  const standing = body.data.find((s: any) => s.account_id === teamId)
+  return standing ? standing.pos : null
+}
