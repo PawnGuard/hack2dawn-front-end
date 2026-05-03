@@ -44,7 +44,8 @@ export function usePollingData<T>(
     if (!enabled) return;
 
     doFetch();
-    const id = setInterval(doFetch, intervalMs);
+    const shouldPoll = intervalMs > 0;
+    const id = shouldPoll ? setInterval(doFetch, intervalMs) : null;
 
     const onVisibility = () => {
       if (document.visibilityState === "visible") doFetch();
@@ -52,7 +53,7 @@ export function usePollingData<T>(
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      clearInterval(id);
+      if (id) clearInterval(id);
       document.removeEventListener("visibilitychange", onVisibility);
       abortRef.current?.abort();
     };

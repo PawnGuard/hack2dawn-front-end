@@ -5,12 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronUp, ChevronDown, Minus, Trophy, Flag } from "lucide-react";
 import { useCtfState } from "@/hooks/useCtfState";
 import { usePollingData } from "@/hooks/usePollingData";
-import { fetchScoreboard } from "@/lib/api/scoreboard";
+import { fetchPublicScoreboardAll, fetchScoreboard } from "@/lib/api/scoreboard";
+import { getTeamColor } from "@/lib/team-color";
 import SectionHeader from "./SectionHeader";
 import styles from "./ScoreboardTop10.module.css";
 import type { ScoreboardResponse, TeamScore } from "@/types/scoreboard";
-
-const PODIUM_COLORS = ["#EF01BA", "#F77200", "#FEF759"];
 
 function PositionIndicator({ team }: { team: TeamScore }) {
   if (team.previousPosition < 0) return null;
@@ -34,16 +33,27 @@ function PositionIndicator({ team }: { team: TeamScore }) {
   );
 }
 
-export default function ScoreboardTop10() {
+type Props = {
+  variant?: "top10" | "all";
+};
+
+export default function ScoreboardTop10({ variant = "top10" }: Props) {
   const ctf = useCtfState();
-  const fetcher = useCallback(() => fetchScoreboard(), []);
+  const fetcher = useCallback(() => {
+    return variant === "all" ? fetchPublicScoreboardAll() : fetchScoreboard();
+  }, [variant]);
+
+  const enabled = Boolean(ctf && ctf.phase !== "before");
+  const intervalMs = ctf?.phase === "during" ? 3_000 : -1;
+
   const { data, isLoading } = usePollingData<ScoreboardResponse>(
     fetcher,
-    15_000,
-    ctf?.phase !== "before"
+    intervalMs,
+    enabled
   );
 
   const teams = data?.teams ?? [];
+  const showFlags = variant === "top10";
 
   const placeholder = (message: string) => (
     <div className="flex items-center justify-center h-48 rounded-xl border border-white/[0.06] bg-black/30">
@@ -53,21 +63,31 @@ export default function ScoreboardTop10() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <SectionHeader label="// scoreboard" title="Top 10" accentColor="#EF01BA" />
+      <SectionHeader
+        label="// scoreboard"
+        title={variant === "all" ? "Resultados" : "Top 10"}
+        accentColor="#EF01BA"
+      />
 
       {ctf?.phase === "before" ? (
-        placeholder("El scoreboard estará disponible cuando inicie el CTF")
-      ) : isLoading && !teams.length ? (
+        placeholder(
+          `El evento aún no inicia. Comienza: ${ctf.config.start.toLocaleString("es-MX")}`
+        )
+      ) : null}
+
+      {ctf?.phase === "before" ? null : isLoading && !teams.length ? (
         <div className="flex items-center justify-center h-48 rounded-xl border border-white/[0.06] bg-black/30">
           <div className="w-5 h-5 border-2 border-pink border-t-transparent rounded-full animate-spin" />
         </div>
+      ) : teams.length === 0 ? (
+        placeholder("Aún no hay datos de scoreboard")
       ) : (
         <div className="rounded-xl border border-white/[0.06] bg-black/30 overflow-hidden">
           <div
             className="
               grid grid-cols-[2.5rem_1fr_4.5rem]
-              sm:grid-cols-[3rem_2rem_1fr_5rem_4rem]
-              md:grid-cols-[4rem_2.5rem_1fr_6rem_5rem]
+              sm:grid-cols-[3rem_2rem_1fr_5rem]
+              md:grid-cols-[4rem_2.5rem_1fr_6rem]
               gap-2 px-3 sm:px-4 md:px-6
               py-3 border-b border-white/[0.06]
               text-white/40 font-mono text-[11px] uppercase tracking-wider
@@ -77,17 +97,16 @@ export default function ScoreboardTop10() {
             <span className="hidden sm:block" />
             <span>Equipo</span>
             <span className="text-right">Pts</span>
-            <span className="hidden sm:flex items-center justify-end gap-1">
-              <Flag className="w-3 h-3" /> Flags
-            </span>
+            {showFlags ? (
+              <span className="hidden sm:flex items-center justify-end gap-1">
+                <Flag className="w-3 h-3" /> Flags
+              </span>
+            ) : null}
           </div>
 
           <AnimatePresence mode="popLayout">
             {teams.map((team) => {
-              const isPodium = team.position <= 3;
-              const podiumColor = isPodium
-                ? PODIUM_COLORS[team.position - 1]
-                : undefined;
+              const teamColor = getTeamColor(team.teamName);
 
               return (
                 <motion.div
@@ -102,30 +121,24 @@ export default function ScoreboardTop10() {
                   }}
                   className="
                     grid grid-cols-[2.5rem_1fr_4.5rem]
-                    sm:grid-cols-[3rem_2rem_1fr_5rem_4rem]
-                    md:grid-cols-[4rem_2.5rem_1fr_6rem_5rem]
+                    sm:grid-cols-[3rem_2rem_1fr_5rem]
+                    md:grid-cols-[4rem_2.5rem_1fr_6rem]
                     gap-2 px-3 sm:px-4 md:px-6
                     py-3 border-b border-white/[0.03]
                     hover:bg-white/[0.04] transition-colors relative
                   "
                 >
-                  {isPodium && (
-                    <div
-                      className="absolute left-0 top-0 bottom-0 w-0.5"
-                      style={{ backgroundColor: podiumColor }}
-                    />
-                  )}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-0.5"
+                    style={{ backgroundColor: teamColor }}
+                  />
 
                   <span
                     className="font-mono text-sm font-bold flex items-center gap-0.5"
-                    style={
-                      podiumColor
-                        ? { color: podiumColor }
-                        : { color: "rgba(244, 237, 242, 0.45)" }
-                    }
+                    style={{ color: teamColor }}
                   >
                     {team.position === 1 && (
-                      <Trophy className="w-3 h-3 shrink-0" style={{ color: podiumColor }} />
+                      <Trophy className="w-3 h-3 shrink-0" style={{ color: teamColor }} />
                     )}
                     {team.position}
                   </span>
@@ -134,7 +147,12 @@ export default function ScoreboardTop10() {
                     <PositionIndicator team={team} />
                   </span>
 
-                  <span className="font-heading text-sm text-white truncate flex items-center">
+                  <span className="font-heading text-sm text-white truncate flex items-center gap-2">
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: teamColor }}
+                      aria-hidden
+                    />
                     {team.teamName}
                   </span>
 
@@ -142,9 +160,11 @@ export default function ScoreboardTop10() {
                     {team.score.toLocaleString()}
                   </span>
 
-                  <span className="hidden sm:flex font-mono text-sm text-white/50 items-center justify-end tabular-nums">
-                    {team.flagsCaptured}
-                  </span>
+                  {showFlags ? (
+                    <span className="hidden sm:flex font-mono text-sm text-white/50 items-center justify-end tabular-nums">
+                      {team.flagsCaptured}
+                    </span>
+                  ) : null}
                 </motion.div>
               );
             })}
