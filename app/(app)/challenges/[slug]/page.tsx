@@ -18,13 +18,27 @@ import type { ChallengeSummary, ChallengesResponse } from '@/types/challenges'
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
-type SubmitStatus = 'idle' | 'loading' | 'correct' | 'incorrect' | 'already_solved' | 'error'
+type SubmitStatus = 'idle' | 'loading' | 'correct' | 'incorrect' | 'already_solved' | 'error' | 'ratelimited'
+
+type HintState = {
+  /** undefined = aún no consultado, null = ya desbloqueado (tenemos content) */
+  isUnlocking: boolean
+  content?: string       // se llena al desbloquear
+  error?: string
+}
 
 interface FlagState {
   input: string
   status: SubmitStatus
   message: string
 }
+
+type ActiveHintModal = {
+  stepId: number
+  stepName: string
+  stepNumber: number | null
+  hints: Array<{ id: number; cost: number; title?: string; content?: string | null }>
+} | null
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -55,13 +69,26 @@ export default function ChallengeDetailPage() {
 
   // ── Per-flag submit state  key = ctfd challenge id ──
   const [flagStates, setFlagStates] = useState<Record<number, FlagState>>({})
-  const [activeHintStep, setActiveHintStep] = useState<ChallengeSummary | null>(null)
 
   // Avoid duplicate in-flight submits
   const submittingRef = useRef<Set<number>>(new Set())
 
+  // Record<hintId, HintState>
+  const [hintStates, setHintStates] = useState<Record<number, HintState>>({})
+
+  const [activeHintModal, setActiveHintModal] = useState<ActiveHintModal>(null)
+
+  type EnrichedStep = {
+    description: string
+    lore: string
+    files?: string[]
+    hints?: Array<{ id: number; cost: number; content?: string | null }>
+    maxAttempts?: number
+    attempts?: number
+  }
+
   // Descipcion del flag
-  const [enrichedSteps, setEnrichedSteps] = useState<Record<number, { description: string; lore: string }>>({})
+  const [enrichedSteps, setEnrichedSteps] = useState<Record<number, EnrichedStep>>({})
 
   // ── Load master challenge list ──
   useEffect(() => {
@@ -115,16 +142,20 @@ export default function ChallengeDetailPage() {
     const enrich = async () => {
       const results = await Promise.all(
         machineSteps.map(step =>
-          fetch(`/api/challenges/${step.id}`)
-            .then(r => r.ok ? r.json() : null)
-            .catch(() => null)
+        Promise.all([
+            fetch(`/api/challenges/${step.id}`).then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch(`/api/challenges/${step.id}/hints`).then(r => r.ok ? r.json() : null).catch(() => null),
+        ]).then(([challengeData, hintsData]) => ({
+            challengeData,
+            hints: (hintsData?.hints ?? []) as Array<{ id: number; cost: number; content?: string | null }>,
+        }))
         )
       )
 
       if (!mounted) return
 
-      const map: Record<number, { description: string; lore: string }> = {}
-    results.forEach((data, i) => {
+  	const map: Record<number, EnrichedStep> = {}
+    results.forEach(({ challengeData: data, hints }, i) => {
     const step = machineSteps[i]
     if (data?.challenge) {
         let rawDescription = data.challenge.description ?? ''
@@ -141,6 +172,10 @@ export default function ChallengeDetailPage() {
         map[step.id] = {
         description: description,
         lore: lore || (step.step === 1 ? 'Briefing no disponible.' : ''), // Solo la flag 1 debe tener lore por defecto
+        files: Array.isArray(data?.challenge?.files) ? data.challenge.files : [],
+        hints,
+        maxAttempts: data.challenge.maxAttempts ?? 0,
+        attempts: data.challenge.attempts ?? 0,
         }
     }
     })
@@ -164,22 +199,68 @@ export default function ChallengeDetailPage() {
     () => machineSteps.reduce((acc, s) => acc + s.points, 0),
     [machineSteps]
   )
-  const completionPercent =
-    totalFlags > 0 ? Math.round((capturedFlags / totalFlags) * 100) : 0
+  const completionPercent = totalFlags > 0 ? Math.round((capturedFlags / totalFlags) * 100) : 0
+
+  const labFiles = useMemo<string[]>(() => {
+    if (!step1) return []
+    const step1Enriched = enrichedSteps[step1.id]
+    return step1Enriched?.files ?? []
+  }, [step1, enrichedSteps])
+
 
   // ── Init flagStates once steps are resolved ──
   useEffect(() => {
     if (!machineSteps.length) return
-    setFlagStates(prev => {
-      const next = { ...prev }
-      for (const step of machineSteps) {
-        if (!next[step.id]) {
-          next[step.id] = { input: '', status: 'idle', message: '' }
+    let mounted = true
+
+    const enrich = async () => {
+        // 1 SOLO FETCH POR FLAG
+        const results = await Promise.all(
+        machineSteps.map(step =>
+            fetch(`/api/challenges/${step.id}`)
+            .then(r => r.ok ? r.json() : null)
+            .catch(() => null)
+        )
+        )
+
+        if (!mounted) return
+
+        const map: Record<number, EnrichedStep> = {}
+        
+        results.forEach((data, i) => {
+        const step = machineSteps[i]
+        if (data?.challenge) {
+            let rawDescription = data.challenge.description ?? ''
+            let lore = ''
+            let description = rawDescription
+
+            if (step.step === 1 && rawDescription.includes('---')) {
+            const parts = rawDescription.split('---')
+            lore = parts[0].trim()
+            description = parts.slice(1).join('---').trim()
+            }
+
+            // AQUÍ ES LA MAGIA: tomamos los hints directamente de data.challenge
+            const hints = data.challenge.hints ?? []
+
+            console.log(`[Step ${step.id}] hints extraídos de detail:`, hints)
+
+            map[step.id] = {
+            description: description,
+            lore: lore || (step.step === 1 ? 'Briefing no disponible.' : ''),
+            files: Array.isArray(data?.challenge?.files) ? data.challenge.files : [],
+            hints: hints, // Se guardan en EnrichedStep
+            maxAttempts: data.challenge.maxAttempts ?? 0,
+            attempts: data.challenge.attempts ?? 0,
+            }
         }
-      }
-      return next
-    })
-  }, [machineSteps])
+        })
+        setEnrichedSteps(map)
+    }
+
+    void enrich()
+    return () => { mounted = false }
+    }, [machineSteps]) // Dependencia original
 
   // ── Submit a flag to CTFd ──
   const submitFlag = useCallback(
@@ -237,9 +318,30 @@ export default function ChallengeDetailPage() {
           },
         }))
 
+        // ── 2. NUEVO: Actualizar el contador de intentos al fallar ──
+        if (ctfdStatus === 'incorrect') {
+        setEnrichedSteps(prev => {
+            const current = prev[stepId]
+            if (!current) return prev
+
+            let newAttempts = (current.attempts ?? 0) + 1
+
+            // Extraemos el número exacto del mensaje de CTFd usando Regex
+            const match = ctfdMessage.match(/You have (\d+) tries remaining/)
+            if (match && current.maxAttempts) {
+            const remaining = parseInt(match[1], 10)
+            newAttempts = current.maxAttempts - remaining // Si max es 5 y quedan 2, intentos = 3
+            }
+
+            return {
+            ...prev,
+            [stepId]: { ...current, attempts: newAttempts }
+            }
+        })
+        }
+
         // Refresh challenge list so status COMPLETED propagates
         if (ctfdStatus === 'correct') {
-          await fetchTeamProgress()
           const refreshed = await fetch('/api/challenges', { cache: 'no-store' })
           if (refreshed.ok) {
             const payload = (await refreshed.json()) as ChallengesResponse
@@ -269,12 +371,77 @@ export default function ChallengeDetailPage() {
   //    Flag N is unlocked if flag N-1 is COMPLETED (or it is the first flag) ──
   const isStepUnlocked = useCallback(
     (index: number) => {
+    // La primera flag (índice 0) siempre está desbloqueada
       if (index === 0) return true
-      const prev = machineSteps[index - 1]
-      return prev?.status === 'COMPLETED' || prev?.solvedByTeam === true
+
+      const prevStep = machineSteps[index - 1]
+      if (!prevStep) return false
+
+      // Condición 1: Resuelta correctamente
+      const isCompleted = prevStep.status === 'COMPLETED' || prevStep.solvedByTeam
+      if (isCompleted) return true
+
+      // Condición 2: Intentos agotados en sesión actual (Feedback instantáneo)
+      const prevFs = flagStates[prevStep.id]
+      const isRateLimitedLocal = prevFs?.status === 'ratelimited' || 
+                               (prevFs?.message?.includes('0 tries remaining'))
+
+      if (isRateLimitedLocal) return true
+
+    // Condición 3: Intentos agotados cargados desde el servidor
+    // Para que esto funcione, enrichedSteps debe tener attempts y maxAttempts
+      const prevEnriched = enrichedSteps[prevStep.id]
+      if (prevEnriched) {
+        const maxAtt = prevEnriched.maxAttempts ?? 0
+        const att = prevEnriched.attempts ?? 0
+
+        if (maxAtt > 0 && att >= maxAtt) {
+          return true // Quemaron el reto antes de recargar
+        }
+      }
+
+      return false
     },
-    [machineSteps]
+    [machineSteps, flagStates, enrichedSteps]
   )
+
+  const handleUnlockHint = async (hintId: number) => {
+    setHintStates(prev => ({
+        ...prev,
+        [hintId]: { isUnlocking: true, error: undefined },
+    }))
+
+    try {
+        const res = await fetch(`/api/hints/${hintId}/unlock`, { method: 'POST' })
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+        throw new Error(data.error ?? 'Error al desbloquear la pista')
+        }
+
+        setHintStates(prev => ({
+        ...prev,
+        [hintId]: { isUnlocking: false, content: data.content },
+        }))
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error desconocido'
+        setHintStates(prev => ({
+        ...prev,
+        [hintId]: { isUnlocking: false, error: msg },
+        }))
+    }
+    }
+
+    const openHintModal = useCallback((step: ChallengeSummary) => {
+        const hints = enrichedSteps[step.id]?.hints ?? []
+
+        setActiveHintModal({
+            stepId: step.id,
+            stepName: step.name,
+            stepNumber: step.step ?? null,
+            hints,
+        })
+        }, [enrichedSteps])
 
   // ─────────────────────────────────────────────
   // Render helpers
@@ -291,19 +458,159 @@ export default function ChallengeDetailPage() {
 
   function submitFeedback(stepId: number) {
     const s = flagStates[stepId]
+    const maxAtt = enrichedSteps[stepId]?.maxAttempts ?? 0
+    const attMade = enrichedSteps[stepId]?.attempts ?? 0
+
+    if (maxAtt > 0 && attMade >= maxAtt) {
+        return (
+        <p className="mt-1 font-mono text-xs text-red-400">
+            Límite de intentos alcanzado. Reto bloqueado. Ya no obtendras estos puntos
+        </p>
+        )
+    }
+
     if (!s || s.status === 'idle' || s.status === 'loading') return null
     const colors: Record<string, string> = {
       correct:       'text-emerald-300',
       incorrect:     'text-red-400',
       already_solved:'text-yellow-300',
       error:         'text-red-400',
+      ratelimited: 'text-red-400',
     }
+
+    let friendlyMessage = s.message
+
+    // Si CTFd nos dice que fue incorrecta pero no nos especifica intentos
+    if (s.status === 'incorrect' && !s.message) {
+        friendlyMessage = 'Flag incorrecta. Intenta de nuevo.'
+    } 
+
+    // Si CTFd nos responde que le quedan intentos (ej: "Incorrect. You have 2 tries remaining")
+    if (s.message.includes('tries remaining')) {
+        const match = s.message.match(/You have (\d+) tries remaining/)
+        if (match) {
+        friendlyMessage = `Flag incorrecta. Te quedan ${match[1]} intentos.`
+        }
+    }
+
+    // Si CTFd nos responde que ya se quedó en 0 y lo rechaza (rate limit de intentos)
+    if (s.message.includes('You have 0 tries remaining')) {
+        friendlyMessage = 'Límite de intentos alcanzado. Reto bloqueado. Ya no obtendras estos puntos'
+    }
+
     return (
-      <p className={`mt-1 font-mono text-xs ${colors[s.status] ?? 'text-white/60'}`}>
-        {s.message || (s.status === 'incorrect' ? 'Flag incorrecta. Intenta de nuevo.' : s.status)}
-      </p>
+    <p className={`mt-1 font-mono text-xs ${colors[s.status] ?? 'text-white/60'}`}>
+        {friendlyMessage}
+    </p>
     )
   }
+
+  interface HintModalProps {
+    modal: ActiveHintModal
+    hintStates: Record<number, HintState>
+    onClose: () => void
+    onUnlock: (hintId: number) => void
+    }
+
+    function HintModal({ modal, hintStates, onClose, onUnlock }: HintModalProps) {
+    if (!modal) return null
+
+    const hasHints = modal.hints.length > 0
+
+    return (
+        <div
+        className="fixed inset-0 z-30 flex items-center justify-center px-4"
+        role="dialog"
+        aria-modal="true"
+        >
+        <button
+            type="button"
+            aria-label="Cerrar modal de pistas"
+            className="absolute inset-0 bg-black/70"
+            onClick={onClose}
+        />
+
+        <div className="relative z-10 w-full max-w-lg border border-[#00F0FF]/35 bg-[#0b0514] p-5">
+            <div className="flex items-start justify-between gap-3">
+            <div>
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#00F0FF]">
+                Hint · Flag {modal.stepNumber ?? '?'}
+                </p>
+                <p className="mt-2 font-heading text-base text-white">{modal.stepName}</p>
+            </div>
+
+            <button
+                type="button"
+                onClick={onClose}
+                className="border border-white/25 px-2 py-1 font-mono text-[11px] text-white/80 hover:bg-white/10 transition-colors"
+            >
+                Cerrar
+            </button>
+            </div>
+
+            {!hasHints && (
+            <div className="mt-4 border border-white/10 bg-black/30 p-4">
+                <p className="text-sm text-white/70">Esta flag no tiene pistas disponibles.</p>
+            </div>
+            )}
+
+            {hasHints && (
+            <div className="mt-4 space-y-3">
+                {modal.hints.map((hint, index) => {
+                const hs = hintStates[hint.id]
+                const content = hs?.content ?? hint.content
+                const isUnlocking = hs?.isUnlocking ?? false
+                const error = hs?.error
+
+                return (
+                    <div
+                    key={hint.id}
+                    className="border border-white/10 bg-black/30 p-4"
+                    >
+                    <div className="flex items-center justify-between gap-3">
+                        <p className="font-mono text-xs uppercase tracking-[0.12em] text-[#FEF759]">
+                        Pista {index + 1}{hint.title ? ` · ${hint.title}` : ''}
+                        </p>
+                    </div>
+
+                    {content ? (
+                        <div
+                        className="prose prose-sm prose-invert mt-3 max-w-none text-white"
+                        dangerouslySetInnerHTML={{ __html: content }}
+                        />
+                    ) : (
+                        <>
+                        <p className="mt-3 text-sm text-white/75">
+                            {hint.cost > 0
+                            ? `Cuesta ${hint.cost} puntos para desbloquear esta pista.`
+                            : 'Esta pista es gratuita.'}
+                        </p>
+
+                        <div className="mt-3">
+                            <button
+                            type="button"
+                            onClick={() => onUnlock(hint.id)}
+                            disabled={isUnlocking}
+                            className="inline-flex items-center justify-center border border-[#00F0FF]/40 bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 text-[#00F0FF] px-3 py-2 font-mono text-xs transition-colors disabled:opacity-50"
+                            >
+                            {isUnlocking ? 'Desbloqueando...' : 'Desbloquear pista'}
+                            </button>
+                        </div>
+                        </>
+                    )}
+
+                    {error && (
+                        <p className="mt-3 font-mono text-xs text-red-300">{error}</p>
+                    )}
+                    </div>
+                )
+                })}
+            </div>
+            )}
+        </div>
+        </div>
+    )
+    }
 
   // ─────────────────────────────────────────────
   // JSX
@@ -435,6 +742,13 @@ export default function ChallengeDetailPage() {
                 const isSubmitting = fs?.status === 'loading'
                 const desc = enrichedSteps[step.id]?.description ?? step.description
                 const lore = enrichedSteps[step.id]?.lore ?? step.lore
+                const maxAttempts = enrichedSteps[step.id]?.maxAttempts ?? 0
+                const attemptsMade = enrichedSteps[step.id]?.attempts ?? 0
+                const remaining = maxAttempts - attemptsMade
+                const exhaustedFromServer = maxAttempts > 0 && attemptsMade >= maxAttempts
+                const exhaustedLocalSession = fs?.status === 'ratelimited' || fs?.message?.includes('0 tries remaining')
+                const isLockedByAttempts = exhaustedLocalSession || exhaustedFromServer
+
 
                 // Extract flag title: "Intro - Flag 2 - Foothold" → "Flag 2 - Foothold"
                 const parts = step.name.split(' - ')
@@ -480,19 +794,21 @@ export default function ChallengeDetailPage() {
                     {unlocked && !completed && (
                       <div className="mt-3 space-y-2">
                         <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+                          
                           <input
                             type="text"
                             value={fs?.input ?? ''}
                             onChange={e => handleInputChange(step.id, e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') void submitFlag(step.id) }}
                             placeholder="PWG{...}"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isLockedByAttempts}
                             className="w-full border border-white/25 bg-black/35 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:border-[#00F0FF] focus:outline-none disabled:opacity-50"
                           />
+
                           <button
                             type="button"
                             onClick={() => void submitFlag(step.id)}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isLockedByAttempts}
                             className="inline-flex items-center justify-center border border-[#EF01BA]/40 bg-[#EF01BA]/15 hover:bg-[#EF01BA]/25 text-white px-4 py-2 font-mono text-xs transition-colors disabled:opacity-50"
                           >
                             {isSubmitting ? (
@@ -501,13 +817,16 @@ export default function ChallengeDetailPage() {
                               'Enviar'
                             )}
                           </button>
-                          <button
+
+                          {(enrichedSteps[step.id]?.hints?.length ?? 0) > 0 && (
+                            <button
                             type="button"
-                            onClick={() => setActiveHintStep(step)}
+                            onClick={() => openHintModal(step)}
                             className="inline-flex items-center justify-center border border-[#00F0FF]/40 bg-[#00F0FF]/10 hover:bg-[#00F0FF]/20 text-[#00F0FF] px-3 py-2 font-mono text-xs transition-colors"
-                          >
+                            >
                             Hint
-                          </button>
+                            </button>
+                        )}
                         </div>
                         {submitFeedback(step.id)}
                       </div>
@@ -519,6 +838,7 @@ export default function ChallengeDetailPage() {
                         Completa la Flag {index} para desbloquear esta sección.
                       </p>
                     )}
+                    
                   </article>
                 )
               })}
@@ -536,45 +856,14 @@ export default function ChallengeDetailPage() {
         )}
       </div>
 
-      {/* ── Hint modal ── */}
-      {activeHintStep && (
-        <div
-          className="fixed inset-0 z-30 flex items-center justify-center px-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <button
-            type="button"
-            aria-label="Cerrar modal de hint"
-            className="absolute inset-0 bg-black/70"
-            onClick={() => setActiveHintStep(null)}
-          />
-          <div className="relative z-10 w-full max-w-lg border border-[#00F0FF]/35 bg-[#0b0514] p-5">
-            <div className="flex items-start justify-between gap-3">
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-[#00F0FF]">
-                Hint · Flag {activeHintStep.step}
-              </p>
-              <button
-                type="button"
-                onClick={() => setActiveHintStep(null)}
-                className="border border-white/25 px-2 py-1 font-mono text-[11px] text-white/80 hover:bg-white/10 transition-colors"
-              >
-                Cerrar
-              </button>
-            </div>
-            <p className="mt-3 font-heading text-base text-white">{activeHintStep.name}</p>
-            <p className="mt-3 text-sm text-white/90 leading-relaxed">
-              {enrichedSteps[activeHintStep.id]?.description ?? activeHintStep.description}
-            </p>
-            {(enrichedSteps[activeHintStep.id]?.lore ?? activeHintStep.lore) &&
-              (enrichedSteps[activeHintStep.id]?.lore ?? activeHintStep.lore) !== 'Briefing no disponible. Revisa la descripción técnica del reto.' && (
-              <p className="mt-2 text-sm text-white/70 leading-relaxed">
-                {enrichedSteps[activeHintStep.id]?.lore ?? activeHintStep.lore}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      {activeHintModal && (
+        <HintModal
+            modal={activeHintModal}
+            hintStates={hintStates}
+            onClose={() => setActiveHintModal(null)}
+            onUnlock={handleUnlockHint}
+        />
+        )}
     </main>
   )
 }

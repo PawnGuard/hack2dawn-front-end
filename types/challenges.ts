@@ -37,6 +37,7 @@ export interface ChallengeSummary {
   solvedByTeam: boolean;
   points: number;
   description: string;
+  files?: string[];
   lore: string;
   totalFlags: number;
   capturedFlags: number;
@@ -44,6 +45,13 @@ export interface ChallengeSummary {
   firstBlood: ChallengeFirstBlood | null;
   solves: number
   connectionInfo: string | null;
+  hints?: Array<{
+    id: number
+    cost: number
+    content?: string | null
+  }>
+  maxAttempts?: number
+  attempts?: number
 }
 
 export interface TeamChallengeProgress {

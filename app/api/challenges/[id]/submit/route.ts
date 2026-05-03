@@ -33,12 +33,25 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     cache: 'no-store',
   })
 
-  if (!ctfdRes.ok) {
-    const text = await ctfdRes.text()
-    console.error('ctfd attempt error', ctfdRes.status, text.slice(0, 200))
-    return NextResponse.json({ error: 'CTFd no respondió correctamente' }, { status: 502 })
+  const rawText = await ctfdRes.text()
+
+  let data
+  try {
+    data = JSON.parse(rawText)
+  } catch {
+    return NextResponse.json(
+      { success: false, error: 'CTFd devolvió una respuesta no válida' }, 
+      { status: 500 }
+    )
   }
 
-  const data = await ctfdRes.json()
-  return NextResponse.json(data)
+  return NextResponse.json(data, { status: 200 })
 }
+
+/* /// TODO: Verifica también tus otros routes con [id] dinámico (/api/challenges/[id]/submit/route.ts, /api/hints/[id]/unlock/route.ts) y aplica el mismo patrón en todos:
+
+typescript
+// Patrón correcto para TODOS tus routes con params en Next.js 15
+{ params }: { params: Promise<{ id: string }> }
+const { id } = await params
+ */

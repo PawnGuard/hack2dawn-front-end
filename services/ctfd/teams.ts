@@ -1,4 +1,4 @@
-import { getUserHeaders } from './core'
+import { getUserHeaders, getAdminHeaders } from './core'
 import { CTFdResponse } from './types'
 
 const BASE = process.env.CTFD_BASE_URL!
@@ -62,4 +62,60 @@ export async function ctfdGetMyTeamStats(sessionCookie: string): Promise<{ score
   }
 
   return { score, rank }
+}
+
+export async function ctfdGetTeamFailsAdmin(teamId: number): Promise<Record<number, number>> {
+  // Al usar el Token de Admin, CTFd SÍ nos dice el historial completo del equipo
+  const res = await fetch(`${BASE}/api/v1/teams/${teamId}/fails`, {
+    headers: getAdminHeaders(),
+    cache: 'no-store',
+  })
+  
+  if (!res.ok) return {}
+
+  const body = await res.json()
+  if (!body.success || !body.data) return {}
+
+  const failsCount: Record<number, number> = {}
+  body.data.forEach((fail: any) => {
+    const cId = fail.challenge_id ?? fail.challenge?.id
+    if (cId) {
+      failsCount[cId] = (failsCount[cId] || 0) + 1
+    }
+  })
+  
+  return failsCount
+}
+
+export async function ctfdGetMyTeamDetailed(sessionCookie: string) {
+  // /api/v1/teams/me devuelve el equipo actual incluyendo a sus miembros 
+  // con el formato: { members: [{ id, name, score }, ...], captain_id, name, score, ... }
+  const res = await fetch(`${BASE}/api/v1/teams/me`, {
+    headers: getUserHeaders(sessionCookie),
+    cache: 'no-store',
+  })
+  
+  if (!res.ok) return null
+  
+  const body = await res.json()
+  if (!body.success || !body.data) return null
+  
+  return body.data // Devuelve el equipo completo con la lista de members pre-cargada
+}
+
+export async function ctfdGetMyTeamRank(sessionCookie: string, teamId: number): Promise<number | null> {
+  // Consulta directa al scoreboard. CTFd devuelve el array ordenado.
+  const res = await fetch(`${BASE}/api/v1/scoreboard`, {
+    headers: getUserHeaders(sessionCookie),
+    cache: 'no-store',
+  })
+  
+  if (!res.ok) return null
+  
+  const body = await res.json()
+  if (!body.success || !body.data) return null
+  
+  // En el scoreboard, account_id corresponde al teamId si CTFd está en Team Mode
+  const standing = body.data.find((s: any) => s.account_id === teamId)
+  return standing ? standing.pos : null
 }
