@@ -73,7 +73,7 @@ export default function ProgressChart() {
     return ticks;
   }, [chartData]);
 
-  const colorForTeam = useCallback((name: string) => getTeamColor(name), []);
+  const colorForTeam = useCallback((i: number) => getTeamColor(i), []);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -135,7 +135,7 @@ export default function ProgressChart() {
                   key={name}
                   type="monotone"
                   dataKey={name}
-                  stroke={colorForTeam(name)}
+                  stroke={colorForTeam(i)}
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 0 }}

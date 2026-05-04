@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronUp, ChevronDown, Minus, Trophy, Flag } from "lucide-react";
 import { useCtfState } from "@/hooks/useCtfState";
@@ -184,6 +184,13 @@ export default function ScoreboardTop10({ variant = "top10" }: Props) {
   const teams     = data?.teams ?? [];
   const showFlags = variant === "top10";
 
+  // Stable color index: sort by numeric teamId so each team always gets the same
+  // unique palette slot regardless of score position changes.
+  const teamColorIndex = useMemo(() => {
+    const sorted = [...teams].sort((a, b) => Number(a.teamId) - Number(b.teamId));
+    return new Map(sorted.map((t, i) => [String(t.teamId), i]));
+  }, [teams]);
+
   // ── position-change glitch + embers ───────────────
   const containerRef  = useRef<HTMLDivElement>(null);
   const rowRefs       = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -317,8 +324,8 @@ export default function ScoreboardTop10({ variant = "top10" }: Props) {
 
           <AnimatePresence mode="popLayout">
             {teams.map((team) => {
-              const teamColor   = getTeamColor(team.teamName);
-              const id          = String(team.teamId);
+              const id        = String(team.teamId);
+              const teamColor = getTeamColor(teamColorIndex.get(id) ?? 0);
               const isGlitching = glitchingTeams.has(id);
 
               return (
