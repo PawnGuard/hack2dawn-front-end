@@ -55,6 +55,24 @@ export default function ProgressChart() {
   const chartData = useMemo(() => data?.dataPoints ?? [], [data]);
   const teamNames = useMemo(() => data?.teamNames ?? [], [data]);
 
+  const hourTicks = useMemo(() => {
+    if (!chartData.length) return [];
+    const timestamps = chartData.map((d: any) => d.timestamp as number);
+    const min = Math.min(...timestamps);
+    const max = Math.max(...timestamps);
+    const rangeMs = max - min;
+    const intervalMs = rangeMs <= 2 * 3_600_000 ? 1_800_000 : 3_600_000;
+    const firstTick = new Date(min);
+    firstTick.setMinutes(intervalMs === 1_800_000 ? (firstTick.getMinutes() >= 30 ? 30 : 0) : 0, 0, 0);
+    const ticks: number[] = [];
+    let cur = firstTick.getTime();
+    while (cur <= max) {
+      if (cur >= min) ticks.push(cur);
+      cur += intervalMs;
+    }
+    return ticks;
+  }, [chartData]);
+
   const colorForTeam = useCallback((name: string) => getTeamColor(name), []);
 
   return (
@@ -90,20 +108,25 @@ export default function ProgressChart() {
               <CartesianGrid stroke="rgba(148, 9, 146, 0.12)" strokeDasharray="4 4" />
               <XAxis
                 dataKey="timestamp"
+                type="number"
+                scale="time"
+                domain={["dataMin", "dataMax"]}
+                ticks={hourTicks}
                 tickFormatter={(ts: number) =>
-                  new Date(ts).toLocaleTimeString("es-MX", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
+                  new Date(ts).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
                 }
-                stroke="rgba(244, 237, 242, 0.25)"
-                tick={{ fontSize: 11, fontFamily: "var(--font-mono)" }}
-                axisLine={{ stroke: "rgba(244, 237, 242, 0.1)" }}
+                stroke="rgba(244, 237, 242, 0.08)"
+                tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "rgba(244, 237, 242, 0.4)" }}
+                axisLine={false}
+                tickLine={false}
+                tickMargin={8}
               />
               <YAxis
-                stroke="rgba(244, 237, 242, 0.25)"
-                tick={{ fontSize: 11, fontFamily: "var(--font-mono)" }}
-                axisLine={{ stroke: "rgba(244, 237, 242, 0.1)" }}
+                stroke="rgba(244, 237, 242, 0.08)"
+                tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "rgba(244, 237, 242, 0.4)" }}
+                axisLine={false}
+                tickLine={false}
+                tickMargin={8}
                 domain={[0, "auto"]}
               />
               <Tooltip content={<ChartTooltip />} />
