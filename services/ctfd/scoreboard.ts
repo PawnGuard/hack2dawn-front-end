@@ -33,11 +33,16 @@ function extractScoreboardArray(payload: unknown): CTFdScoreboardEntry[] | null 
 	return null
 }
 
-async function fetchScoreboardWithHeaders(headers: HeadersInit, path: string): Promise<CTFdScoreboardEntry[] | null> {
-	const res = await fetch(`${BASE}${path}`, {
-		headers,
-		cache: 'no-store',
-	})
+async function fetchScoreboardWithHeaders(
+	headers: HeadersInit,
+	path: string,
+	revalidateSeconds?: number,
+): Promise<CTFdScoreboardEntry[] | null> {
+	const fetchOptions: RequestInit = revalidateSeconds !== undefined
+		? { headers, next: { revalidate: revalidateSeconds } }
+		: { headers, cache: 'no-store' }
+
+	const res = await fetch(`${BASE}${path}`, fetchOptions)
 
 	if (!res.ok) return null
 
@@ -88,8 +93,8 @@ export async function ctfdAdminGetScoreboardAll(): Promise<CTFdScoreboardEntry[]
 	const headers = getAdminHeaders()
 
 	const full =
-		(await fetchScoreboardWithHeaders(headers, `/api/v1/scoreboard`)) ??
-		(await fetchScoreboardWithHeaders(headers, `/scoreboard`))
+		(await fetchScoreboardWithHeaders(headers, `/api/v1/scoreboard`, 15)) ??
+		(await fetchScoreboardWithHeaders(headers, `/scoreboard`, 15))
 
 	if (!full || !Array.isArray(full)) {
 		console.error('[ctfdAdminGetScoreboardAll] Scoreboard response was not an array')
@@ -98,6 +103,41 @@ export async function ctfdAdminGetScoreboardAll(): Promise<CTFdScoreboardEntry[]
 
 	return full
 }
+
+// Versiones admin con caché de Next.js (para scoreboard/top y scoreboard/progress)
+
+export async function ctfdAdminGetScoreboardTop(count: number): Promise<CTFdScoreboardEntry[]> {
+	const safeCount = Number.isFinite(count) ? Math.max(1, Math.min(100, Math.floor(count))) : 10
+	const headers = getAdminHeaders()
+
+	const top =
+		(await fetchScoreboardWithHeaders(headers, `/api/v1/scoreboard/top/${safeCount}`, 15)) ??
+		(await fetchScoreboardWithHeaders(headers, `/scoreboard/top/${safeCount}`, 15))
+
+	if (top && Array.isArray(top)) return top
+
+	const full =
+		(await fetchScoreboardWithHeaders(headers, `/api/v1/scoreboard`, 15)) ??
+		(await fetchScoreboardWithHeaders(headers, `/scoreboard`, 15))
+
+	if (!full || !Array.isArray(full)) return []
+	return full.slice(0, safeCount)
+}
+
+export async function ctfdAdminGetTeamSolvesCount(teamId: number): Promise<number> {
+	if (!Number.isFinite(teamId) || teamId <= 0) return 0
+
+	const res = await fetch(`${BASE}/api/v1/teams/${teamId}/solves`, {
+		headers: getAdminHeaders(),
+		next: { revalidate: 60 },
+	})
+
+	if (!res.ok) return 0
+	const body = await safeJson<CTFdResponse<unknown[]>>(res)
+	if (!body?.success || !Array.isArray(body.data)) return 0
+	return body.data.length
+}
+
 
 export async function ctfdGetTeamSolvesCount(sessionCookie: string, teamId: number): Promise<number> {
 	if (!Number.isFinite(teamId) || teamId <= 0) return 0

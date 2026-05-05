@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
-import { ctfdGetScoreboardTop } from '@/services/ctfd/scoreboard'
+import { ctfdAdminGetScoreboardTop } from '@/services/ctfd/scoreboard'
 import { getEventWindow, getEventWindowKey, isEventOver, eventDurationMs } from '@/lib/event-window'
 import type { ProgressChartResponse, ScoreDataPoint } from '@/types/scoreboard'
 
@@ -26,9 +26,6 @@ export async function GET() {
   try {
     const session = await getSession()
     if (!session?.userId) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-    }
-    if (!session?.ctfdSessionCookie) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
@@ -93,7 +90,8 @@ export async function GET() {
       return NextResponse.json(payload, { status: 200 })
     }
 
-    const rows = await ctfdGetScoreboardTop(session.ctfdSessionCookie, 10)
+    // ctfdAdminGetScoreboardTop usa next: { revalidate: 15 } internamente
+    const rows = await ctfdAdminGetScoreboardTop(10)
     const teamNames = rows.map(r => r.name)
 
     // Backfill: si entra un equipo nuevo al top, su línea debe empezar en 0 desde el inicio.
