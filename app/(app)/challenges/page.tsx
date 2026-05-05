@@ -15,6 +15,7 @@ import ChallengesGlobe, { type GlobeContinent } from "./ChallengesGlobe";
 import type { ChallengeSummary, ChallengeDetailResponse, ChallengesResponse } from "@/types/challenges";
 import type { ScoreboardResponse } from "@/types/scoreboard";
 import { ctfdGetMyTeamStats, ctfdGetMyTeamSolves } from "@/services/ctfd/teams";
+import { EncryptedText } from "@/components/ui/encrypted-text";
 
 const LORE_ONCE_KEY = "challenges:lore-played:v2";
 const LORE_TEXT =
@@ -230,27 +231,41 @@ export default function ChallengesPage() {
 	}
 
 	const countryPoints = useMemo(() => {
-	// Solo emitir un punto por continente que tenga al menos 1 challenge
-	return (Object.entries(challengesByContinent) as Array<[GlobeContinent, ChallengeSummary[]]>)
-		.filter(([continent, items]) => 
-			items.length > 0 && continent !== 'Antartida Sur'
-		)
-		.map(([continent, items]) => {
-		const isSelected = selectedContinent === continent
-		// Primer challenge del continente como representante del hotspot
-		const representative = [...items].sort((a, b) => (a.step ?? 0) - (b.step ?? 0))[0]
-		return {
-			id:          `${continent}-center`,
-			challengeId: representative.id,
-			continent,
-			location:    CONTINENT_CENTER[continent] as [number, number],
-			size:        isSelected ? 0.032 : 0.026,
-			color:       isSelected
-			? [1, 0.85, 0] as [number, number, number]   // dorado cuando está seleccionado
-  			: [1, 0.08, 0.08] as [number, number, number] // rojo por default
-		}
-		})
-	}, [challengesByContinent, selectedContinent])
+    // Solo emitir un punto por continente que tenga al menos 1 challenge
+		return (Object.entries(challengesByContinent) as Array<[GlobeContinent, ChallengeSummary[]]>)
+			.filter(([continent, items]) => items.length > 0 && continent !== "Antartida Sur")
+			.map(([continent, items]) => {
+				const isSelected = selectedContinent === continent;
+				
+				// Primer challenge del continente como representante del hotspot
+				const representative = [...items].sort((a, b) => (a.step ?? 0) - (b.step ?? 0))[0];
+				
+				// Verificar si el reto/lab completo está COMPLETED
+				const isCompleted = representative.status === 'COMPLETED';
+
+				// Definimos el color RGB [R, G, B] en base al estado
+				let pointColor: [number, number, number];
+				if (isCompleted) {
+					// Verde Neón: #39FF14 -> rgb(57, 255, 20) -> [0.22, 1, 0.08]
+					pointColor = [0.22, 1, 0.08];
+				} else if (isSelected) {
+					// Dorado cuando está seleccionado (normal)
+					pointColor = [1, 0.85, 0];
+				} else {
+					// Rojo por default (hostil)
+					pointColor = [1, 0.08, 0.08];
+				}
+
+				return {
+					id: `continent-center-${representative.id}`,
+					challengeId: representative.id,
+					continent,
+					location: CONTINENT_CENTER[continent as GlobeContinent] as [number, number],
+					size: isSelected || isCompleted ? 0.032 : 0.026,
+					color: pointColor
+				};
+			});
+	}, [challengesByContinent, selectedContinent]);
 
 	const hotspotPoints = useMemo(() => {
 		return countryPoints.map((point) => ({
@@ -678,8 +693,22 @@ export default function ChallengesPage() {
 
 							<div className="mt-5 border border-white/15 bg-[#0b0214]/80 p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)] sm:p-5">
 								<p className="font-mono text-sm leading-relaxed text-white/85 sm:text-[15px]">
-									{payload?.lore.transmissionText}
-									{!loreAnimated ? <span className="animate-pulse text-[#00F0FF]">|</span> : null}
+									{payload?.lore.transmissionText ? (
+										<>
+											<EncryptedText 
+												text={payload.lore.transmissionText} 
+												revealDelayMs={15} // Velocidad de "tipeo" (más bajo es más rápido, ideal para textos largos)
+												flipDelayMs={30}   // Velocidad de cambio de los caracteres falsos
+												encryptedClassName="text-[#00F0FF]/50" // Color cyan tenue mientras se descifra
+												revealedClassName="text-white/85"      // Color final al revelarse
+											/>
+											{/* El cursor parpadeante al final del texto */}
+											{!loreAnimated ? <span className="animate-pulse text-[#00F0FF] ml-1">_</span> : null}
+										</>
+									) : (
+										// Fallback por si no hay texto de transmisión
+										<span className="animate-pulse text-[#00F0FF]">_</span>
+									)}
 								</p>
 							</div>
 						</div>
@@ -689,13 +718,19 @@ export default function ChallengesPage() {
 								<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#FEF759]">Estado de alerta</p>
 								<p className="mt-1 font-heading text-lg text-white">{payload?.lore.alertLevel}</p>
 							</div>
-							<div className="border border-white/15 bg-black/55 p-3">
-								<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">Ventana tactica</p>
-								<p className="mt-1 font-mono text-sm text-white/80">{payload?.lore.tacticalWindow}</p>
+
+							<div className="border border-[#EF01BA]/30 bg-[#EF01BA]/10 p-3">
+								<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#EF01BA]">Ventana tactica</p>
+								<p className="mt-1 font-mono text-sm text-white/90">{payload?.lore.tacticalWindow}</p>
 							</div>
-							<div className="border border-[#00F0FF]/25 bg-[#00F0FF]/5 p-3">
-								<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#00F0FF]">Objetivo primario</p>
-								<p className="mt-1 font-mono text-sm text-white/85">{payload?.lore.primaryObjective}</p>
+
+							<div className="border border-[#39FF14]/30 bg-[#39FF14]/10 p-3">
+								<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#39FF14]">Objetivo primario</p>
+								<p className="mt-1 font-mono text-sm text-white/90">{payload?.lore.primaryObjective}</p>
+							</div>
+							<div className="border border-[#00F0FF]/30 bg-[#00F0FF]/10 p-3">
+								<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#00F0FF]">Software necesario</p>
+								<p className="mt-1 font-mono text-sm text-white/90">{payload?.lore.software}</p>
 							</div>
 						</div>
 					</div>
@@ -705,22 +740,40 @@ export default function ChallengesPage() {
 					<div className="flex items-center justify-between gap-4">
 						<h2 className="font-heading text-2xl text-[#FEF759] sm:text-3xl">Globo de Operaciones</h2>
 					</div>
-
+					
+					{/* Panel de Acceso Rápido */}
 					{quickAccessChallenges.length ? (
 						<div className="mt-4 border border-white/15 bg-black/40 p-3 sm:p-4">
 							<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#00F0FF]">Acceso Rapido</p>
 							<div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
 								{quickAccessChallenges.map((challenge) => {
 									const isFocused = hoveredChallengeId === challenge.id || selectedChallengeId === challenge.id;
+									const isCompleted = challenge.status === 'COMPLETED'; // Verificamos si ya resolvió todas sus flags
+
 									return (
 										<button
 											key={challenge.id}
 											type="button"
 											onClick={() => handleQuickAccess(challenge)}
-											className={`border px-3 py-2 text-left transition-colors ${isFocused ? "border-[#FEF759]/70 bg-[#FEF759]/10" : "border-white/15 bg-black/55 hover:border-white/35"}`}
+											className={`border px-3 py-2 text-left transition-colors ${
+												isCompleted
+													? isFocused 
+														? "border-[#39FF14]/70 bg-[#39FF14]/15" // Hover Verde intenso
+														: "border-[#39FF14]/30 bg-[#39FF14]/5 hover:border-[#39FF14]/50" // Reposo Verde
+													: isFocused
+														? "border-[#FEF759]/70 bg-[#FEF759]/10" // Hover Amarillo intenso (normal)
+														: "border-white/15 bg-black/55 hover:border-white/35" // Reposo (normal)
+											}`}
 										>
-											<p className="truncate font-heading text-sm text-white">{challenge.name}</p>
-											<p className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-white/65">
+											<div className="flex items-center justify-between">
+												<p className={`truncate font-heading text-sm ${isCompleted ? 'text-[#39FF14]' : 'text-white'}`}>
+													{challenge.name}
+												</p>
+												{isCompleted && (
+													<Flag className="h-3.5 w-3.5 text-[#39FF14]" />
+												)}
+											</div>
+											<p className={`mt-1 font-mono text-[10px] uppercase tracking-[0.12em] ${isCompleted ? 'text-[#39FF14]/70' : 'text-white/65'}`}>
 												{challengeContinent(challenge)} - {challenge.category}
 											</p>
 										</button>
@@ -943,7 +996,18 @@ export default function ChallengesPage() {
 										) : displayChallenge ? (
 											<div className="mt-5 border border-white/15 bg-black/55 p-3 sm:p-4">
 											<div className="flex flex-wrap items-start justify-between gap-2">
-												<p className="font-heading text-xl text-white">{displayChallenge.name}</p>
+												<p className="font-heading text-xl text-[#00F0FF]">
+												<EncryptedText 
+													text={displayChallenge.name} 
+													revealDelayMs={30} 
+													flipDelayMs={30}
+													encryptedClassName="text-[#00F0FF]/50" 
+													revealedClassName="text-white" 
+													// Usamos el ID como 'key' para forzar que el componente se desmonte 
+													// y reinicie la animación CADA VEZ que seleccionan otra máquina
+													key={`title-${displayChallenge.id}`}
+												/>
+												</p>
 												<p className="font-mono text-xs text-[#FEF759]">{displayChallenge.points} pts</p>
 											</div>
 
@@ -959,41 +1023,85 @@ export default function ChallengesPage() {
 												</span>
 											</div>
 
-											<p className="mt-2 border border-white/10 bg-black/35 p-2 font-mono text-[11px] text-white/70">
-												{displayChallenge.description}
-											</p>
-
-											<div className="mt-3 grid gap-2 sm:grid-cols-2">
-												{/* Ocultamos "Tipo" si es una máquina agrupada */}
-												{!displayChallenge.machineId && (
-												<div className="border border-white/10 bg-black/35 p-2.5 font-mono text-xs text-white/75">
-													Tipo: {displayChallenge.type}
-												</div>
-												)}
-												
-												{/* "Flags" siempre se muestra, pero en máquinas dirá "0/4" */}
-												<div className="border border-white/10 bg-black/35 p-2.5 font-mono text-xs text-white/75">
-												Flags: {displayChallenge.capturedFlags}/{displayChallenge.totalFlags}
-												</div>
-
-												{/* Ocultamos el resto si es máquina agrupada */}
-												{!displayChallenge.machineId && (
+											<div className="mt-2 border border-white/10 bg-black/35 p-2.5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]">
+											<p className="font-mono text-[11px] leading-relaxed text-white/75">
+												{displayChallenge.description ? (
 												<>
-													<div className="border border-white/10 bg-black/35 p-2.5 font-mono text-xs text-white/75">
-													{displayChallenge.firstBlood 
-														? `First Blood: ${displayChallenge.firstBlood.teamName}`
-														: 'First Blood pendiente'}
-													</div>
-													<div className="border border-white/10 bg-black/35 p-2.5 font-mono text-xs text-white/75">
-													{displayChallenge.solvedByTeam
-														? 'Resuelto por el equipo'
-														: displayChallenge.status === 'COMPLETED'
-														? 'Completado por mi'
-														: 'Reto activo para tu equipo'}
-													</div>
+													<EncryptedText 
+													text={displayChallenge.description} 
+													revealDelayMs={10} // MUY RÁPIDO: no queremos que se desesperen leyendo
+													flipDelayMs={25}
+													encryptedClassName="text-[#EF01BA]/50" // Magenta tenue
+													revealedClassName="text-white/75"
+													key={`desc-${displayChallenge.id}`}
+													/>
+													<span className="animate-pulse text-[#EF01BA] ml-1">_</span>
 												</>
+												) : (
+												<span className="animate-pulse text-[#EF01BA]">_</span>
 												)}
+											</p>
 											</div>
+
+											<div className="mt-4 space-y-2">
+											{/* Contenedor principal de metadatos (Tipo y First Blood / Estado) */}
+											{!displayChallenge.machineId && (
+												<div className="grid gap-2 sm:grid-cols-2">
+													<div className="border border-white/10 bg-black/35 p-2.5 flex items-center justify-between">
+														<span className="font-mono text-[10px] uppercase tracking-widest text-white/50">Tipo</span>
+														<span className="font-mono text-xs text-white/85">{displayChallenge.type}</span>
+													</div>
+													
+													<div className="border border-white/10 bg-black/35 p-2.5 flex items-center justify-between">
+														<span className="font-mono text-[10px] uppercase tracking-widest text-white/50">First Blood</span>
+														<span className={`font-mono text-xs ${displayChallenge.firstBlood ? 'text-red-400' : 'text-white/60'}`}>
+															{displayChallenge.firstBlood ? displayChallenge.firstBlood.teamName : 'Pendiente'}
+														</span>
+													</div>
+
+													<div className="border border-white/10 bg-black/35 p-2.5 flex items-center justify-between sm:col-span-2">
+														<span className="font-mono text-[10px] uppercase tracking-widest text-white/50">Estatus Operativo</span>
+														<span className={`font-mono text-xs ${
+															displayChallenge.status === 'COMPLETED' || displayChallenge.solvedByTeam 
+																? 'text-[#39FF14]' 
+																: 'text-yellow-400'
+														}`}>
+															{displayChallenge.solvedByTeam
+																? 'Sector asegurado por el escuadrón'
+																: displayChallenge.status === 'COMPLETED'
+																? 'Asegurado por ti'
+																: 'Sector hostil - Se requiere incursión'}
+														</span>
+													</div>
+												</div>
+											)}
+
+											{/* Contador de Flags Táctico - Abarca todo el ancho siempre */}
+											<div className="border border-white/10 bg-black/35 p-3">
+												<div className="flex items-center justify-between mb-2">
+													<span className="font-mono text-[10px] uppercase tracking-widest text-white/50">Progreso de Incursión</span>
+													<span className="font-mono text-xs text-[#EF01BA]">
+														{displayChallenge.capturedFlags} / {displayChallenge.totalFlags} FLAGS
+													</span>
+												</div>
+												{/* Minibarra de progreso visual */}
+												<div className="flex gap-1">
+													{Array.from({ length: displayChallenge.totalFlags || 1 }).map((_, i) => {
+														const isCaptured = i < (displayChallenge.capturedFlags || 0);
+														return (
+															<div 
+																key={i} 
+																className={`h-1.5 flex-1 transition-colors ${
+																	isCaptured 
+																		? 'bg-[#39FF14] shadow-[0_0_8px_rgba(57,255,20,0.6)]' 
+																		: 'bg-white/10'
+																}`} 
+															/>
+														);
+													})}
+												</div>
+											</div>
+										</div>
 
 											<div className="mt-4">
 												{/* El slug ha sido inyectado inteligentemente para llevarte directo al Flag que te toca resolver */}

@@ -21,6 +21,7 @@ export interface EventLore {
   alertLevel:        string
   tacticalWindow:    string
   primaryObjective:  string
+  software: string
 }
 
 export interface ChallengeSummary {

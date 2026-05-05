@@ -441,25 +441,24 @@ export default function ChallengesGlobe({
 
       const pulse = (Math.sin(performance.now() * 0.004) + 1) / 2;
       const hotspotMarkers = normalizedHotspots.flatMap((hotspot, index) => {
+        // Si no mandas color, cyan por defecto
         const coreColor = hotspot.color ?? [0, 0.94, 1];
-        const haloColor: [number, number, number] = index % 2 === 0
-          ? [0.32, 0.02, 0.28]
-          : [0.08, 0.26, 0.3];
+        
+        // El halo será una versión oscurecida del coreColor, para que el pulso verde
+        // emita un aura verde oscura en vez de magenta
+        const haloColor: [number, number, number] = [
+            coreColor[0] * 0.3,
+            coreColor[1] * 0.3,
+            coreColor[2] * 0.3
+        ];
+
         const baseSize = hotspot.size ?? 0.021;
         const corePulseSize = baseSize * (1 + pulse * 0.24);
         const haloPulseSize = baseSize * (1.85 + pulse * 0.5);
 
         return [
-          {
-            location: hotspot.location,
-            size: haloPulseSize,
-            color: haloColor,
-          },
-          {
-            location: hotspot.location,
-            size: corePulseSize,
-            color: coreColor,
-          },
+            { location: hotspot.location, size: haloPulseSize, color: haloColor },
+            { location: hotspot.location, size: corePulseSize, color: coreColor },
         ];
       });
 

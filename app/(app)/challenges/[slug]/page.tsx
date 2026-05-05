@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { Boxes } from '@/components/ui/background-boxes'
 import type { ChallengeSummary, ChallengesResponse } from '@/types/challenges'
+import { EncryptedText } from "@/components/ui/encrypted-text";
 
 // ─────────────────────────────────────────────
 // Types
@@ -658,7 +659,15 @@ export default function ChallengeDetailPage() {
                     <TerminalSquare className="w-3.5 h-3.5" /> expediente de misión
                   </p>
                   <h1 className="font-heading text-3xl sm:text-4xl text-[#EF01BA] font-bold mt-1">
-                    {machineName}
+                    {machineName ? (
+                      <EncryptedText 
+                        text={machineName} 
+                        revealDelayMs={30} 
+                        flipDelayMs={30}
+                        encryptedClassName="text-[#EF01BA]/50" 
+                        revealedClassName="text-[#EF01BA]" 
+                      />
+                    ) : null}
                   </h1>
                   <p className="font-mono text-sm text-white/55 mt-1">{currentChallenge.category}</p>
                 </div>
@@ -696,11 +705,29 @@ export default function ChallengeDetailPage() {
                 </div>
               )}
 
-              {/* Lore / description from step 1 */}
-              <div className="mt-6 border border-white/10 bg-black/35 p-4">
-                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#00F0FF]">Lore del laboratorio</p>
-                <p className="text-white/80 text-sm leading-relaxed mt-2">
-                    {enrichedSteps[step1?.id ?? 0]?.lore || step1?.lore || currentChallenge.lore}
+              {/* Lore description from step 1 */}
+              <div className="mt-6 border border-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)] bg-[#0b0214]/80 p-4 sm:p-5">
+                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#00F0FF] mb-3">
+                  Briefing Interceptado
+                </p>
+                <p className="text-white/85 text-sm leading-relaxed sm:text-[15px]">
+                  {(() => {
+                    const loreText = enrichedSteps[step1?.id ?? 0]?.lore || step1?.lore || currentChallenge.lore;
+                    return loreText ? (
+                      <>
+                        <EncryptedText 
+                          text={loreText} 
+                          revealDelayMs={15} // Rápido porque es texto largo
+                          flipDelayMs={30}
+                          encryptedClassName="text-[#00F0FF]/50"
+                          revealedClassName="text-white/85"
+                        />
+                        <span className="animate-pulse text-[#00F0FF] ml-1">_</span>
+                      </>
+                    ) : (
+                      <span className="animate-pulse text-[#00F0FF]">_</span>
+                    );
+                  })()}
                 </p>
               </div>
 
@@ -800,7 +827,7 @@ export default function ChallengeDetailPage() {
                             value={fs?.input ?? ''}
                             onChange={e => handleInputChange(step.id, e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') void submitFlag(step.id) }}
-                            placeholder="PWG{...}"
+                            placeholder="PWG{tu_respuesta} o copia y pega la flag!"
                             disabled={isSubmitting || isLockedByAttempts}
                             className="w-full border border-white/25 bg-black/35 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:border-[#00F0FF] focus:outline-none disabled:opacity-50"
                           />

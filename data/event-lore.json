@@ -1,7 +1,8 @@
 {
   "operationName": "Hack2Dawn 2026",
-  "transmissionText": "[TRANSMISION INTERCEPTADA] Operador, una red hostil activó nodos durmientes en la malla global...",
-  "alertLevel": "Nivel Amarillo",
+  "transmissionText": "[TRANSMISION INTERCEPTADA] Agentes, bienvenidos a la Unidad Especializada de Operaciones Digitales. La NSA les ha asignado 4 casos activos relacionados con el grupo terrorista digital “de4thPawn”. No existe un orden estricto en cómo tomar los casos, sin embargo la inteligencia recolectada en un caso podría facilitar trabajo en los demás.",
+  "alertLevel": "Nivel Amber",
   "tacticalWindow": "Activa mientras haya nodos comprometidos",
-  "primaryObjective": "Capturar flags y neutralizar cadena de ataque"
+  "primaryObjective": "Capturar flags y neutralizar cadena de ataque",
+  "software": "Docker Engine"
 }
