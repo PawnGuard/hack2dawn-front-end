@@ -1,15 +1,30 @@
 import { NextResponse } from 'next/server'
 import { ctfdAdminGetScoreboardAll } from '@/services/ctfd/scoreboard'
-import { getEventWindow, isEventOver } from '@/lib/event-window'
+import { getEventWindow, getEventWindowKey, isEventOver } from '@/lib/event-window'
 import type { ScoreboardResponse, TeamScore } from '@/types/scoreboard'
+
+const state: { snapshot: ScoreboardResponse | null; windowKey: string } = {
+  snapshot: null,
+  windowKey: '',
+}
 
 export async function GET() {
   try {
     const { start } = getEventWindow()
+    const windowKey = getEventWindowKey()
+
+    if (state.windowKey && state.windowKey !== windowKey) {
+      state.snapshot = null
+      state.windowKey = ''
+    }
 
     if (Date.now() < start.getTime()) {
       const payload: ScoreboardResponse = { teams: [], updatedAt: new Date().toISOString() }
       return NextResponse.json(payload, { status: 200 })
+    }
+
+    if (isEventOver() && state.snapshot && state.windowKey === windowKey) {
+      return NextResponse.json(state.snapshot, { status: 200 })
     }
 
     // ctfdAdminGetScoreboardAll usa next: { revalidate: 15 } internamente
@@ -27,9 +42,17 @@ export async function GET() {
         previousPosition: -1,
       }))
 
+    const eventOver = isEventOver()
+
     const payload: ScoreboardResponse = {
       teams,
       updatedAt: new Date().toISOString(),
+      locked: eventOver,
+    }
+
+    if (eventOver) {
+      state.snapshot = payload
+      state.windowKey = windowKey
     }
 
     return NextResponse.json(payload, { status: 200 })
