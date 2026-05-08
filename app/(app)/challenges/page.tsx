@@ -651,7 +651,7 @@ export default function ChallengesPage() {
 							<p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#00F0FF]">Panel de Progreso de Equipo</p>
 							<div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
 								<span className="font-mono text-white/80">
-									{progressStats?.completedLabs ?? 0} de {progressStats?.totalLabs ?? 0} laboratorios completados
+									{progressStats?.completedLabs ?? 0} de {(progressStats?.totalLabs ?? 1) - 1} laboratorios completados
 								</span>
 								<span className="font-mono text-[#FEF759]">{progressStats?.score ?? 0} pts</span>
 								<Link
