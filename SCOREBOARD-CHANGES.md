@@ -27,6 +27,7 @@ Este documento resume los cambios implementados durante esta conversación para:
 - Requiere sesión igual que Top10.
 - Genera una serie temporal (timeline) en memoria.
 - Throttle de puntos: 1 punto cada ~3s.
+- El eje X de la gráfica se visualiza con rango fijo: **inicio → fin** del evento (no “auto-zoom” por los puntos disponibles).
 - Seed + backfill:
   - Crea un punto inicial en el inicio del evento con 0.
   - Si aparece un equipo nuevo en el top, se “rellena” hacia atrás con 0 para que su línea inicie desde el principio.
