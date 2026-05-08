@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronUp, ChevronDown, Minus, Trophy, Flag } from "lucide-react";
+import { ChevronUp, ChevronDown, Minus, Trophy, Flag, Lock } from "lucide-react";
 import { useCtfState } from "@/hooks/useCtfState";
 import { usePollingData } from "@/hooks/usePollingData";
 import { fetchPublicScoreboardAll, fetchScoreboard } from "@/lib/api/scoreboard";
@@ -175,21 +175,15 @@ export default function ScoreboardTop10({ variant = "top10" }: Props) {
   }, [variant]);
 
   const enabled    = Boolean(ctf && ctf.phase !== "before");
-  const intervalMs = ctf?.phase === "during" ? 3_000 : -1;
+  const intervalMs = 15_000;
 
   const { data, isLoading } = usePollingData<ScoreboardResponse>(
     fetcher, intervalMs, enabled
   );
 
+  const isLocked  = data?.locked === true || ctf?.phase === "after";
   const teams     = data?.teams ?? [];
   const showFlags = variant === "top10";
-
-  // Stable color index: sort by numeric teamId so each team always gets the same
-  // unique palette slot regardless of score position changes.
-  const teamColorIndex = useMemo(() => {
-    const sorted = [...teams].sort((a, b) => Number(a.teamId) - Number(b.teamId));
-    return new Map(sorted.map((t, i) => [String(t.teamId), i]));
-  }, [teams]);
 
   // ── position-change glitch + embers ───────────────
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -204,6 +198,14 @@ export default function ScoreboardTop10({ variant = "top10" }: Props) {
 
   useEffect(() => {
     if (!teams.length) return;
+
+    if (isLocked) {
+      teams.forEach((team) => {
+        prevPositions.current.set(String(team.teamId), team.position);
+      });
+      return;
+    }
+
     const newGlitching: string[] = [];
     const directionUpdates: Array<[string, "up" | "down"]> = [];
 
@@ -237,7 +239,7 @@ export default function ScoreboardTop10({ variant = "top10" }: Props) {
 
     if (newGlitching.length > 0)
       setGlitchingTeams((prev) => new Set([...prev, ...newGlitching]));
-  }, [teams]);
+  }, [teams, isLocked]);
 
   // sync ember Y positions from DOM whenever glitching set changes
   useEffect(() => {
@@ -262,6 +264,14 @@ export default function ScoreboardTop10({ variant = "top10" }: Props) {
     const timers = glitchTimers.current;
     return () => { timers.forEach((t) => clearTimeout(t)); };
   }, []);
+
+  useEffect(() => {
+    if (!isLocked) return;
+    glitchTimers.current.forEach((t) => clearTimeout(t));
+    glitchTimers.current.clear();
+    setGlitchingTeams(new Set());
+    setTeamDirections(new Map());
+  }, [isLocked]);
 
   // ── placeholders ───────────────────────────────────
   const placeholder = (message: string) => (
@@ -296,9 +306,17 @@ export default function ScoreboardTop10({ variant = "top10" }: Props) {
           className={[
             "rounded-xl border border-white/[0.06] bg-black/30 overflow-hidden relative",
             anyGlitching ? styles.containerHovered : "",
+            isLocked ? styles.lockedContainer : "",
           ].join(" ")}
         >
           <EmberCanvas active={anyGlitching} yPositions={glitchYPositions} />
+
+          {isLocked && (
+            <div className={styles.lockedBanner}>
+              <Lock className="w-3.5 h-3.5 shrink-0" />
+              <span>// resultados finales · scoreboard bloqueado</span>
+            </div>
+          )}
 
           {/* header */}
           <div
@@ -325,7 +343,7 @@ export default function ScoreboardTop10({ variant = "top10" }: Props) {
           <AnimatePresence mode="popLayout">
             {teams.map((team) => {
               const id        = String(team.teamId);
-              const teamColor = getTeamColor(teamColorIndex.get(id) ?? 0);
+              const teamColor = getTeamColor(team.teamName);
               const isGlitching = glitchingTeams.has(id);
 
               return (

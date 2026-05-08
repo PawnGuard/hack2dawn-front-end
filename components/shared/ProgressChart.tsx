@@ -55,25 +55,46 @@ export default function ProgressChart() {
   const chartData = useMemo(() => data?.dataPoints ?? [], [data]);
   const teamNames = useMemo(() => data?.teamNames ?? [], [data]);
 
+  const xStartMs = ctf?.config.start.getTime();
+  const xEndMs = ctf?.config.end.getTime();
+  const xDomain = useMemo(() => {
+    if (typeof xStartMs !== "number" || typeof xEndMs !== "number") return ["dataMin", "dataMax"] as const;
+    return [xStartMs, xEndMs] as const;
+  }, [xStartMs, xEndMs]);
+
   const hourTicks = useMemo(() => {
-    if (!chartData.length) return [];
-    const timestamps = chartData.map((d: any) => d.timestamp as number);
-    const min = Math.min(...timestamps);
-    const max = Math.max(...timestamps);
-    const rangeMs = max - min;
+    if (typeof xStartMs !== "number" || typeof xEndMs !== "number") {
+      if (!chartData.length) return [];
+      const timestamps = chartData.map((d: any) => d.timestamp as number);
+      const min = Math.min(...timestamps);
+      const max = Math.max(...timestamps);
+      const rangeMs = max - min;
+      const intervalMs = rangeMs <= 2 * 3_600_000 ? 1_800_000 : 3_600_000;
+      const firstTick = new Date(min);
+      firstTick.setMinutes(intervalMs === 1_800_000 ? (firstTick.getMinutes() >= 30 ? 30 : 0) : 0, 0, 0);
+      const ticks: number[] = [];
+      let cur = firstTick.getTime();
+      while (cur <= max) {
+        if (cur >= min) ticks.push(cur);
+        cur += intervalMs;
+      }
+      return ticks;
+    }
+
+    const rangeMs = xEndMs - xStartMs;
     const intervalMs = rangeMs <= 2 * 3_600_000 ? 1_800_000 : 3_600_000;
-    const firstTick = new Date(min);
+    const firstTick = new Date(xStartMs);
     firstTick.setMinutes(intervalMs === 1_800_000 ? (firstTick.getMinutes() >= 30 ? 30 : 0) : 0, 0, 0);
     const ticks: number[] = [];
     let cur = firstTick.getTime();
-    while (cur <= max) {
-      if (cur >= min) ticks.push(cur);
+    while (cur <= xEndMs) {
+      if (cur >= xStartMs) ticks.push(cur);
       cur += intervalMs;
     }
     return ticks;
-  }, [chartData]);
+  }, [chartData, xStartMs, xEndMs]);
 
-  const colorForTeam = useCallback((i: number) => getTeamColor(i), []);
+  const colorForTeam = useCallback((name: string) => getTeamColor(name), []);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -110,7 +131,7 @@ export default function ProgressChart() {
                 dataKey="timestamp"
                 type="number"
                 scale="time"
-                domain={["dataMin", "dataMax"]}
+                domain={xDomain as any}
                 ticks={hourTicks}
                 tickFormatter={(ts: number) =>
                   new Date(ts).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
@@ -130,17 +151,16 @@ export default function ProgressChart() {
                 domain={[0, "auto"]}
               />
               <Tooltip content={<ChartTooltip />} />
-              {teamNames.map((name, i) => (
+              {teamNames.map((name) => (
                 <Line
                   key={name}
-                  type="monotone"
+                  type="linear"
                   dataKey={name}
-                  stroke={colorForTeam(i)}
+                  stroke={colorForTeam(name)}
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 0 }}
-                  animationDuration={500}
-                  animationEasing="ease-in-out"
+                  isAnimationActive={false}
                 />
               ))}
             </LineChart>

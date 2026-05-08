@@ -7,11 +7,15 @@ import type { ScoreboardResponse, TeamScore } from '@/types/scoreboard'
 type ScoreboardState = {
   lastPositions: Map<string, number>
   windowKey: string
+  frozenSnapshots: Map<number, ScoreboardResponse>
+  frozenWindowKey: string
 }
 
 const state: ScoreboardState = {
   lastPositions: new Map(),
   windowKey: '',
+  frozenSnapshots: new Map(),
+  frozenWindowKey: '',
 }
 
 async function mapWithConcurrency<T, R>(
@@ -50,6 +54,11 @@ export async function GET(req: NextRequest) {
     }
     state.windowKey = windowKey
 
+    if (state.frozenWindowKey && state.frozenWindowKey !== windowKey) {
+      state.frozenSnapshots = new Map()
+      state.frozenWindowKey = ''
+    }
+
     if (Date.now() < start.getTime()) {
       const payload: ScoreboardResponse = { teams: [], updatedAt: new Date().toISOString() }
       return NextResponse.json(payload, { status: 200 })
@@ -57,6 +66,13 @@ export async function GET(req: NextRequest) {
 
     const countParam = req.nextUrl.searchParams.get('count')
     const count = countParam ? Number(countParam) : 10
+
+    if (isEventOver()) {
+      const cached = state.frozenSnapshots.get(count)
+      if (cached) {
+        return NextResponse.json(cached, { status: 200 })
+      }
+    }
 
     // ctfdAdminGetScoreboardTop usa next: { revalidate: 15 } internamente
     const rows = await ctfdAdminGetScoreboardTop(count)
@@ -83,13 +99,21 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    if (!isEventOver()) {
+    const eventOver = isEventOver()
+
+    if (!eventOver) {
       state.lastPositions = new Map(teams.map((t) => [t.teamId, t.position]))
     }
 
     const payload: ScoreboardResponse = {
       teams,
       updatedAt: new Date().toISOString(),
+      locked: eventOver,
+    }
+
+    if (eventOver) {
+      state.frozenWindowKey = windowKey
+      state.frozenSnapshots.set(count, payload)
     }
 
     return NextResponse.json(payload, { status: 200 })
