@@ -6,6 +6,7 @@ import { AnimatePresence } from "framer-motion";
 import { EncryptedText } from "@/components/ui/encrypted-text";
 import { SelectionCards } from "@/components/shared/teamUp/selection-cards";
 import { TerminalForm } from "@/components/shared/teamUp/terminal-form";
+import { useEffect } from 'react';
 
 const MATRIX_BLUE = "#00F0FF";
 const MATRIX_RED  = "#FF003C";
@@ -14,6 +15,18 @@ type TeamMode = "selection" | "join" | "create";
 
 export default function TeamUpPage() {
   const [mode, setMode] = useState<TeamMode>("selection");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isKicked = sessionStorage.getItem("kicked_from_team");
+      if (isKicked) {
+        // Muestra la alerta de expulsión
+        window.alert("Has sido expulsado de tu equipo actual.");
+        // Limpia el storage para que no vuelva a salir si recarga la página
+        sessionStorage.removeItem("kicked_from_team");
+      }
+    }
+  }, []);
 
   return (
     <div className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-[#0a0006] px-4 py-20">
