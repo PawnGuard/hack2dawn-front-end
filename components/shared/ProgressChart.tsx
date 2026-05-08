@@ -160,8 +160,7 @@ export default function ProgressChart() {
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 0 }}
-                  animationDuration={500}
-                  animationEasing="ease-in-out"
+                  isAnimationActive={false}
                 />
               ))}
             </LineChart>
