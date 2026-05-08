@@ -175,7 +175,7 @@ export default function ScoreboardTop10({ variant = "top10" }: Props) {
   }, [variant]);
 
   const enabled    = Boolean(ctf && ctf.phase !== "before");
-  const intervalMs = ctf?.phase === "during" ? 3_000 : -1;
+  const intervalMs = ctf?.phase === "during" ? 15_000 : -1;
 
   const { data, isLoading } = usePollingData<ScoreboardResponse>(
     fetcher, intervalMs, enabled
