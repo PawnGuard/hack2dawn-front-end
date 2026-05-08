@@ -20,7 +20,7 @@ export const sidebarLinks: SidebarLinkData[] = [
   },
   {
     label: "Scoreboard",
-    href: "/home#scoreboard",
+    href: "/ctfscoreboard",
     iconClass: "hn hn-trophy-solid",
   },
   {
