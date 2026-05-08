@@ -154,7 +154,7 @@ export default function ProgressChart() {
               {teamNames.map((name) => (
                 <Line
                   key={name}
-                  type="monotone"
+                  type="linear"
                   dataKey={name}
                   stroke={colorForTeam(name)}
                   strokeWidth={2}
