@@ -36,11 +36,12 @@ const dayMonth = new Intl.DateTimeFormat("es-MX", {
 // Resultado: "16 MAY"
 
 export const galleryItems: GalleryItem[] = [
-    { id: 3,  type: "card",  text: "HACK2DAWN",    time: dayMonth, description: "TEC de Monterrey, Edificio negiocios",                               charColor: "#1fffd2", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
-    { id: 4,  type: "card",  text: "REGISTRO",    time: "13:00", description: "No guardamos tus datos... o si?",                               charColor: "#FF1F8C", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
-    { id: 5,  type: "card",  text: "BIENVENIDA",    time: "14:00", description: "Te damos la bienvenida!",               charColor: "#bf14ff", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
-    { id: 6,  type: "card",  text: "CTF",    time: "15:00", description: "Hora de hackear... eticamente",                       charColor: "#4ab9de", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
-    { id: 7,  type: "card",  text: "COMIDA",         time: "17:00", description: "Nuestros hackers necesitan energia",                                      charColor: "#f97316", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
-    { id: 8,  type: "card",  text: "PREMIACIÓN",        time: "19:00", description: "Quién ganara los premios???",                                  charColor: "#f838cb", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
-    { id: 9,  type: "card",  text: "CIERRE",     time: "19:30", description: "No es un adios, es un hasta luego...",                             charColor: "#facc15", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 3,  type: "card",  text: "HACK2DAWN",    time: dayMonth, description: "TEC de Monterrey, Edificio negiocios, 3er piso",                               charColor: "#1fffd2", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 4,  type: "card",  text: "REGISTRO",    time: "13:00", description: "Llega y espera a tu equipo!",                               charColor: "#FF1F8C", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 5,  type: "card",  text: "BIENVENIDA",    time: "14:00", description: "Bienvenida y presentación importante!",               charColor: "#bf14ff", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 6,  type: "card",  text: "CTF",    time: "14:30", description: "Hora de hackear... eticamente",                       charColor: "#4ab9de", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 7,  type: "card",  text: "COMIDA",         time: "15:30", description: "Nuestros hackers necesitan energia",                                      charColor: "#f97316", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 8,  type: "card",  text: "CIERRE CTF",        time: "19:30", description: "Cierra CTF y empieza jurado",                                  charColor: "#f838cb", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 9,  type: "card",  text: "PREMIACIÓN",     time: "20:00", description: "El jurado decide y premia a los ganadores",                             charColor: "#facc15", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 10, type: "card",  text: "CIERRE",     time: "20:30", description: "No es un adios, es un hasta luego...",                             charColor: "#1fffd2", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
 ];

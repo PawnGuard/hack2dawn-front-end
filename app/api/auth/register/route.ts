@@ -1,17 +1,17 @@
+// ── api/auth/register/route.ts ──
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
-import { ctfdCreateUser } from '@/lib/ctfd'
+import { ctfdCreateUser, ctfdVerifyCredentials } from '@/lib/ctfd' // ← Importamos ctfdVerifyCredentials
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { name, email, password } = body as {
-      name: string
-      email: string
-      password: string
-    }
+    
+    // NOTA: Si en tu app pides más datos (como perfil, isTecCampus), 
+    // asegúrate de extraerlos aquí para pasarlos a ctfdCreateUser.
+    const { name, email, password } = body
 
-    // ── Validación básica en el servidor (nunca confíes solo en el cliente) ──
+    // ── Validación básica en el servidor ──
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: 'Todos los campos son requeridos' },
@@ -19,8 +19,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── Crear usuario en CTFd via admin token ───────────────────
-    const result = await ctfdCreateUser({ name, email, password })
+    // ── 1. Crear usuario en CTFd via admin token ───────────────────
+    // (Pasa el body completo si ctfdCreateUser espera más parámetros en tu versión final)
+    const result = await ctfdCreateUser(body)
 
     if (!result.success || !result.data) {
       const ctfdErrors = result.errors ?? {}
@@ -35,13 +36,33 @@ export async function POST(req: NextRequest) {
 
     const newUser = result.data
 
-    // ── Crear sesión con iron-session ───────────────────────────
+    // ── 2. ¡NUEVO! Auto-login para generar Cookie y CSRF ──────────
+    // Ahora que existe, iniciamos sesión como si fuera el navegador
+    const verifyResult = await ctfdVerifyCredentials(name, password)
+
+    if (!verifyResult) {
+      // Caso muy raro: se creó en DB pero el login falló.
+      // Le pedimos al usuario que inicie sesión manualmente.
+      return NextResponse.json(
+        { error: 'Cuenta creada, pero falló el auto-login. Por favor inicia sesión manualmente.' },
+        { status: 502 }
+      )
+    }
+
+    const { sessionCookie, csrfToken } = verifyResult
+
+    // ── 3. Crear sesión con iron-session ───────────────────────────
     const session = await getSession()
     session.userId = newUser.id
     session.username = newUser.name
     session.email = newUser.email
     session.isAdmin = newUser.type === 'admin'
     session.teamId   = null // Nuevo usuario no tiene equipo aún
+    
+    // Guardamos las credenciales de CTFd para que pueda enviar flags y crear equipos
+    session.ctfdSessionCookie = sessionCookie
+    session.ctfdCsrfToken = csrfToken
+
     await session.save() // ← Firma, encripta y setea la cookie httpOnly
 
     return NextResponse.json({
@@ -50,6 +71,7 @@ export async function POST(req: NextRequest) {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
+        isAdmin: session.isAdmin,
       },
     })
   } catch (err) {

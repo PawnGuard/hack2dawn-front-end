@@ -1,56 +1,68 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 
 const CTF_COLORS = ["#430464", "#940992", "#EF01BA", "#F77200", "#FEF759"];
 
-// 50 columns × 30 rows = 1500 cells covering the full viewport
 const COLS = 50;
 const ROWS = 30;
 const TOTAL = COLS * ROWS;
 
-function Cell() {
-  const ref = useRef<HTMLDivElement>(null);
+export const Boxes = React.memo(function Boxes() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cellRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const handleEnter = () => {
-    const el = ref.current;
-    if (!el) return;
+  const flashCell = useCallback((el: HTMLDivElement) => {
     const color = CTF_COLORS[Math.floor(Math.random() * CTF_COLORS.length)];
-    // Instant flash
     el.style.transition = "none";
     el.style.backgroundColor = color;
-    // Fade back on the next paint so the "none" transition registers first
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
-        if (!ref.current) return;
-        ref.current.style.transition = "background-color 1.5s ease-out";
-        ref.current.style.backgroundColor = "transparent";
+        el.style.transition = "background-color 1.5s ease-out";
+        el.style.backgroundColor = "transparent";
       })
     );
-  };
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // pointer-events: none en el container, así que usamos elementFromPoint
+      // temporalmente habilitando pointer-events
+      container.style.pointerEvents = "auto";
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      container.style.pointerEvents = "none";
+
+      if (el instanceof HTMLDivElement && el.dataset.cell === "1") {
+        flashCell(el);
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [flashCell]);
 
   return (
+    // pointer-events: none → el scroll llega al documento sin bloquearse
     <div
-      ref={ref}
-      onMouseEnter={handleEnter}
-      // Pink border at low opacity → subtle grid lines
-      className="border-r border-b border-[#EF01BA]/[0.07]"
-    />
-  );
-}
-
-export const Boxes = React.memo(function Boxes() {
-  return (
-    <div
+      ref={containerRef}
       className="absolute inset-0"
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${COLS}, 1fr)`,
         gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+        pointerEvents: "none",
       }}
     >
       {Array.from({ length: TOTAL }).map((_, i) => (
-        <Cell key={i} />
+        <div
+          key={i}
+          data-cell="1"
+          ref={(el) => { cellRefs.current[i] = el; }}
+          className="border-r border-b border-[#EF01BA]/[0.07]"
+        />
       ))}
     </div>
   );

@@ -7,7 +7,7 @@
     <img src="https://img.shields.io/badge/DEDSEC-CERTIFIED-000000?style=for-the-badge&logo=hack-the-box&logoColor=white" alt="DedSec Certified" />
 </p>
 
-> Frontend for Hack2Dawn CTF web app. By PawnGuard of Guadalajara
+> Frontend for Hack2Dawn CTF web app. By PawnGuard of Guadalajara lol
 
 ---
 
@@ -21,7 +21,7 @@
 ---
 
 ## 🚀 Quick Start
-
+a
 Follow these steps to get the project running in under 5 minutes.
 
 ### Prerequisites

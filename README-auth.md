@@ -22,7 +22,7 @@
 
 ---
 
-## Arquitectura General
+## Arquitectura Generala
 
 ```
 BROWSER                      VERCEL (Servidor)                    VPS (CTFd)

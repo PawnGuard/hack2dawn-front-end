@@ -35,7 +35,7 @@ export default function CtfStatusBanner() {
               El CTF ha finalizado. &iexcl;Gracias por participar!
             </p>
             <Link
-              href="/scoreboard"
+              href="/ctfscoreboard"
               className="inline-block mt-1 font-mono text-xs text-white/80 underline underline-offset-2 hover:text-white transition-colors"
             >
               Ver scoreboard final &rarr;

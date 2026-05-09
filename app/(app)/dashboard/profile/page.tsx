@@ -359,7 +359,7 @@ export default function ProfileDashboardPage() {
           />
           <StatCard
             label="Precisión"
-            value={accuracy !== null ? `${accuracy}%` : "—"}
+            value={profile.accuracy !== undefined  ? `${profile.accuracy}%` : "—"}
             color="#00F0FF"
           />
         </div>

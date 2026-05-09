@@ -15,6 +15,7 @@ export interface ScoreDataPoint {
 export interface ScoreboardResponse {
   teams: TeamScore[];
   updatedAt: string;
+  locked?: boolean;
 }
 
 export interface ProgressChartResponse {

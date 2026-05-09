@@ -120,7 +120,7 @@ export default function HomeCountdown() {
           &middot; {durationHours}h de competencia
         </p>
         <Link
-          href="/scoreboard"
+          href="/ctfscoreboard"
           className="inline-block mt-4 font-heading text-sm px-6 py-2.5 rounded-lg
                      border border-pink/40 text-pink hover:bg-pink/10 transition-colors"
         >

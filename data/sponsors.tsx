@@ -23,5 +23,10 @@ export const SPONSORS: Sponsor[] = [
     name: "MLH",
     website: "https://mlh.io",
     logo: <Image src="/images/mlh-logo-color.png" alt="MLH" className="h-20 w-auto object-contain" width={240} height={80} />
+  },
+  {
+    name: "330Ohms",
+    website: "https://330ohms.com",
+    logo: <Image src="/images/330ohms.png" alt="330Ohms" className="h-20 w-auto object-contain" width={240} height={80} />
   }
 ];

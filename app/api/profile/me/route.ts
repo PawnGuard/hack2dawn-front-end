@@ -1,52 +1,51 @@
 import { NextResponse } from 'next/server'
-import { getIronSession } from 'iron-session'
-import { cookies } from 'next/headers'
-import { sessionOptions, SessionData } from '@/lib/session'
-import { ctfdGetUser, ctfdGetTeam, ctfdGetUserSolves, ctfdGetChallenge } from '@/lib/ctfd'
+import { getSession } from '@/lib/session'
+import { ctfdGetMyProfile, ctfdGetMySolves, ctfdGetMyFails } from '@/services/ctfd/users'
+import { ctfdGetMyTeamDetailed } from '@/services/ctfd/teams'
 import { ProfileDashboardData } from '@/lib/types/ctfd'
 
 export async function GET() {
-  const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
+  const session = await getSession()
 
-  if (!session.userId) {
+  if (!session?.userId || !session?.ctfdSessionCookie) {
     return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   }
 
-  // 1. Obtener perfil del usuario
-  const user = await ctfdGetUser(session.userId)
+  // 1. Obtener perfil, solves y fails del usuario simultáneamente (usando credenciales de usuario)
+  const [user, rawSolves, rawFails] = await Promise.all([
+    ctfdGetMyProfile(session.ctfdSessionCookie),
+    ctfdGetMySolves(session.ctfdSessionCookie),
+    ctfdGetMyFails(session.ctfdSessionCookie)
+  ])
+
   if (!user) {
     return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
   }
 
-  // 2. Obtener nombre del equipo (si pertenece a uno)
+  // 2. Obtener nombre del equipo (si aplica)
   let teamName: string | null = null
-  if (user.team_id) {
-    const team = await ctfdGetTeam(user.team_id)
+  if (session.teamId) {
+    const team = await ctfdGetMyTeamDetailed(session.ctfdSessionCookie)
     if (team) teamName = team.name
   }
 
-  // 3. Obtener solves del usuario
-  const rawSolves = await ctfdGetUserSolves(session.userId)
-
-  // 4. Enriquecer los solves con el nombre y valor (puntos) del reto
-  // Usamos Promise.all para hacer los fetches en paralelo
-  const enrichedSolves = await Promise.all(
-    rawSolves.map(async (solve) => {
-      const challengeInfo = await ctfdGetChallenge(solve.challenge_id)
-      return {
-        id: solve.id,
-        challenge_id: solve.challenge_id,
-        challenge_name: challengeInfo?.name ?? solve.challenge_name ?? `Challenge #${solve.challenge_id}`,
-        date: solve.date,
-        value: challengeInfo?.value ?? 0, // Puntos
-      }
-    })
+  // 3. Ordenar solves del más reciente al más antiguo
+  const enrichedSolves = rawSolves.sort((a: any, b: any) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
   )
 
-  // Ordenar solves del más reciente al más antiguo
-  enrichedSolves.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  // ── Cálculo de la Precisión (Accuracy) ──
+  const totalSolves = rawSolves.length
+  const totalFails = rawFails.length
+  const totalAttempts = totalSolves + totalFails
 
-  // Construir la respuesta final
+  let accuracy = 0
+  if (totalAttempts > 0) {
+    // Math.round para evitar decimales infinitos (ej. 83.333% -> 83)
+    accuracy = Math.round((totalSolves / totalAttempts) * 100)
+  }
+
+  // 4. Construir la respuesta final
   const payload: ProfileDashboardData = {
     id: user.id,
     username: user.name,
@@ -54,11 +53,12 @@ export async function GET() {
     affiliation: user.affiliation,
     website: user.website,
     country: user.country,
-    teamId: user.team_id,
+    teamId: user.team_id ?? session.teamId,
     teamName: teamName,
     score: user.score ?? 0,
     place: user.place ?? null,
     solves: enrichedSolves,
+    accuracy: accuracy
   }
 
   return NextResponse.json(payload, { status: 200 })

@@ -12,7 +12,8 @@ import {
 } from "recharts";
 import { useCtfState } from "@/hooks/useCtfState";
 import { usePollingData } from "@/hooks/usePollingData";
-import { fetchProgressChart, TEAM_COLORS } from "@/lib/api/scoreboard";
+import { fetchProgressChart } from "@/lib/api/scoreboard";
+import { getTeamColor } from "@/lib/team-color";
 import SectionHeader from "./SectionHeader";
 import type { ProgressChartResponse } from "@/types/scoreboard";
 
@@ -41,14 +42,59 @@ function ChartTooltip({ active, payload, label }: any) {
 export default function ProgressChart() {
   const ctf = useCtfState();
   const fetcher = useCallback(() => fetchProgressChart(), []);
+
+  const enabled = Boolean(ctf && ctf.phase !== "before");
+  const intervalMs = ctf?.phase === "during" ? 3_000 : -1;
+
   const { data, isLoading } = usePollingData<ProgressChartResponse>(
     fetcher,
-    30_000,
-    ctf?.phase !== "before"
+    intervalMs,
+    enabled
   );
 
   const chartData = useMemo(() => data?.dataPoints ?? [], [data]);
   const teamNames = useMemo(() => data?.teamNames ?? [], [data]);
+
+  const xStartMs = ctf?.config.start.getTime();
+  const xEndMs = ctf?.config.end.getTime();
+  const xDomain = useMemo(() => {
+    if (typeof xStartMs !== "number" || typeof xEndMs !== "number") return ["dataMin", "dataMax"] as const;
+    return [xStartMs, xEndMs] as const;
+  }, [xStartMs, xEndMs]);
+
+  const hourTicks = useMemo(() => {
+    if (typeof xStartMs !== "number" || typeof xEndMs !== "number") {
+      if (!chartData.length) return [];
+      const timestamps = chartData.map((d: any) => d.timestamp as number);
+      const min = Math.min(...timestamps);
+      const max = Math.max(...timestamps);
+      const rangeMs = max - min;
+      const intervalMs = rangeMs <= 2 * 3_600_000 ? 1_800_000 : 3_600_000;
+      const firstTick = new Date(min);
+      firstTick.setMinutes(intervalMs === 1_800_000 ? (firstTick.getMinutes() >= 30 ? 30 : 0) : 0, 0, 0);
+      const ticks: number[] = [];
+      let cur = firstTick.getTime();
+      while (cur <= max) {
+        if (cur >= min) ticks.push(cur);
+        cur += intervalMs;
+      }
+      return ticks;
+    }
+
+    const rangeMs = xEndMs - xStartMs;
+    const intervalMs = rangeMs <= 2 * 3_600_000 ? 1_800_000 : 3_600_000;
+    const firstTick = new Date(xStartMs);
+    firstTick.setMinutes(intervalMs === 1_800_000 ? (firstTick.getMinutes() >= 30 ? 30 : 0) : 0, 0, 0);
+    const ticks: number[] = [];
+    let cur = firstTick.getTime();
+    while (cur <= xEndMs) {
+      if (cur >= xStartMs) ticks.push(cur);
+      cur += intervalMs;
+    }
+    return ticks;
+  }, [chartData, xStartMs, xEndMs]);
+
+  const colorForTeam = useCallback((name: string) => getTeamColor(name), []);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -60,13 +106,21 @@ export default function ProgressChart() {
 
       {ctf?.phase === "before" ? (
         <div className="flex items-center justify-center h-64 rounded-xl border border-white/[0.06] bg-black/30">
-          <p className="font-body text-white/40 text-sm">
-            La gr&aacute;fica estar&aacute; disponible cuando inicie el CTF
+          <p className="font-body text-white/40 text-sm text-center px-4">
+            El evento aún no inicia. Comienza: {ctf.config.start.toLocaleString("es-MX")}
           </p>
         </div>
-      ) : isLoading && !chartData.length ? (
+      ) : null}
+
+      {ctf?.phase === "before" ? null : isLoading && !chartData.length ? (
         <div className="flex items-center justify-center h-64 rounded-xl border border-white/[0.06] bg-black/30">
           <div className="w-5 h-5 border-2 border-purple border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : !chartData.length ? (
+        <div className="flex items-center justify-center h-64 rounded-xl border border-white/[0.06] bg-black/30">
+          <p className="font-body text-white/40 text-sm">
+            A&uacute;n no hay datos para la gr&aacute;fica
+          </p>
         </div>
       ) : (
         <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4 pt-6">
@@ -75,33 +129,38 @@ export default function ProgressChart() {
               <CartesianGrid stroke="rgba(148, 9, 146, 0.12)" strokeDasharray="4 4" />
               <XAxis
                 dataKey="timestamp"
+                type="number"
+                scale="time"
+                domain={xDomain as any}
+                ticks={hourTicks}
                 tickFormatter={(ts: number) =>
-                  new Date(ts).toLocaleTimeString("es-MX", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
+                  new Date(ts).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
                 }
-                stroke="rgba(244, 237, 242, 0.25)"
-                tick={{ fontSize: 11, fontFamily: "var(--font-mono)" }}
-                axisLine={{ stroke: "rgba(244, 237, 242, 0.1)" }}
+                stroke="rgba(244, 237, 242, 0.08)"
+                tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "rgba(244, 237, 242, 0.4)" }}
+                axisLine={false}
+                tickLine={false}
+                tickMargin={8}
               />
               <YAxis
-                stroke="rgba(244, 237, 242, 0.25)"
-                tick={{ fontSize: 11, fontFamily: "var(--font-mono)" }}
-                axisLine={{ stroke: "rgba(244, 237, 242, 0.1)" }}
+                stroke="rgba(244, 237, 242, 0.08)"
+                tick={{ fontSize: 10, fontFamily: "var(--font-mono)", fill: "rgba(244, 237, 242, 0.4)" }}
+                axisLine={false}
+                tickLine={false}
+                tickMargin={8}
+                domain={[0, "auto"]}
               />
               <Tooltip content={<ChartTooltip />} />
-              {teamNames.map((name, i) => (
+              {teamNames.map((name) => (
                 <Line
                   key={name}
-                  type="monotone"
+                  type="linear"
                   dataKey={name}
-                  stroke={TEAM_COLORS[i % TEAM_COLORS.length]}
+                  stroke={colorForTeam(name)}
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 0 }}
-                  animationDuration={1500}
-                  animationEasing="ease-in-out"
+                  isAnimationActive={false}
                 />
               ))}
             </LineChart>

@@ -12,3 +12,246 @@
   60%  { transform: scale(0.9); }
   100% { transform: scale(1); }
 }
+
+/* ── Glitch Row (posición y hover) ──────────────── */
+
+.glitchRow {
+  animation:
+    glitchRowFlicker 1.4s steps(1) infinite,
+    glitchGlow       1.4s steps(1) infinite;
+}
+
+.glitchRow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent       0px,
+    transparent       2px,
+    rgba(0,0,0,0.18)  2px,
+    rgba(0,0,0,0.18)  4px
+  );
+  animation: scanlinesDrift 0.22s linear infinite;
+  opacity: 0.45;
+  z-index: 2;
+}
+
+.glitchText {
+  display: inline-block;
+  animation: glitchText 1.4s steps(1) infinite;
+}
+
+/* ── Container hover — scanlines + glow global ─── */
+
+.containerHovered {
+  box-shadow:
+    0 0 24px rgba(239, 1, 186, 0.14),
+    inset 0 0 24px rgba(239, 1, 186, 0.05);
+  transition: box-shadow 0.15s ease;
+}
+
+.containerHovered::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent              0px,
+    transparent              3px,
+    rgba(148, 9, 146, 0.05)  3px,
+    rgba(148, 9, 146, 0.05)  4px
+  );
+  animation: scanlinesDrift 0.18s linear infinite, containerFlicker 1.2s steps(1) infinite;
+  z-index: 5;
+}
+
+/* ── Locked / Resultados finales ─────────────────── */
+
+.lockedContainer {
+  box-shadow:
+    0 0 22px rgba(239, 1, 186, 0.18),
+    inset 0 0 30px rgba(67, 4, 100, 0.18);
+}
+
+.lockedBanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #FEF759;
+  background: linear-gradient(
+    90deg,
+    rgba(67, 4, 100, 0.55) 0%,
+    rgba(148, 9, 146, 0.45) 50%,
+    rgba(239, 1, 186, 0.40) 100%
+  );
+  border-bottom: 1px solid rgba(239, 1, 186, 0.45);
+  text-shadow: 0 0 8px rgba(254, 247, 89, 0.55);
+  position: relative;
+  z-index: 6;
+  animation: lockedBannerPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes lockedBannerPulse {
+  0%, 100% {
+    box-shadow: inset 0 0 12px rgba(239, 1, 186, 0.18);
+  }
+  50% {
+    box-shadow: inset 0 0 22px rgba(239, 1, 186, 0.35);
+  }
+}
+
+/* ── Pro Hacker Badge ────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 6px 2px 4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.proHackerBadge {
+  color: #EF01BA;
+  background: rgba(239, 1, 186, 0.07);
+  border: 1px solid rgba(239, 1, 186, 0.55);
+  animation: badgeGlow 2.2s ease-in-out infinite;
+}
+
+.emergingDangerBadge {
+  color: #F77200;
+  background: rgba(247, 114, 0, 0.07);
+  border: 1px solid rgba(247, 114, 0, 0.50);
+  animation: badgeGlowOrange 2.2s ease-in-out infinite;
+}
+
+.watchingYouBadge {
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.06);
+  border: 1px solid rgba(0, 240, 255, 0.40);
+  animation: badgeGlowCyan 2.6s ease-in-out infinite;
+}
+
+.skullIcon {
+  font-size: 11px;
+  display: inline-block;
+  image-rendering: pixelated;
+  animation: skullPulse 2.2s ease-in-out infinite;
+}
+
+.eyeIcon {
+  font-size: 11px;
+  display: inline-block;
+  animation: eyePulse 2.6s ease-in-out infinite;
+}
+
+/* ── Keyframes ───────────────────────────────────── */
+
+@keyframes glitchRowFlicker {
+  0%   { background-color: rgba(239,  1, 186, 0.09); }
+  4%   { background-color: rgba(  0, 240, 255, 0.05); }
+  8%   { background-color: rgba(239,  1, 186, 0.14); }
+  13%  { background-color: transparent; }
+  60%  { background-color: transparent; }
+  64%  { background-color: rgba(239,  1, 186, 0.07); }
+  68%  { background-color: rgba(  0, 240, 255, 0.03); }
+  73%  { background-color: transparent; }
+  100% { background-color: transparent; }
+}
+
+@keyframes glitchGlow {
+  0%   { box-shadow: inset 2px 0 0 #ff006c, 0 0 16px rgba(255,  0, 108, 0.20); }
+  4%   { box-shadow: inset 2px 0 0 #00f0ff, 0 0 16px rgba(  0, 240, 255, 0.20); }
+  8%   { box-shadow: inset 2px 0 0 #ff006c; }
+  13%  { box-shadow: none; }
+  60%  { box-shadow: none; }
+  64%  { box-shadow: inset 2px 0 0 #EF01BA, 0 0 10px rgba(239, 1, 186, 0.14); }
+  73%  { box-shadow: none; }
+  100% { box-shadow: none; }
+}
+
+@keyframes glitchText {
+  0%   { text-shadow: -3px 0 rgba(255, 0, 60, 0.90),  3px 0 rgba(0,240,255,0.90); transform: translateX( 0px); }
+  4%   { text-shadow:  3px 0 rgba(255, 0, 60, 0.90), -3px 0 rgba(0,240,255,0.90); transform: translateX( 2px); }
+  8%   { text-shadow: -2px 0 rgba(255, 0, 60, 0.70),  2px 0 rgba(0,240,255,0.70); transform: translateX(-1px); }
+  13%  { text-shadow: none; transform: translateX(0); }
+  60%  { text-shadow: none; transform: translateX(0); }
+  64%  { text-shadow:  3px 0 rgba(255, 0, 60, 0.80), -3px 0 rgba(0,240,255,0.80); transform: translateX(-2px); }
+  68%  { text-shadow: -1px 0 rgba(255, 0, 60, 0.50),  1px 0 rgba(0,240,255,0.50); transform: translateX( 1px); }
+  73%  { text-shadow: none; transform: translateX(0); }
+  100% { text-shadow: none; transform: translateX(0); }
+}
+
+@keyframes containerFlicker {
+  0%   { opacity: 0.6; }
+  7%   { opacity: 0.9; }
+  14%  { opacity: 0.5; }
+  20%  { opacity: 0.7; }
+  100% { opacity: 0.6; }
+}
+
+@keyframes scanlinesDrift {
+  from { background-position: 0 0; }
+  to   { background-position: 0 4px; }
+}
+
+@keyframes badgeGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(239,1,186,0.45), inset 0 0 4px rgba(239,1,186,0.08);
+    text-shadow: 0 0 6px rgba(239,1,186,0.75);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(239,1,186,0.85), 0 0 28px rgba(239,1,186,0.30), inset 0 0 8px rgba(239,1,186,0.16);
+    text-shadow: 0 0 12px rgba(239,1,186,1), 0 0 24px rgba(239,1,186,0.55);
+  }
+}
+
+@keyframes badgeGlowOrange {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(247,114,0,0.40), inset 0 0 4px rgba(247,114,0,0.08);
+    text-shadow: 0 0 6px rgba(247,114,0,0.70);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(247,114,0,0.80), 0 0 28px rgba(247,114,0,0.28), inset 0 0 8px rgba(247,114,0,0.14);
+    text-shadow: 0 0 12px rgba(247,114,0,1), 0 0 24px rgba(247,114,0,0.50);
+  }
+}
+
+@keyframes badgeGlowCyan {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(0,240,255,0.35), inset 0 0 4px rgba(0,240,255,0.07);
+    text-shadow: 0 0 6px rgba(0,240,255,0.65);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(0,240,255,0.75), 0 0 28px rgba(0,240,255,0.25), inset 0 0 8px rgba(0,240,255,0.12);
+    text-shadow: 0 0 12px rgba(0,240,255,1), 0 0 24px rgba(0,240,255,0.45);
+  }
+}
+
+@keyframes skullPulse {
+  0%,  80%, 100% { opacity: 1;   transform: scale(1)  translateX(0); }
+  50%            { opacity: 0.8; transform: scale(1.1) translateX(0); }
+  86%            { transform: scale(1) translateX(-1px); }
+  93%            { transform: scale(1) translateX( 2px); }
+}
+
+@keyframes eyePulse {
+  0%,  60%, 100% { opacity: 1;   transform: scale(1); }
+  30%            { opacity: 0.5; transform: scale(0.85); }
+  65%            { opacity: 1;   transform: scale(1.12); }
+}

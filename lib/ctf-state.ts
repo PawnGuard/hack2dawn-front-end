@@ -1,15 +1,12 @@
 import type { CtfPhase, CtfConfig, CtfState, CountdownTime } from "@/types/ctf";
+import { getEventWindow } from "@/lib/event-window";
 
 export function getCtfConfig(): CtfConfig {
-  const startStr = process.env.NEXT_PUBLIC_EVENT_START;
-  const endStr = process.env.NEXT_PUBLIC_EVENT_END;
-
-  const fallbackStart = new Date("2026-05-09T21:00:00Z");
-  const fallbackEnd = new Date("2026-05-10T07:00:00Z");
+  const { start, end } = getEventWindow();
 
   return {
-    start: startStr ? new Date(startStr) : fallbackStart,
-    end: endStr ? new Date(endStr) : fallbackEnd,
+    start,
+    end,
     name: "CTF 2026 · Hack2Dawn",
   };
 }

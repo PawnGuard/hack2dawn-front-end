@@ -5,8 +5,8 @@ import { SessionData, COOKIE_NAME, SESSION_PASSWORD } from '@/lib/session'
 
 function getEventWindow() {
   return {
-    start: new Date(process.env.EVENT_START!),
-    end:   new Date(process.env.EVENT_END!),
+    start: new Date(process.env.NEXT_PUBLIC_EVENT_START!),
+    end:   new Date(process.env.NEXT_PUBLIC_EVENT_END!),
   }
 }
 
@@ -17,7 +17,7 @@ function isEventActive(): boolean {
 }
 
 function isEventOver(): boolean {
-  return new Date() > new Date(process.env.EVENT_END!)
+  return new Date() > new Date(process.env.NEXT_PUBLIC_EVENT_END!)
 }
 
 export async function proxy(request: NextRequest) {
@@ -43,7 +43,9 @@ export async function proxy(request: NextRequest) {
   const isAdmin    = session.isAdmin === true
 
   // ── Grupos de rutas ──────────────────────────────────────────
-  const EVENT_LOCKED_ROUTES = ['/challenges']
+  const EVENT_LOCKED_ROUTES: string[] = [
+    '/challenges', // habilitada: no se  bloquea por ventana de tiempo
+  ]
 
   const isAuthRoute = ['/login', '/register'].some(r => pathname.startsWith(r))
 
