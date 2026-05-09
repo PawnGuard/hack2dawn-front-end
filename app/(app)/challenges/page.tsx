@@ -185,6 +185,17 @@ export default function ChallengesPage() {
 		return map
 	}, [challengesByContinent])
 
+	const machineSolvedMap = useMemo(() => {
+		const solved = new Map<string, boolean>()
+		for (const [key, steps] of machineGroups.entries()) {
+			const allSolved = steps.length > 0 && steps.every(
+				(s) => s.status === 'COMPLETED' || s.solvedByTeam
+			)
+			solved.set(key, allSolved)
+		}
+		return solved
+	}, [machineGroups])
+
 	const displayChallenge = useMemo(() => {
 		if (!selectedChallenge) return null
 
@@ -241,7 +252,12 @@ export default function ChallengesPage() {
 				const representative = [...items].sort((a, b) => (a.step ?? 0) - (b.step ?? 0))[0];
 				
 				// Verificar si el reto/lab completo está COMPLETED
-				const isCompleted = representative.status === 'COMPLETED';
+				const machineKey = representative.machineId
+					? `${representative.continent}::${representative.machineId}`
+					: null
+				const isCompleted = machineKey
+					? machineSolvedMap.get(machineKey) === true
+					: (representative.status === 'COMPLETED' || representative.solvedByTeam);
 
 				// Definimos el color RGB [R, G, B] en base al estado
 				let pointColor: [number, number, number];
@@ -265,7 +281,7 @@ export default function ChallengesPage() {
 					color: pointColor
 				};
 			});
-	}, [challengesByContinent, selectedContinent]);
+	}, [challengesByContinent, machineSolvedMap, selectedContinent]);
 
 	const hotspotPoints = useMemo(() => {
 		return countryPoints.map((point) => ({
@@ -734,6 +750,49 @@ export default function ChallengesPage() {
 							</div>
 						</div>
 					</div>
+				</section>
+
+				<section className="mt-4 border border-[#FEF759]/20 bg-[#FEF759]/5 p-4 sm:p-5 relative overflow-hidden">
+				<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(254,247,89,0.05),transparent_60%)]" />
+				
+				<div className="relative flex flex-col md:flex-row gap-5">
+					<div className="flex-1">
+					<div className="flex flex-wrap items-center gap-2">
+						<span className="inline-flex items-center gap-1.5 border border-[#FEF759]/30 bg-[#FEF759]/10 px-2 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[#FEF759]">
+						<Trophy className="h-3 w-3" />
+						Side-Quest Optional
+						</span>
+						<span className="font-mono text-[10px] uppercase tracking-[0.1em] text-white/50">
+						Powered by MLH
+						</span>
+					</div>
+					
+					<h2 className="mt-3 font-heading text-xl text-white">Google Gemini API Challenge</h2>
+					
+					<div className="mt-2 space-y-2 font-mono text-sm leading-relaxed text-white/70 max-w-4xl">
+						<p>
+						Crea un proyecto usando la <span className="text-white">API de Google Gemini</span> como apoyo para los retos de ciberseguridad. <strong>La implementación más creativa, coherente y útil será la ganadora.</strong>
+						</p>
+						<p className="border-l-2 border-[#EF01BA] pl-3 text-white/60">
+						<span className="text-[#EF01BA] font-bold">IMPORTANTE:</span> Gemini es tu aliado para expandir tu enfoque, no un atajo. <strong className="text-white/80">NO debe resolver directamente las flags ni los labs.</strong> Úsalo como valor complementario: generar ideas, automatizar tareas, visualizar datos o documentar hallazgos.
+						</p>
+						<p>
+						Sube tu repositorio (evidencia de código y documentación) a Devpost para competir por una <span className="text-[#FEF759] font-bold">Tech Organizers, libretas Wire-O premium, Tumblers térmicos y equipo de escritura</span>.
+						</p>
+					</div>
+					</div>
+
+					<div className="shrink-0 md:self-center md:mt-0 mt-2">
+					<Link
+						href="https://hack2dawn.devpost.com/" 
+						target="_blank"
+						className="inline-flex w-full items-center justify-center gap-2 border border-white/20 bg-white/5 px-4 py-2.5 font-mono text-xs text-white transition-colors hover:bg-white/10 hover:border-white/40"
+					>
+						Subir repo a Devpost
+						<ExternalLink className="h-3.5 w-3.5" />
+					</Link>
+					</div>
+				</div>
 				</section>
 
 				<section className="mt-9">
