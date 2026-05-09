@@ -49,7 +49,11 @@ export default async function RootLayout({
   const user = await getSessionUser()
 
   return (
-    <html lang="es" className={`${chakraPetch.variable} ${watchdogs.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="es"
+      className={`${chakraPetch.variable} ${watchdogs.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <body className={"font-body bg-black text-white"}>
         <UserProvider initialUser={user}>
           <FuzzyOverlay />
