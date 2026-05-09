@@ -110,12 +110,6 @@ export default function HomePage() {
           <section className="pointer-events-auto">
             <ImportantNotes />
           </section>
-          <section className="pointer-events-auto">
-            <ProgressChart />
-          </section>
-          <section className="pointer-events-auto pb-4">
-            <ScoreboardTop10 />
-          </section>
         </div>
       </div>
     </div>

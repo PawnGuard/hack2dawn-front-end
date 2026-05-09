@@ -17,16 +17,50 @@ export default function TeamDashboardPage() {
   const [draftName, setDraftName] = useState("");
   const [error, setError] = useState("");
 
-  const fetchTeam = useCallback(async () => {
-    const res = await fetch("/api/teams/me")
-    if (!res.ok) { router.push("/dashboard/team/select"); return; }
-    const json: TeamDashboardData = await res.json()
-    setData(json)
-    setDraftName(json.teamName)
-    setIsLoading(false)
-  }, [router])
+  const fetchTeam = useCallback(async (isPolling = false) => {
+    try {
+      const res = await fetch('/api/teams/me');
+      
+      if (!res.ok) {
+        // Si el backend nos responde 404 o 403, significa que fue expulsado o el equipo fue borrado
+        if (res.status === 404 || res.status === 403) {
+          sessionStorage.setItem("kicked_from_team", "true");
+          router.push('/dashboard/team/select');
+          return;
+        }
+        
+        // Si es un error temporal y es polling, lo ignoramos para no asustar al usuario
+        if (!isPolling) {
+          setError("Error al cargar la información del equipo.");
+        }
+        setIsLoading(false);
+        return;
+      }
 
-  useEffect(() => { fetchTeam() }, [fetchTeam])
+      const json: TeamDashboardData = await res.json();
+      setData(json);
+      
+      // Solo actualizamos el draft si no lo está editando en este momento
+      setDraftName((prev) => isEditingName ? prev : json.teamName);
+      setIsLoading(false);
+    } catch (err) {
+      if (!isPolling) setError("Error de conexión con el servidor.");
+      setIsLoading(false);
+    }
+  }, [router, isEditingName]);
+
+  useEffect(() => {
+    // Carga inicial (proxy / entrada directa)
+    fetchTeam(false);
+
+    // Polling cada 60 segundos (60000 ms)
+    const intervalId = setInterval(() => {
+      fetchTeam(true);
+    }, 60000);
+
+    return () => clearInterval(intervalId);
+  }, [fetchTeam]);
+
 
   const handleSaveName = async () => {
     if (!draftName.trim()) return

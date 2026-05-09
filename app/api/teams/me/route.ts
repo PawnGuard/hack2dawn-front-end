@@ -20,17 +20,29 @@ export async function GET() {
     return NextResponse.json({ error: 'No perteneces a un equipo' }, { status: 404 })
   }
 
-  // ── Paso 1: Datos del equipo usando ADMIN TOKEN (Para ver el Invite Code) ──
+  // ── Paso 1: Datos del equipo usando ADMIN TOKEN ──
   const team = await ctfdGetTeam(session.teamId)
+  
   if (!team) {
+    session.teamId = null;
+    await session.save();
     return NextResponse.json({ error: 'Equipo no encontrado' }, { status: 404 })
   }
 
   // ── Paso 2: Obtener Rank y Score oficial del Scoreboard ──
   const { score, rank } = await ctfdGetTeamStats(session.teamId)
 
-  // ── Paso 3: IDs de miembros (Admin Token garantiza verlos todos) ──
+  // ── Paso 3: IDs de miembros ──
   const memberIds = await ctfdGetTeamMemberIds(session.teamId) || []
+  
+  // VALIDACIÓN CLAVE PARA EL EXPULSADO:
+  // Verificar que el usuario que hace el request sigue en el arreglo de miembros de CTFd
+  if (!memberIds.includes(session.userId)) {
+    // ¡Lo expulsaron! Limpiamos su sesión local
+    session.teamId = null;
+    await session.save();
+    return NextResponse.json({ error: 'Has sido expulsado del equipo' }, { status: 403 }); // 403 para indicar expulsión explícita
+  }
 
   // ── Paso 4: Datos de cada miembro en paralelo ──
   const memberProfiles = await Promise.all(
@@ -54,7 +66,7 @@ export async function GET() {
     teamName: team.name,
     teamScore: score,
     teamRank: rank,
-    inviteCode: getTeamInviteCode(team), // Ahora sí vendrá en team.fields
+    inviteCode: getTeamInviteCode(team),
     captainId: team.captain_id,
     isCaptain: team.captain_id === session.userId,
     members,
