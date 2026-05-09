@@ -136,57 +136,6 @@ export default function ChallengeDetailPage() {
   const step1 = machineSteps[0] ?? null
   const isMachine = (currentChallenge?.machineId ?? null) !== null
 
-  useEffect(() => {
-    if (!machineSteps.length) return
-    let mounted = true
-
-    const enrich = async () => {
-      const results = await Promise.all(
-        machineSteps.map(step =>
-        Promise.all([
-            fetch(`/api/challenges/${step.id}`).then(r => r.ok ? r.json() : null).catch(() => null),
-            fetch(`/api/challenges/${step.id}/hints`).then(r => r.ok ? r.json() : null).catch(() => null),
-        ]).then(([challengeData, hintsData]) => ({
-            challengeData,
-            hints: (hintsData?.hints ?? []) as Array<{ id: number; cost: number; content?: string | null }>,
-        }))
-        )
-      )
-
-      if (!mounted) return
-
-  	const map: Record<number, EnrichedStep> = {}
-    results.forEach(({ challengeData: data, hints }, i) => {
-    const step = machineSteps[i]
-    if (data?.challenge) {
-        let rawDescription = data.challenge.description ?? ''
-        let lore = ''
-        let description = rawDescription
-
-        // Si es el Step 1 y encontramos el separador "---"
-        if (step.step === 1 && rawDescription.includes('---')) {
-        const parts = rawDescription.split('---')
-        lore = parts[0].trim() // Lo de arriba es el Lore
-        description = parts.slice(1).join('---').trim() // Lo de abajo es la misión de la Flag 1
-        }
-
-        map[step.id] = {
-        description: description,
-        lore: lore || (step.step === 1 ? 'Briefing no disponible.' : ''), // Solo la flag 1 debe tener lore por defecto
-        files: Array.isArray(data?.challenge?.files) ? data.challenge.files : [],
-        hints,
-        maxAttempts: data.challenge.maxAttempts ?? 0,
-        attempts: data.challenge.attempts ?? 0,
-        }
-    }
-    })
-    setEnrichedSteps(map)
-    }
-
-    void enrich()
-    return () => { mounted = false }
-  }, [machineSteps])
-
   // ── Derived stats ──
   const totalFlags = machineSteps.length
   const capturedFlags = useMemo(
