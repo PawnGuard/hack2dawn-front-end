@@ -92,7 +92,7 @@ export const importantNotes: ImportantNote[] = [
   },
   {
     title: "Formato de flag",
-    content: "Todas las flags siguen el formato H2D{texto_aqui}. Asegúrate de incluir el prefijo completo.",
+    content: "Todas las flags siguen el formato PWG{texto_aqui}. Asegúrate de incluir el prefijo completo.",
     icon: "Flag",
     accentColor: "#EF01BA",
   },
