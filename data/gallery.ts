@@ -41,7 +41,7 @@ export const galleryItems: GalleryItem[] = [
     { id: 5,  type: "card",  text: "BIENVENIDA",    time: "14:00", description: "Bienvenida y presentación importante!",               charColor: "#bf14ff", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
     { id: 6,  type: "card",  text: "CTF",    time: "14:30", description: "Hora de hackear... eticamente",                       charColor: "#4ab9de", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
     { id: 7,  type: "card",  text: "COMIDA",         time: "15:30", description: "Nuestros hackers necesitan energia",                                      charColor: "#f97316", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
-    { id: 8,  type: "card",  text: "CIERRE CTF",        time: "19:30", description: "Cierra CTF y empieza jurado",                                  charColor: "#f838cb", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
-    { id: 9,  type: "card",  text: "PREMIACIÓN",     time: "20:00", description: "El jurado decide y premia a los ganadores",                             charColor: "#facc15", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
-    { id: 10, type: "card",  text: "CIERRE",     time: "20:30", description: "No es un adios, es un hasta luego...",                             charColor: "#1fffd2", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 8,  type: "card",  text: "CIERRE CTF",        time: "19:00", description: "Cierra CTF y empieza jurado",                                  charColor: "#f838cb", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 9,  type: "card",  text: "PREMIACIÓN",     time: "19:30", description: "El jurado decide y premia a los ganadores",                             charColor: "#facc15", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
+    { id: 10, type: "card",  text: "CIERRE",     time: "19:30", description: "No es un adios, es un hasta luego...",                             charColor: "#1fffd2", size: "normal", orientation: "horizontal", scrollSpeed: 1 },
 ];
