@@ -31,7 +31,7 @@ export function ChallengeDossierTerminal({ challenge }: ChallengeDossierTerminal
       0: [
         `name: ${challenge.name}`,
         `type: ${challenge.type}`,
-        `difficulty: ${challenge.difficulty}`,
+        `difficulty: ${challenge.difficultyTag ?? "undefined"}`,
         `points: ${challenge.points}`,
       ],
       1: [
@@ -45,7 +45,7 @@ export function ChallengeDossierTerminal({ challenge }: ChallengeDossierTerminal
       challenge.capturedFlags,
       challenge.completedAt,
       challenge.description,
-      challenge.difficulty,
+      challenge.difficultyTag,
       challenge.lore,
       challenge.name,
       challenge.points,

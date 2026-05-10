@@ -1,4 +1,4 @@
-import { ChallengeContinent, ChallengeSummary } from "@/types/challenges"
+import { ChallengeContinent, ChallengeDifficulty, ChallengeSummary } from "@/types/challenges"
 import { 
   CTFdResponse, 
   CTFdTeam, 
@@ -645,6 +645,7 @@ export async function ctfdGetChallengeDetail(
   const continent = parseContinentTag(chall.tags)
   const machineId = parseMachineTag(chall.tags) // Ejemplo de tag: "machine:docker, o como esta en el docs de sammy"
   const step      = parseStepTag(chall.tags) // ← 1, 2, 3, 4 ,etc... n flags
+  const difficultyTag = parseDifficultyTag(chall.tags)
 
   return {
     id:            chall.id,
@@ -656,6 +657,7 @@ export async function ctfdGetChallengeDetail(
     continent,
     type:          chall.type ?? chall.category ?? 'General',
     difficulty:    mapDifficulty(points),
+    difficultyTag,
     points,
     description:   chall.description ?? 'Sin descripción disponible.',
     files:         chall.files ?? [],
@@ -726,6 +728,7 @@ export async function ctfdGetChallengeList(
     const continent = parseContinentTag(chall.tags)
     const machineId = parseMachineTag(chall.tags) // Ejemplo de tag: "machine:docker, o como esta en el docs de sammy"
     const step      = parseStepTag(chall.tags) // ← 1, 2, 3, 4 ,etc... n flags
+    const difficultyTag = parseDifficultyTag(chall.tags)
 
     return {
       id:             chall.id,
@@ -737,6 +740,7 @@ export async function ctfdGetChallengeList(
       continent,
       type:           chall.type          ?? chall.category ?? 'General',
       difficulty:     mapDifficulty(points),
+      difficultyTag,
       points,
       description:    chall.description   ?? 'Sin descripción disponible.',
       lore:           'Briefing no disponible. Revisa la descripción técnica del reto.',
@@ -819,6 +823,7 @@ export async function ctfdGetChallengeListDual(
     const continent = parseContinentTag(chall.tags)
     const machineId = parseMachineTag(chall.tags)
     const step      = parseStepTag(chall.tags)
+    const difficultyTag = parseDifficultyTag(chall.tags)
 
     return {
       id:             chall.id,
@@ -830,6 +835,7 @@ export async function ctfdGetChallengeListDual(
       continent,
       type:           chall.type ?? chall.category ?? 'General',
       difficulty:     mapDifficulty(points),
+      difficultyTag,
       points,
       description:    chall.description ?? 'Sin descripción disponible.',
       lore:           'Briefing no disponible. Revisa la descripción técnica del reto.',
@@ -907,4 +913,29 @@ function parseStepTag(tags: CTFdTag[] | undefined | null): number | null {
     
   const n = Number(raw)
   return Number.isFinite(n) ? n : null
+}
+
+const VALID_DIFFICULTIES: Record<string, ChallengeDifficulty> = {
+  easy: 'Easy',
+  medium: 'Medium',
+  hard: 'Hard',
+  insane: 'Insane',
+}
+
+function parseDifficultyTag(
+  tags: CTFdTag[] | undefined | null,
+): ChallengeDifficulty | undefined {
+  if (!tags || tags.length === 0) return undefined
+  const values = tags
+    .map(t => (typeof t === 'string' ? t : t?.value))
+    .filter((v): v is string => typeof v === 'string' && v.length > 0)
+
+  const raw = values
+    .find(v => v.toLowerCase().startsWith('difficulty:'))
+    ?.slice('difficulty:'.length)
+    .trim()
+
+  if (!raw) return undefined
+
+  return VALID_DIFFICULTIES[raw.toLowerCase()]
 }

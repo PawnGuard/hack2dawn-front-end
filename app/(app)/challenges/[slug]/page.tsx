@@ -566,6 +566,7 @@ export default function ChallengeDetailPage() {
   // JSX
   // ─────────────────────────────────────────────
   const machineName = isMachine ? getMachineName(machineSteps) : (currentChallenge?.name ?? '')
+  const displayDifficulty = currentChallenge?.difficultyTag ?? 'undefined'
 
   return (
     <main className="relative min-h-screen bg-[#090013] text-white overflow-hidden">
@@ -625,7 +626,7 @@ export default function ChallengeDetailPage() {
                     {totalPoints} PTS
                   </span>
                   <span className="font-mono text-xs text-white/60 border border-white/15 bg-white/5 px-3 py-1">
-                    {currentChallenge.difficulty}
+                    {displayDifficulty}
                   </span>
                 </div>
               </div>
@@ -638,7 +639,7 @@ export default function ChallengeDetailPage() {
                 </div>
                 <div className="border border-white/10 bg-black/40 p-3">
                   <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">Dificultad</p>
-                  <p className="text-white/85 text-sm">{currentChallenge.difficulty}</p>
+                  <p className="text-white/85 text-sm">{displayDifficulty}</p>
                 </div>
                 <div className="border border-white/10 bg-black/40 p-3">
                   <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/45">Flags</p>

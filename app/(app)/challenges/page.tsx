@@ -32,7 +32,11 @@ const CATEGORY_FALLBACK: Record<string, GlobeContinent> = {
   'Misc':      'North America',
 }
 
-function difficultyTone(difficulty: ChallengeSummary["difficulty"]) {
+function difficultyTone(difficulty?: ChallengeSummary["difficulty"]) {
+	if (!difficulty) {
+		return { label: "undefined", className: "text-white/70 border-white/25 bg-white/5", bar: "bg-white/20", level: 0 };
+	}
+
 	switch (difficulty) {
 		case "Easy":
 			return { label: "Easy", className: "text-emerald-300 border-emerald-400/35 bg-emerald-500/10", bar: "bg-emerald-400", level: 1 };
@@ -198,7 +202,6 @@ export default function ChallengesPage() {
 
 	const displayChallenge = useMemo(() => {
 		if (!selectedChallenge) return null
-
 		// Si tiene machineId, fusionamos los datos visuales
 		if (selectedChallenge.machineId) {
 		const key = `${selectedChallenge.continent}::${selectedChallenge.machineId}`
@@ -229,6 +232,11 @@ export default function ChallengesPage() {
 		// Si es un reto normal, se muestra tal cual
 		return selectedChallenge
 	}, [selectedChallenge, machineGroups])
+
+	const displayDifficultyTone = useMemo(
+		() => difficultyTone(displayChallenge?.difficultyTag),
+		[displayChallenge?.difficultyTag]
+	)
 
 	// Centro geográfico de cada continente — un único punto de objetivo
 	const CONTINENT_CENTER: Record<GlobeContinent, [number, number]> = {
@@ -1074,8 +1082,8 @@ export default function ChallengesPage() {
 												<span className="border px-2 py-1 font-mono text-[10px] uppercase ...">
 												{displayChallenge.category}
 												</span>
-												<span className={`border px-2 py-1 font-mono text-[10px] uppercase ${difficultyTone(displayChallenge.difficulty).className}`}>
-												{difficultyTone(displayChallenge.difficulty).label}
+												<span className={`border px-2 py-1 font-mono text-[10px] uppercase ${displayDifficultyTone.className}`}>
+												{displayDifficultyTone.label}
 												</span>
 												<span className={`border px-2 py-1 font-mono text-[10px] uppercase ${operationalStatus(displayChallenge).className}`}>
 												{operationalStatus(displayChallenge).label}

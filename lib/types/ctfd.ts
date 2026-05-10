@@ -154,6 +154,7 @@ export interface CTFdChallengeSummary {
   category: string
   type: string
   difficulty: 'Easy' | 'Medium' | 'Hard' | 'Insane'
+  difficultyTag?: 'Easy' | 'Medium' | 'Hard' | 'Insane'
   points: number
   continent: ChallengeContinent | null
   description: string

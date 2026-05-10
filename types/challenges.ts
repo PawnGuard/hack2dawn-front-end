@@ -34,6 +34,7 @@ export interface ChallengeSummary {
   continent: ChallengeContinent | null
   type: string;
   difficulty: ChallengeDifficulty;
+  difficultyTag?: ChallengeDifficulty;
   status: ChallengeStatus;
   solvedByTeam: boolean;
   points: number;
